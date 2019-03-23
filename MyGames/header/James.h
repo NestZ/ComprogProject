@@ -88,4 +88,7 @@ void Specialitem_Setup(){
 
 //titi add char number
 //nestz add now player by number
+<<<<<<< HEAD
 
+=======
+>>>>>>> ab2a9d7d06f4544165865f536603f9a2a68b08b1
