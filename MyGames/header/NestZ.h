@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <stack>
+#include <vector>
 
 using namespace std;
 using namespace sf;
@@ -42,6 +43,10 @@ class Game{
         void drawChooseCharacters();
         void updatePlayerIcon();
         void setPlayerIcon(Sprite &, int);
+        void chooseState(int);
+        //randomPlayer
+        void initRandomPlayerVariables();
+        void drawRandomPlayers();
     private:
         //Menu
         Vector2i mousePosView;
@@ -66,8 +71,14 @@ class Game{
         int choosePlayersFontSize;
         int players;
         //ChooseCharacters
-        Texture char1Texture[6];
-        Sprite char1Sprite[6];
+        bool choosed[6];
+        Texture charTexture[6];
+        Sprite charSprite[6];
+        Texture chooseCharacterBGTexture;
+        Sprite chooseCharacterBGSprite;
+        //randomPlayer
+        vector<string> playerName;
+
 };
 
 Game::Game(){
@@ -77,7 +88,9 @@ Game::Game(){
 
 void Game::initVariables(){
     initMenuVariables();
+    initRandomPlayerVariables();
     initChoosePlayersVariables();
+    initChooseCharactersVariables();
     initWindowVariables();
 }
 
@@ -257,6 +270,7 @@ void Game::updateChoosePlayersButton(){
                         break;
                     case 2: //4 players
                         players = 4;
+                        break;
                 }
                 state.push(ChooseCharacters);
             }
@@ -265,25 +279,41 @@ void Game::updateChoosePlayersButton(){
     }
 }
 
+void Game::initRandomPlayerVariables(){
+
+}
+
+void Game::drawRandomPlayers(){
+    string name;
+    for(int i = 0;i < players;i++){
+        cin >> name;
+        playerName.push_back(name);
+    }
+}
+
 void Game::initChooseCharactersVariables(){
-    char1Texture[0].loadFromFile("img/Char1.png");
-    char1Sprite[0].setTexture(char1Texture[0]);
-    char1Texture[1].loadFromFile("img/Char2.png");
-    char1Sprite[1].setTexture(char1Texture[1]);
-    char1Texture[2].loadFromFile("img/Char3.png");
-    char1Sprite[2].setTexture(char1Texture[2]);
-    char1Texture[3].loadFromFile("img/Char4.png");
-    char1Sprite[3].setTexture(char1Texture[3]);
-    char1Texture[4].loadFromFile("img/Char5.png");
-    char1Sprite[4].setTexture(char1Texture[4]);
-    char1Texture[5].loadFromFile("img/Char6.png");
-    char1Sprite[5].setTexture(char1Texture[5]);
+    for(int i = 0;i < 6;i++)choosed[i] = false;
+    charTexture[0].loadFromFile("img/Char1.png");
+    charSprite[0].setTexture(charTexture[0]);
+    charTexture[1].loadFromFile("img/Char2.png");
+    charSprite[1].setTexture(charTexture[1]);
+    charTexture[2].loadFromFile("img/Char3.png");
+    charSprite[2].setTexture(charTexture[2]);
+    charTexture[3].loadFromFile("img/Char4.png");
+    charSprite[3].setTexture(charTexture[3]);
+    charTexture[4].loadFromFile("img/Char5.png");
+    charSprite[4].setTexture(charTexture[4]);
+    charTexture[5].loadFromFile("img/Char6.png");
+    charSprite[5].setTexture(charTexture[5]);
+    chooseCharacterBGTexture.loadFromFile("img/chooseCharacterBG.jpg");
+    chooseCharacterBGSprite.setTexture(chooseCharacterBGTexture);
 }
 
 void Game::drawChooseCharacters(){
+    this->gameWindow->draw(chooseCharacterBGSprite);
     for(int i = 0;i < 6;i++){
-        setPlayerIcon(char1Sprite[i],i);
-        this->gameWindow->draw(char1Sprite[i]);
+        setPlayerIcon(charSprite[i],i);
+        this->gameWindow->draw(charSprite[i]);
     }
     updatePlayerIcon();
 }
@@ -303,10 +333,16 @@ double Game::getSpriteHeight(Sprite sprite){
 
 void Game::updatePlayerIcon(){
     for(int i = 0;i < 6;i++){
-        if(char1Sprite[i].getGlobalBounds().contains(mousePos)){
-            char1Sprite[i].setScale(1.1,1.1);
+        if(charSprite[i].getGlobalBounds().contains(mousePos)){
+                charSprite[i].setScale(1.1,1.1);
         }
-        else char1Sprite[i].setScale(1,1);
+        else charSprite[i].setScale(1,1);
     }
+}
+
+void Game::chooseState(int index){
+    /*if(checkMouseClick()){
+        choosed[i] = true;
+    }*/
 }
 #endif
