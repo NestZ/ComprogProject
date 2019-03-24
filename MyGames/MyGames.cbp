@@ -54,7 +54,6 @@
 			<Add directory="D:/Project/CMU CPE/Comprog 261102/Project/Games/SFML-2.5.1/lib" />
 		</Linker>
 		<Unit filename="cb.bmp" />
-		<Unit filename="header/NestZ_ChoosePlayers.cpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="openal32.dll" />
 		<Unit filename="sfml-audio-2.dll" />
