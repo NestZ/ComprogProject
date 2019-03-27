@@ -52,6 +52,9 @@ class Game{
         void chooseState(int);
         void randomPick(vector<string> &);
         void updateChoosingState();
+        void updateChoosed();
+        void updateBackButtonCC();
+        void resetCC();
         //InsertName
         void initInsertNameVariables();
         void drawInsertName();
@@ -94,6 +97,9 @@ class Game{
         Sprite charSprite[6];
         Texture chooseCharacterBGTexture;
         Sprite chooseCharacterBGSprite;
+        Texture choosedIconTexture;
+        Sprite choosedIconSprite[6];
+        Sprite spriteIcon;
         int randomIndexST;
         int randomIndexND;
         int chooseIndex;
@@ -159,7 +165,7 @@ void Game::initGlobalVariables(){
     backButtonTexture.loadFromFile("img/BackButton.png");
     backButtonSprite.setTexture(backButtonTexture);
     backButtonSprite.setOrigin(getObjWidth(backButtonSprite) / 2.0,getObjHeight(backButtonSprite) / 2.0);
-    backButtonSprite.setPosition(70,windowHeight - 70);
+    backButtonSprite.setPosition(50,windowHeight - 50);
     backButtonSprite.setScale(0.7,0.7);
     backButtonSprite.setRotation(-45);
 }
@@ -291,9 +297,11 @@ void Game::updateMenuButton(){
             if(checkMouseClick()){
                 switch(i){
                     case 0: //play
+                        this->gameWindow->clear();
                         state.push(ChoosePlayers);
                         break;
                     case 1: //setting
+                        this->gameWindow->clear();
                         state.push(Setting);
                         break;
                     case 2: //quit
@@ -367,6 +375,7 @@ void Game::updateChoosePlayersButton(){
                         players = 4;
                         break;
                 }
+                this->gameWindow->clear();
                 state.push(InsertName);
             }
         }
@@ -376,12 +385,13 @@ void Game::updateChoosePlayersButton(){
 
 void Game::updateBackButtonHMP(){
     if(backButtonSprite.getGlobalBounds().contains(mousePos)){
-        backButtonSprite.setScale(0.8,0.8);
+        backButtonSprite.setScale(0.7,0.7);
         if(checkMouseClick()){
+            this->gameWindow->clear();
             state.pop();
         }
     }
-    else backButtonSprite.setScale(0.7,0.7);
+    else backButtonSprite.setScale(0.6,0.6);
 }
 
 /*#############################################################################################################
@@ -467,6 +477,7 @@ void Game::updateInsertedName(char insertedChar){
         }
         else {
             randomPick(playerName);
+            this->gameWindow->clear();
             state.push(ChooseCharacters);
         }
     }
@@ -474,13 +485,14 @@ void Game::updateInsertedName(char insertedChar){
 
 void Game::updateBackButtonIPN(){
     if(backButtonSprite.getGlobalBounds().contains(mousePos)){
-        backButtonSprite.setScale(0.8,0.8);
+        backButtonSprite.setScale(0.7,0.7);
         if(checkMouseClick()){
             resetIPN();
+            this->gameWindow->clear();
             state.pop();
         }
     }
-    else backButtonSprite.setScale(0.7,0.7);
+    else backButtonSprite.setScale(0.6,0.6);
 }
 
 void Game::resetIPN(){
@@ -502,25 +514,31 @@ void Game::initChooseCharactersVariables(){
     chooseIndex = 0;
     for(int i = 0;i < 6;i++)choosed[i] = false;
     charTexture[0].loadFromFile("img/Char1.png");
-    charSprite[0].setTexture(charTexture[0]);
     charTexture[1].loadFromFile("img/Char2.png");
-    charSprite[1].setTexture(charTexture[1]);
     charTexture[2].loadFromFile("img/Char3.png");
-    charSprite[2].setTexture(charTexture[2]);
     charTexture[3].loadFromFile("img/Char4.png");
-    charSprite[3].setTexture(charTexture[3]);
     charTexture[4].loadFromFile("img/Char5.png");
-    charSprite[4].setTexture(charTexture[4]);
     charTexture[5].loadFromFile("img/Char6.png");
-    charSprite[5].setTexture(charTexture[5]);
+    for(int i = 0;i < 6;i++)charSprite[i].setTexture(charTexture[i]);
     chooseCharacterBGTexture.loadFromFile("img/chooseCharacterBG.jpg");
     chooseCharacterBGSprite.setTexture(chooseCharacterBGTexture);
-
+    choosedIconTexture.loadFromFile("img/ChoosedArrow.png");
+    for(int i = 0;i < 6;i++){
+        choosedIconSprite[i].setTexture(choosedIconTexture);
+        choosedIconSprite[i].setOrigin(getObjWidth(choosedIconSprite[i]) / 2.0,getObjHeight(choosedIconSprite[i]) / 2.0);
+        choosedIconSprite[i].setScale(0.4,0.4);
+    }
+    mainPlayerNameText.setFillColor(Color::Black);
+    mainPlayerNameText.setOutlineColor(Color::White);
+    mainPlayerNameText.setOutlineThickness(4);
 }
 
 void Game::drawChooseCharacters(){
     this->gameWindow->draw(chooseCharacterBGSprite);
+    this->gameWindow->draw(backButtonSprite);
+    updateBackButtonCC();
     updateChoosingState();
+    updateChoosed();
     this->gameWindow->draw(mainPlayerNameText);
     for(int i = 0;i < 6;i++){
         setCharacterIcon(charSprite[i],i);
@@ -548,28 +566,54 @@ void Game::randomPick(vector<string> &playerName){
 
 void Game::updateCharacterIcon(){
     for(int i = 0;i < 6;i++){
-        if(charSprite[i].getGlobalBounds().contains(mousePos)){
+        if(charSprite[i].getGlobalBounds().contains(mousePos) && !choosed[i]){
             charSprite[i].setScale(1.1,1.1);
+            if(checkMouseClick()){
+                choosed[i] = true;
+                if(chooseIndex < players - 1)chooseIndex++;
+                else {}
+            }
         }
         else charSprite[i].setScale(1,1);
+        if(choosed[i] == true)charSprite[i].setColor(Color(128,128,128,255));
+        else charSprite[i].setColor(Color(255,255,255,255));
     }
 }
 
 void Game::updateChoosingState(){
     updateCharacterIcon();
-    mainPlayerNameString = playerName[chooseIndex] + " turn";
-
+    mainPlayerNameString = playerName[chooseIndex] + " pick turn";
     mainPlayerNameText.setString(mainPlayerNameString);
-
-    mainPlayerNameText.setFillColor(Color::Black);
     mainPlayerNameText.setCharacterSize(choosingCharacterFontSize);
     mainPlayerNameText.setFont(menuFont);
     mainPlayerNameText.setOrigin(getObjWidth(mainPlayerNameText) / 2,getObjHeight(mainPlayerNameText) / 2);
-    mainPlayerNameText.setPosition(windowMidWidth(),150);
-    mainPlayerNameText.setOutlineColor(Color::White);
-    mainPlayerNameText.setOutlineThickness(4);
-    /*if(checkMouseClick()){
-        choosed[i] = true;
-    }*/
+    mainPlayerNameText.setPosition(windowMidWidth(),100);
+}
+
+void Game::updateChoosed(){
+    for(int i = 0;i < 6;i++){
+        if(choosed[i] == true){
+            choosedIconSprite[i].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 100);
+            this->gameWindow->draw(choosedIconSprite[i]);
+        }
+    }
+}
+
+void Game::updateBackButtonCC(){
+    if(backButtonSprite.getGlobalBounds().contains(mousePos)){
+        backButtonSprite.setScale(0.7,0.7);
+        if(checkMouseClick()){
+            resetCC();
+            resetIPN();
+            this->gameWindow->clear();
+            state.pop();
+        }
+    }
+    else backButtonSprite.setScale(0.6,0.6);
+}
+
+void Game::resetCC(){
+    chooseIndex = 0;
+    for(int i = 0;i < 6;i++)choosed[i] = false;
 }
 #endif
