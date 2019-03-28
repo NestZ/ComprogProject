@@ -21,7 +21,7 @@ class Game{
         void update();
         Event updateSfmlEvent();
         void render();
-        enum States {Menu, ChoosePlayers, ChooseCharacters, Setting, InsertName};
+        enum States {Menu, ChoosePlayers, ChooseCharacters, Setting, InsertName, Playing};
         bool checkMouseClick();
         double windowMidWidth();
         double windowMidHeight();
@@ -65,6 +65,8 @@ class Game{
         void updateBackButtonIPN();
         void resetIPN();
         bool isValidCharacter(char);
+        //Playing
+        void drawPlaying();
     private:
         //Menu
         Vector2i mousePosView;
@@ -105,6 +107,8 @@ class Game{
         int chooseIndex;
         Text mainPlayerNameText;
         string mainPlayerNameString;
+        Text playerChoosedName[4];
+        int playerChoosedFontSize;
         //InsertName
         int cinTextFontSize;
         int insertedNameFontSize;
@@ -161,6 +165,7 @@ void Game::initGlobalVariables(){
     cinTextFontSize = 35;
     insertedNameFontSize = 30;
     choosingCharacterFontSize = 45;
+    playerChoosedFontSize = 20;
     menuFont.loadFromFile("font/8-BIT WONDER.TTF");
     backButtonTexture.loadFromFile("img/BackButton.png");
     backButtonSprite.setTexture(backButtonTexture);
@@ -184,6 +189,9 @@ void Game::render(){
                 break;
             case ChooseCharacters:
                 drawChooseCharacters();
+                break;
+            case Playing:
+                drawPlaying();
                 break;
             case Setting:
                 break;
@@ -531,6 +539,9 @@ void Game::initChooseCharactersVariables(){
     mainPlayerNameText.setFillColor(Color::Black);
     mainPlayerNameText.setOutlineColor(Color::White);
     mainPlayerNameText.setOutlineThickness(4);
+    for(int i = 0;i < 4;i++){
+        playerChoosedName[i].setPosition(-300,-300);
+    }
 }
 
 void Game::drawChooseCharacters(){
@@ -570,8 +581,9 @@ void Game::updateCharacterIcon(){
             charSprite[i].setScale(1.1,1.1);
             if(checkMouseClick()){
                 choosed[i] = true;
+                playerChoosedName[chooseIndex].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 130);
                 if(chooseIndex < players - 1)chooseIndex++;
-                else {}
+                else state.push(Playing);
             }
         }
         else charSprite[i].setScale(1,1);
@@ -588,6 +600,16 @@ void Game::updateChoosingState(){
     mainPlayerNameText.setFont(menuFont);
     mainPlayerNameText.setOrigin(getObjWidth(mainPlayerNameText) / 2,getObjHeight(mainPlayerNameText) / 2);
     mainPlayerNameText.setPosition(windowMidWidth(),100);
+    for(int i = 0;i < players;i++){
+        playerChoosedName[i].setFillColor(Color::Black);
+        playerChoosedName[i].setOutlineColor(Color::White);
+        playerChoosedName[i].setOutlineThickness(1.5);
+        playerChoosedName[i].setFont(menuFont);
+        playerChoosedName[i].setCharacterSize(playerChoosedFontSize);
+        playerChoosedName[i].setString(playerName[i]);
+        playerChoosedName[i].setOrigin(getObjWidth(playerChoosedName[i]) / 2.0,getObjHeight(playerChoosedName[i]) / 2.0);
+        this->gameWindow->draw(playerChoosedName[i]);
+    }
 }
 
 void Game::updateChoosed(){
@@ -615,5 +637,15 @@ void Game::updateBackButtonCC(){
 void Game::resetCC(){
     chooseIndex = 0;
     for(int i = 0;i < 6;i++)choosed[i] = false;
+}
+
+/*#############################################################################################################
+##########                                                                                          ###########
+##########                                       PLAYING                                            ###########
+##########                                                                                          ###########
+#############################################################################################################*/
+
+void Game::drawPlaying(){
+
 }
 #endif
