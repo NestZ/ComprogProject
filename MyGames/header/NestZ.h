@@ -5,6 +5,7 @@
 #include <iostream>
 #include <stack>
 #include <vector>
+#include <fstream>
 
 using namespace std;
 using namespace sf;
@@ -18,6 +19,7 @@ class Game{
         void initVariables();
         void initWindowVariables();
         void initGlobalVariables();
+        void initFont();
         void update();
         Event updateSfmlEvent();
         void render();
@@ -31,6 +33,7 @@ class Game{
         double getObjHeight(T);
         template <typename T>
         void Swap(T &, T&);
+        void updateMouseIcon();
         //Menu
         void initMenuVariables();
         void checkMouseClick(int);
@@ -38,6 +41,10 @@ class Game{
         void drawMenu();
         void updateMousePos();
         void updateMenuButton();
+        //Setting
+        void initSettingVariables();
+        void drawSetting();
+        void updateBackButtonST();
         //ChoosePlayers
         void drawChoosePlayers();
         void setChoosePlayersButton(Text &, int);
@@ -67,6 +74,8 @@ class Game{
         bool isValidCharacter(char);
         //Playing
         void drawPlaying();
+        void initPlayingVariables();
+        void updateView();
     private:
         //Menu
         Vector2i mousePosView;
@@ -76,9 +85,23 @@ class Game{
         Text menuButton[3];
         Texture menuBGTexture;
         Sprite menuBGSprite;
+        //Setting
+        int horizontalScrollSpeed;
+        int verticalScrollSpeed;
+        int setting[2];
+        char temp[20];
+        string settingString;
+        Texture settingBGTexture;
+        Sprite settingBGSprite;
+        Text settingText[2];
+        Text settingValue[2];
+        int settingFontSize;
+        int settingIndex;
         //Window
         Texture backButtonTexture;
         Sprite backButtonSprite;
+        Texture mouseIconTexture;
+        Sprite mouseIconSprite;
         bool MouseReleased;
         int windowWidth;
         int windowHeight;
@@ -123,6 +146,11 @@ class Game{
         int playerNamingIndex;
         Texture insertNameBGTexture;
         Sprite insertNameBGSprite;
+        //Playing
+        Texture movingCursorTexture;
+        Texture mapTexture;
+        Sprite mapSprite;
+        View camera;
 };
 
 Game::Game(){
@@ -137,18 +165,35 @@ Game::Game(){
 #############################################################################################################*/
 
 void Game::initVariables(){
+    initFont();
     initMenuVariables();
     initInsertNameVariables();
     initChoosePlayersVariables();
     initChooseCharactersVariables();
+    initPlayingVariables();
     initWindowVariables();
+    initSettingVariables();
     initGlobalVariables();
+}
+
+void Game::initFont(){
+    menuFontSize = 45;
+    choosePlayersFontSize = 35;
+    cinTextFontSize = 35;
+    insertedNameFontSize = 30;
+    choosingCharacterFontSize = 45;
+    playerChoosedFontSize = 20;
+    settingFontSize = 40;
+    menuFont.loadFromFile("font/8-BIT WONDER.TTF");
 }
 
 void Game::initWindow(){
     gameWindow = new RenderWindow(VideoMode(windowWidth,windowHeight),GameName,Style::Close);
-    this->gameWindow->setVerticalSyncEnabled(true);
-    this->gameWindow->setKeyRepeatEnabled(false);
+    this->gameWindow->setVerticalSyncEnabled(false);
+    this->gameWindow->setFramerateLimit(60);
+    this->gameWindow->setKeyRepeatEnabled(true);
+    this->gameWindow->setMouseCursorGrabbed(true);
+    this->gameWindow->setMouseCursorVisible(false);
 }
 
 void Game::initWindowVariables(){
@@ -160,19 +205,19 @@ void Game::initWindowVariables(){
 }
 
 void Game::initGlobalVariables(){
-    menuFontSize = 45;
-    choosePlayersFontSize = 35;
-    cinTextFontSize = 35;
-    insertedNameFontSize = 30;
-    choosingCharacterFontSize = 45;
-    playerChoosedFontSize = 20;
-    menuFont.loadFromFile("font/8-BIT WONDER.TTF");
     backButtonTexture.loadFromFile("img/BackButton.png");
+    backButtonTexture.setSmooth(true);
     backButtonSprite.setTexture(backButtonTexture);
     backButtonSprite.setOrigin(getObjWidth(backButtonSprite) / 2.0,getObjHeight(backButtonSprite) / 2.0);
     backButtonSprite.setPosition(50,windowHeight - 50);
     backButtonSprite.setScale(0.7,0.7);
     backButtonSprite.setRotation(-45);
+    movingCursorTexture.loadFromFile("img/MovingCursor.png");
+    mouseIconTexture.loadFromFile("img/MouseCursor.png");
+    mouseIconTexture.setSmooth(true);
+    mouseIconSprite.setTexture(mouseIconTexture);
+    mouseIconSprite.setOrigin(10,10);
+    mouseIconSprite.setScale(0.6,0.6);
 }
 
 void Game::render(){
@@ -194,6 +239,7 @@ void Game::render(){
                 drawPlaying();
                 break;
             case Setting:
+                drawSetting();
                 break;
         }
         this->gameWindow->display();
@@ -209,6 +255,7 @@ void Game::run(){
 void Game::update(){
     //Window
     updateSfmlEvent();
+    updateMouseIcon();
     //Menu
     updateMousePos();
 }
@@ -236,6 +283,10 @@ double Game::windowMidWidth(){
 
 double Game::windowMidHeight(){
     return windowHeight / 2.0;
+}
+
+void Game::updateMouseIcon(){
+    mouseIconSprite.setPosition(mousePos);
 }
 
 template <typename T>
@@ -281,6 +332,7 @@ void Game::drawMenu(){
     for(int i = 0;i < 3;i++){
         this->gameWindow->draw(menuButton[i]);
     }
+    this->gameWindow->draw(mouseIconSprite);
 }
 
 void Game::setMenuButton(Text &text, int index){
@@ -334,6 +386,75 @@ bool Game::checkMouseClick(){
 
 /*#############################################################################################################
 ##########                                                                                          ###########
+##########                                       SETIING                                            ###########
+##########                                                                                          ###########
+#############################################################################################################*/
+
+void Game::initSettingVariables(){
+    settingIndex = 2;
+    settingBGTexture.loadFromFile("img/SettingBG.jpg");
+    settingBGSprite.setTexture(settingBGTexture);
+    settingText[0].setString("Vertical Scroll Speed ");
+    settingText[1].setString("Horizontal Scroll Speed ");
+    for(int i = 0;i < settingIndex;i++){
+        settingText[i].setFont(menuFont);
+        settingText[i].setOutlineColor(Color::White);
+        settingText[i].setOutlineThickness(4);
+        settingText[i].setFillColor(Color::Black);
+        settingText[i].setCharacterSize(settingFontSize);
+        settingText[i].setPosition(100,(windowHeight / 3) * (i + 1));
+    }
+    int i = 0;
+    char format[] = "%s : %d";
+    ifstream fileIn("Setting.ini");
+    while(getline(fileIn,settingString)){
+        sscanf(settingString.c_str(),format,temp,&setting[i]);
+        cout << temp << " " << setting[i] << '\n';
+        i++;
+    }
+    fileIn.close();
+    verticalScrollSpeed = setting[0];
+    horizontalScrollSpeed = setting[1];
+
+    settingValue[0].setString(to_string(verticalScrollSpeed));
+    settingValue[1].setString(to_string(horizontalScrollSpeed));
+    for(int i = 0;i < settingIndex;i++){
+        settingValue[i].setFont(menuFont);
+        settingValue[i].setOutlineColor(Color::White);
+        settingValue[i].setOutlineThickness(4);
+        settingValue[i].setFillColor(Color::Black);
+        settingValue[i].setCharacterSize(settingFontSize);
+        settingValue[i].setPosition(1100,settingText[i].getPosition().y);
+    }
+}
+
+void Game::drawSetting(){
+    this->gameWindow->draw(settingBGSprite);
+    for(int i = 0;i < settingIndex;i++){
+        settingText[i].setOrigin(0,getObjHeight(settingText[i]) / 2);
+        this->gameWindow->draw(settingText[i]);
+        settingValue[i].setOrigin(0,getObjHeight(settingValue[i]) / 2);
+        this->gameWindow->draw(settingValue[i]);
+    }
+    updateBackButtonST();
+    this->gameWindow->draw(backButtonSprite);
+    updateMouseIcon();
+    this->gameWindow->draw(mouseIconSprite);
+}
+
+void Game::updateBackButtonST(){
+    if(backButtonSprite.getGlobalBounds().contains(mousePos)){
+        backButtonSprite.setScale(0.7,0.7);
+        if(checkMouseClick()){
+            this->gameWindow->clear();
+            state.pop();
+        }
+    }
+    else backButtonSprite.setScale(0.6,0.6);
+}
+
+/*#############################################################################################################
+##########                                                                                          ###########
 ##########                                   CHOOSE HOW MANY PLAYER                                 ###########
 ##########                                                                                          ###########
 #############################################################################################################*/
@@ -355,6 +476,7 @@ void Game::drawChoosePlayers(){
         setChoosePlayersButton(chooseButton[i],i);
         this->gameWindow->draw(chooseButton[i]);
     }
+    this->gameWindow->draw(mouseIconSprite);
 }
 
 void Game::setChoosePlayersButton(Text &text,int index){
@@ -444,6 +566,7 @@ void Game::drawInsertName(){
     updateBackButtonIPN();
     this->gameWindow->draw(cinText);
     this->gameWindow->draw(InsertedName);
+    this->gameWindow->draw(mouseIconSprite);
 }
 
 void Game::updateInsertNameTextBoxEvent(Event InsertNameEvent){
@@ -555,6 +678,7 @@ void Game::drawChooseCharacters(){
         setCharacterIcon(charSprite[i],i);
         this->gameWindow->draw(charSprite[i]);
     }
+    this->gameWindow->draw(mouseIconSprite);
 }
 
 void Game::setCharacterIcon(Sprite &sprite, int index){
@@ -582,6 +706,7 @@ void Game::updateCharacterIcon(){
             if(checkMouseClick()){
                 choosed[i] = true;
                 playerChoosedName[chooseIndex].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 130);
+                //setPlayer's Character
                 if(chooseIndex < players - 1)chooseIndex++;
                 else state.push(Playing);
             }
@@ -645,7 +770,35 @@ void Game::resetCC(){
 ##########                                                                                          ###########
 #############################################################################################################*/
 
-void Game::drawPlaying(){
+void Game::initPlayingVariables(){
+    mapTexture.loadFromFile("img/Map.jpg");
+    mapSprite.setTexture(mapTexture);
+    mapSprite.setPosition(0,0);
+    camera.setCenter(Vector2f(300,300));
+    camera.setSize(Vector2f(300,300));
+    camera.setViewport(FloatRect(0,0,1,1));
+}
 
+void Game::drawPlaying(){
+    this->gameWindow->setView(camera);
+    this->gameWindow->draw(mapSprite);
+    this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
+    updateView();
+    this->gameWindow->draw(mouseIconSprite);
+}
+
+void Game::updateView(){
+    if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3){
+        camera.move(horizontalScrollSpeed,0);
+    }
+    else if(Mouse::getPosition(*this->gameWindow).x < 3){
+        camera.move(-horizontalScrollSpeed,0);
+    }
+    if(Mouse::getPosition(*this->gameWindow).y > windowHeight - 3){
+        camera.move(0,verticalScrollSpeed);
+    }
+    else if(Mouse::getPosition(*this->gameWindow).y < 3){
+        camera.move(0,-verticalScrollSpeed);
+    }
 }
 #endif
