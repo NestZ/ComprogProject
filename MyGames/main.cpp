@@ -10,8 +10,6 @@ int main()
 {
 
     srand(time(0));
-    cout << action_phase(monster_phase(),player_phase(),0);
-
     Game game;
 
     game.run();
