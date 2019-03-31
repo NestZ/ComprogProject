@@ -10,6 +10,7 @@ using namespace std;
 struct chara{
 	int stat[6],lv[3];//[0]lv [1]nowexp//[2]need[exp] ,,statas str agi luk  vit atk hp
 	string clas;
+	int inven[3];
 };
 void upstat(chara a[]);
 void battlephase(chara a,int[]);
