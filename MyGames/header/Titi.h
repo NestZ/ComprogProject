@@ -11,8 +11,9 @@ struct object{
 };
 
 void inoutstat_object();
-void get_item(string name,object [],object [],char [],int xx);
-void Equip_item(chara chara[],int n_2,object sword[],int xx);
+void get_item(string name,int number_chara);
+void Equip_item(int n_2,int number_chara);
+void use_potion(int number_potion);
 
 object sword[10];
 object potion[5];
@@ -32,11 +33,11 @@ void inputstat_object(){
     potion[0].name_object ="extra vit";     potion[0].potion_effect = 3;
     potion[1].name_object ="extra atk";     potion[1].potion_effect = 3;
     potion[2].name_object ="extra luk";     potion[2].potion_effect = 3;
-    potion[3].name_object ="Green potion";  potion[3].potion_effect = 3;
-    potion[4].name_object ="Red potion";    potion[4].potion_effect = 3;
+    potion[3].name_object ="Green potion";  potion[3].potion_effect = 10;
+    potion[4].name_object ="Red potion";    potion[4].potion_effect = 30;
 }
 
-void get_item(string name ,object sword[],object potion[],chara chara[],int xx){
+void get_item(string name ,int number_chara){
     int n = rand()%100+1;
     int a = rand()%5;
     int n_2,n_3,x;
@@ -61,7 +62,7 @@ void get_item(string name ,object sword[],object potion[],chara chara[],int xx){
         cin >> x;
         switch(x){
             case 1: cout << "You Equip";
-                    Equip_item(chara,n_2,sword,xx);
+                    Equip_item(n_2,number_chara);
                     break;
             case 2: cout << "You Drop";
                     break;
@@ -70,13 +71,39 @@ void get_item(string name ,object sword[],object potion[],chara chara[],int xx){
     }
     if(name == "potion"){
         cout << "you get " << potion[a].name_object;
-        chara.inven[0] += 1;
+        switch(a){
+            case 0: chara[number_chara].inven[0] += 1;
+                    break;
+            case 1: chara[number_chara].inven[1] += 1;
+                    break;
+            case 2: chara[number_chara].inven[2] += 1;
+                    break;
+            case 3: chara[number_chara].inven[3] += 1;
+                    break;
+            case 4: chara[number_chara].inven[4] += 1;
+                    break;
+        }
     }
 }
 
-void Equip_item(chara chara[],int n_2,object sword[],int xx){
-    chara[xx].stat[0] +=  sword[n_2].sword_stat[0];
-    chara[xx].stat[1] +=  sword[n_2].sword_stat[1];
-    chara[xx].stat[2] +=  sword[n_2].sword_stat[2];
+void Equip_item(int n_2,int number_chara){
+    chara[number_chara].stat[0] +=  sword[n_2].sword_stat[0];
+    chara[number_chara].stat[1] +=  sword[n_2].sword_stat[1];
+    chara[number_chara].stat[2] +=  sword[n_2].sword_stat[2];
+}
+
+void use_potion(int number_potion,int number_chara){
+    switch(number_potion){
+            case 0: chara[number_chara].stat[3] += potion[0].potion_effect;
+                    break;
+            case 1: chara[number_chara].stat[4] += potion[1].potion_effect;
+                    break;
+            case 2: chara[number_chara].stat[2] += potion[2].potion_effect;
+                    break;
+            case 3: chara[number_chara].stat[5] += potion[3].potion_effect;
+                    break;
+            case 4: chara[number_chara].stat[5] += potion[4].potion_effect;
+                    break;
+    }
 }
 #endif // TITI_H
