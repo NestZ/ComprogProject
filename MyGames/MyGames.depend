@@ -480,26 +480,43 @@
 1552637205 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\source\game.cpp
 	"Game.h"
 
-<<<<<<< HEAD
-1554006455 source:c:\users\user\desktop\engineer\comprog project\mygames\main.cpp
+1552637205 D
+
+1554011806 source:c:\users\user\desktop\engineer\comprog project\mygames\main.cpp
 	"header/James.h"
 	"header/NestZ.h"
 	"header/Pound.h"
 	"header/Billy.h"
 	"header/Titi.h"
+	<cstdlib>
 	<ctime>
 
-1552901267 c:\users\user\desktop\engineer\comprog project\mygames\header\james.h
+1554011806 c:\users\user\desktop\engineer\comprog project\mygames\header\james.h
+	<iostream>
+	<SFML/Graphics.hpp>
+	<cmath>
+	<cstdlib>
+	<string>
+	<ctime>
 
-1552923382 c:\users\user\desktop\engineer\comprog project\mygames\header\nestz.h
+1554011806 c:\users\user\desktop\engineer\comprog project\mygames\header\nestz.h
 	<SFML/Graphics.hpp>
 	<string>
+	<iostream>
+	<stack>
+	<vector>
 
 1552901267 c:\users\user\desktop\engineer\comprog project\mygames\header\pound.h
 
-1552901267 c:\users\user\desktop\engineer\comprog project\mygames\header\billy.h
+1554011806 c:\users\user\desktop\engineer\comprog project\mygames\header\billy.h
+	<iostream>
+	<vector>
+	<cmath>
+	<cstdlib>
+	<ctime>
+	<string>
 
-1554011325 c:\users\user\desktop\engineer\comprog project\mygames\header\titi.h
+1554013986 c:\users\user\desktop\engineer\comprog project\mygames\header\titi.h
 	<iostream>
 	<cstdlib>
 
@@ -911,7 +928,9 @@
 	<SFML/Graphics/PrimitiveType.hpp>
 	<SFML/Graphics/Drawable.hpp>
 	<SFML/Window/GlResource.hpp>
-=======
+
+1552901268 ow/GlResource.hpp>
+
 1553337297 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz_game.h
 	<SFML/Graphics.hpp>
 	<string>
@@ -927,5 +946,6 @@
 1553326476 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz_chooseplayers.cpp
 
 1553326037 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz_chooseplayers.h
->>>>>>> refs/remotes/origin/master
+
+1553326037 s/remotes/origin/master
 

@@ -17,8 +17,7 @@ void Equip_item(chara chara[],int n_2,object sword[],int xx);
 object sword[10];
 object potion[5];
 void inputstat_object(){
-    object sword[10];
-    object potion[5];
+
     sword[0].name_object = "Kusanagi";          sword[0].sword_stat[0] = 3;sword[0].sword_stat[1] = 1;sword[0].sword_stat[2] = 2;
     sword[1].name_object = "Durandal";          sword[1].sword_stat[0] = 3;sword[1].sword_stat[1] = 1;sword[1].sword_stat[2] = 2;
     sword[2].name_object = "Muramasas";         sword[2].sword_stat[0] = 3;sword[2].sword_stat[1] = 1;sword[2].sword_stat[2] = 2;
@@ -54,7 +53,7 @@ void get_item(string name ,object sword[],object potion[],chara chara[],int xx){
     else if(n >=0 && n <50){
         n_2 = rand()%4;
     }
-
+;
 
     if(name == "sword"){
         cout << "You get " << sword[n_2].name_object << endl;
@@ -71,6 +70,7 @@ void get_item(string name ,object sword[],object potion[],chara chara[],int xx){
     }
     if(name == "potion"){
         cout << "you get " << potion[a].name_object;
+        chara.inven[0] += 1;
     }
 }
 
