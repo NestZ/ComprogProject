@@ -4,136 +4,79 @@
 #include <cstdlib>
 
 using namespace std;
-struct Hero_stat{
-int Strange;
-int Agility;
-int intelligence;
-int luk;
+
+struct object{
+    int sword_stat[3],potion_effect; // 0str 1agi 2luk
+    string name_object;
 };
 
-void input_stat(){
-Hero_stat Martial_art;
-Hero_stat Jajamaru;
-Hero_stat Demon;
+void inoutstat_object();
+void get_item(string name,object [],object [],char [],int xx);
+void Equip_item(chara chara[],int n_2,object sword[],int xx);
 
-Martial_art.Strange = 5;
-Martial_art.Agility = 2;
-Martial_art.intelligence = 1;
-Martial_art.luk = 4;
+object sword[10];
+object potion[5];
+void inputstat_object(){
+    object sword[10];
+    object potion[5];
+    sword[0].name_object = "Kusanagi";          sword[0].sword_stat[0] = 3;sword[0].sword_stat[1] = 1;sword[0].sword_stat[2] = 2;
+    sword[1].name_object = "Durandal";          sword[1].sword_stat[0] = 3;sword[1].sword_stat[1] = 1;sword[1].sword_stat[2] = 2;
+    sword[2].name_object = "Muramasas";         sword[2].sword_stat[0] = 3;sword[2].sword_stat[1] = 1;sword[2].sword_stat[2] = 2;
+    sword[3].name_object = "Murasame";          sword[3].sword_stat[0] = 3;sword[3].sword_stat[1] = 1;sword[3].sword_stat[2] = 2;
+    sword[4].name_object = "Masamune";          sword[4].sword_stat[0] = 3;sword[4].sword_stat[1] = 1;sword[4].sword_stat[2] = 2;
+    sword[5].name_object = "Shusui";            sword[5].sword_stat[0] = 3;sword[5].sword_stat[1] = 1;sword[5].sword_stat[2] = 2;
+    sword[6].name_object = "Yubashiri";         sword[6].sword_stat[0] = 3;sword[6].sword_stat[1] = 1;sword[6].sword_stat[2] = 2;
+    sword[7].name_object = "Kitetsu Sandai";    sword[7].sword_stat[0] = 3;sword[7].sword_stat[1] = 1;sword[7].sword_stat[2] = 2;
+    sword[8].name_object = "Wado Ichimonji";    sword[8].sword_stat[0] = 3;sword[8].sword_stat[1] = 1;sword[8].sword_stat[2] = 2;
+    sword[9].name_object = "Excalibur";         sword[9].sword_stat[0] = 3;sword[9].sword_stat[1] = 1;sword[9].sword_stat[2] = 2;
 
-Jajamaru.Strange = 3;
-Jajamaru.Agility = 3;
-Jajamaru.intelligence = 3;
-Jajamaru.luk = 3;
-
-Demon.Strange = 9;
-Demon.Agility = 2;
-Demon.intelligence = 1;
-Demon.luk = 0;
+    potion[0].name_object ="extra vit";     potion[0].potion_effect = 3;
+    potion[1].name_object ="extra atk";     potion[1].potion_effect = 3;
+    potion[2].name_object ="extra luk";     potion[2].potion_effect = 3;
+    potion[3].name_object ="Green potion";  potion[3].potion_effect = 3;
+    potion[4].name_object ="Red potion";    potion[4].potion_effect = 3;
 }
 
-void Convert_stat(string name, int str, int agi, int intel, int lux ){
-   //ค่อยคิดต่อ
-}
+void get_item(string name ,object sword[],object potion[],chara chara[],int xx){
+    int n = rand()%100+1;
+    int a = rand()%5;
+    int n_2,n_3,x;
 
-int exp_cal(int numbermonster){
-    int exp =0;
-    if(numbermonster == 1){
-        exp = 10; return exp;
+    if(n >= 90){
+        n_2 = rand()%2+8;
     }
-    if(numbermonster == 2){
-        exp = 15; return exp;
+    else if(n >=70 && n <90){
+        n_2 = rand()%2+6;
     }
-    if(numbermonster == 3){
-        exp = 20; return exp;
+    else if(n >=40 && n <70){
+        n_2 = rand()%2+4;
     }
-    if(numbermonster == 4){
-        exp = 25; return exp;
+    else if(n >=0 && n <50){
+        n_2 = rand()%4;
     }
-}
 
-string monster_phase(){
-    int monsterchoice = rand()%3;
-    string Choice[3] = {"hammer","Scissors","Paper"};
-    string test = Choice[monsterchoice];
-    cout << test << "\n";
-    return test;
-}
 
-string player_phase(){
-    string Choice[3] = {"hammer","Scissors","Paper"};
-    int playerchoice;
-    cout << "Please select your attack\n";
-    cout << "Your choice 1.hammer 2.Scissors 3.Paper \n";
-    cin >> playerchoice;
-    string test = Choice[playerchoice];
-    cout << test << "\n";
-    return test;
-}
-
-int action_phase (string monsterchoosed ,string playerchoosed ,int phasenumber ){
-    //0=player 1=monster
-
-    if(phasenumber == 0){
-
-        if(playerchoosed == "hammer" && monsterchoosed == "Scissors"){
-            //แก้atkในภายหลัง
-            return 1;
-        }
-        if(playerchoosed == "Scissors" && monsterchoosed == "Paper"){
-            //แก้atkในภายหลัง
-            return 2;
-        }
-        if(playerchoosed == "Paper" && monsterchoosed == "hammer"){
-            //แก้atkในภายหลัง
-            return 3;
-        }
-        if(playerchoosed == "Paper" && monsterchoosed == "Paper"){
-            //แก้atkในภายหลัง
-            return 4;
-        }
-        if(playerchoosed == "hammer" && monsterchoosed == "hammer"){
-            //แก้atkในภายหลัง
-            return 5;
-        }
-        if(playerchoosed == "Scissors" && monsterchoosed == "Scissors"){
-            //แก้atkในภายหลัง
-            return 6;
-        }
-        else{
-            //แก้atkในภายหลัง
+    if(name == "sword"){
+        cout << "You get " << sword[n_2].name_object << endl;
+        cout << "1 to Equip or 2 to Drop";
+        cin >> x;
+        switch(x){
+            case 1: cout << "You Equip";
+                    Equip_item(chara,n_2,sword,xx);
+                    break;
+            case 2: cout << "You Drop";
+                    break;
+            default:cin >> x;
         }
     }
-    if(phasenumber == 1){
-        if(playerchoosed == "Scissors" && monsterchoosed == "hammer"){
-            //แก้atkในภายหลัง
-            return 7;
-        }
-        if(playerchoosed == "hammer" && monsterchoosed == "Paper"){
-            //แก้atkในภายหลัง
-            return 8;
-        }
-        if(playerchoosed == "Paper" && monsterchoosed == "Scissors"){
-            //แก้atkในภายหลัง
-            return 9;
-        }
-        if(playerchoosed == "Paper" && monsterchoosed == "Paper"){
-            //แก้atkในภายหลัง
-            return 8;
-        }
-        if(playerchoosed == "hammer" && monsterchoosed == "hammer"){
-            //แก้atkในภายหลัง
-            return 9;
-        }
-        if(playerchoosed == "Scissors" && monsterchoosed == "Scissors"){
-            //แก้atkในภายหลัง
-            return 10;
-        }
-        else{
-                return 11;
-            //แก้atkในภายหลัง
-        }
+    if(name == "potion"){
+        cout << "you get " << potion[a].name_object;
     }
 }
 
+void Equip_item(chara chara[],int n_2,object sword[],int xx){
+    chara[xx].stat[0] +=  sword[n_2].sword_stat[0];
+    chara[xx].stat[1] +=  sword[n_2].sword_stat[1];
+    chara[xx].stat[2] +=  sword[n_2].sword_stat[2];
+}
 #endif // TITI_H
