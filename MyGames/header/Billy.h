@@ -33,6 +33,7 @@ for(int i=0;i<3;i++){
 		if(a[i].lv[1]>=a[i].lv[2]){
 			a[i].lv[0]++;
 			a[i].lv[1]=a[i].lv[1]-a[i].lv[2];
+			a[i].iven[i]=0;
 		}
  int x;x=a[i].lv[0];
 	while(x>1){
