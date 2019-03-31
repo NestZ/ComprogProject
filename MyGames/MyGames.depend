@@ -1,10 +1,12 @@
 # depslib dependency file v1.0
-1552832714 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\main.cpp
+1553361676 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\main.cpp
 	"header/James.h"
 	"header/NestZ.h"
 	"header/Pound.h"
 	"header/Billy.h"
 	"header/Titi.h"
+	<cstdlib>
+	<ctime>
 
 1525812018 d:\project\cmu cpe\comprog 261102\project\games\sfml-2.5.1\include\sfml\graphics.hpp
 	<SFML/Window.hpp>
@@ -443,18 +445,28 @@
 
 1552545727 c:\users\user\desktop\project\mygames\titi.h
 
-1552533892 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\james.h
+1553402524 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\james.h
+	<iostream>
+	<SFML/Graphics.hpp>
+	<cmath>
+	<cstdlib>
+	<string>
+	<ctime>
 
-1552905778 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
+1553770005 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
 	<SFML/Graphics.hpp>
 	<string>
+	<iostream>
+	<stack>
+	<vector>
 
 1552533893 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\pound.h
 
 1552533891 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\billy.h
 
-1552629799 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\titi.h
+1553097928 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\titi.h
 	<iostream>
+	<cstdlib>
 
 1552637325 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\game.h
 	<SFML/Graphics.hpp>
@@ -468,6 +480,7 @@
 1552637205 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\source\game.cpp
 	"Game.h"
 
+<<<<<<< HEAD
 1554006455 source:c:\users\user\desktop\engineer\comprog project\mygames\main.cpp
 	"header/James.h"
 	"header/NestZ.h"
@@ -898,4 +911,21 @@
 	<SFML/Graphics/PrimitiveType.hpp>
 	<SFML/Graphics/Drawable.hpp>
 	<SFML/Window/GlResource.hpp>
+=======
+1553337297 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz_game.h
+	<SFML/Graphics.hpp>
+	<string>
+	<iostream>
+	<stack>
+
+1553322960 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz_menu.h
+
+1553326252 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz_menu.cpp
+
+1553326828 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz_chooseplayers.cpp
+
+1553326476 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz_chooseplayers.cpp
+
+1553326037 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz_chooseplayers.h
+>>>>>>> refs/remotes/origin/master
 

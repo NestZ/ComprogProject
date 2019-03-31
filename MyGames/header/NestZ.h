@@ -1,78 +1,202 @@
-#ifndef NESTZ_H
-#define NESTZ_H
+#ifndef NESTZ_GAME_H
+#define NESTZ_GAME_H
 #include <SFML/Graphics.hpp>
 #include <string>
+#include <iostream>
+#include <stack>
+#include <vector>
+
 using namespace std;
 using namespace sf;
 
 class Game{
     public:
-        //initGameWindow
+        //Window
         Game();
+        void run();
+        void initWindow();
+        void initVariables();
+        void initWindowVariables();
+        void initGlobalVariables();
+        void update();
+        Event updateSfmlEvent();
+        void render();
+        enum States {Menu, ChoosePlayers, ChooseCharacters, Setting, InsertName, Playing};
+        bool checkMouseClick();
+        double windowMidWidth();
+        double windowMidHeight();
+        template <typename T>
+        double getObjWidth(T);
+        template <typename T>
+        double getObjHeight(T);
+        template <typename T>
+        void Swap(T &, T&);
+        //Menu
+        void initMenuVariables();
+        void checkMouseClick(int);
+        void setMenuButton(Text &, int);
+        void drawMenu();
+        void updateMousePos();
+        void updateMenuButton();
+        //ChoosePlayers
+        void drawChoosePlayers();
+        void setChoosePlayersButton(Text &, int);
+        void initChoosePlayersVariables();
+        void updateChoosePlayersButton();
+        void updateBackButtonHMP();
+        //ChooseCharacters
+        void initChooseCharactersVariables();
+        void drawChooseCharacters();
+        void updateCharacterIcon();
+        void setCharacterIcon(Sprite &, int);
+        void chooseState(int);
+        void randomPick(vector<string> &);
+        void updateChoosingState();
+        void updateChoosed();
+        void updateBackButtonCC();
+        void resetCC();
+        //InsertName
+        void initInsertNameVariables();
+        void drawInsertName();
+        void setInsertNameText();
+        void updateInsertNameTextBoxEvent(Event);
+        void updateInsertedName(char);
+        void setCinText(Text &, int);
+        void updateBackButtonIPN();
+        void resetIPN();
+        bool isValidCharacter(char);
+        //Playing
+        void drawPlaying();
+    private:
+        //Menu
+        Vector2i mousePosView;
+        Vector2f mousePos;
+        int menuFontSize;
+        Font menuFont;
+        Text menuButton[3];
+        Texture menuBGTexture;
+        Sprite menuBGSprite;
+        //Window
+        Texture backButtonTexture;
+        Sprite backButtonSprite;
+        bool MouseReleased;
         int windowWidth;
         int windowHeight;
         const string GameName = "MyGame";
         RenderWindow *gameWindow;
         Event sfEvent;
-
-        void run();
-        void initWindow();
-        void update();
-        void updateSfmlEvent();
-        void render();
-
-        //Menu
-        Vector2i mousePosView;
-        Vector2f mousePos;
-        int menuCharacterSize;
-        Font menuFont;
-        Text play;
-        Text setting;
-        Text quit;
-
-        void drawMenu();
-        void getMousePos();
-        void updateButton();
-
+        stack<States> state;
+        //ChoosePlayers
+        Texture choosePlayersBGTexture;
+        Sprite choosePlayersBGSprite;
+        Text chooseButton[3];
+        int choosePlayersFontSize;
+        int players;
+        //ChooseCharacters
+        int choosingCharacterFontSize;
+        bool choosed[6];
+        Texture charTexture[6];
+        Sprite charSprite[6];
+        Texture chooseCharacterBGTexture;
+        Sprite chooseCharacterBGSprite;
+        Texture choosedIconTexture;
+        Sprite choosedIconSprite[6];
+        Sprite spriteIcon;
+        int randomIndexST;
+        int randomIndexND;
+        int chooseIndex;
+        Text mainPlayerNameText;
+        string mainPlayerNameString;
+        Text playerChoosedName[4];
+        int playerChoosedFontSize;
+        //InsertName
+        int cinTextFontSize;
+        int insertedNameFontSize;
+        Text cinText;
+        Event textInputEvent;
+        char textEntered;
+        const unsigned int MAX_TEXT = 6;
+        vector<char> character;
+        Text InsertedName;
+        string name;
+        vector<string> playerName;
+        int playerNamingIndex;
+        Texture insertNameBGTexture;
+        Sprite insertNameBGSprite;
 };
 
 Game::Game(){
-    menuCharacterSize = 24;
-    windowWidth = 1200;
-    windowHeight = 800;
+    initVariables();
     initWindow();
+}
+
+/*#############################################################################################################
+##########                                                                                          ###########
+##########                                       GAME WINDOW                                        ###########
+##########                                                                                          ###########
+#############################################################################################################*/
+
+void Game::initVariables(){
+    initMenuVariables();
+    initInsertNameVariables();
+    initChoosePlayersVariables();
+    initChooseCharactersVariables();
+    initWindowVariables();
+    initGlobalVariables();
 }
 
 void Game::initWindow(){
     gameWindow = new RenderWindow(VideoMode(windowWidth,windowHeight),GameName,Style::Close);
     this->gameWindow->setVerticalSyncEnabled(true);
+    this->gameWindow->setKeyRepeatEnabled(false);
+}
+
+void Game::initWindowVariables(){
+    state.push(Menu);
+    gameWindow = NULL;
+    windowWidth = 1280;
+    windowHeight = 720;
+    MouseReleased = true;
+}
+
+void Game::initGlobalVariables(){
+    menuFontSize = 45;
+    choosePlayersFontSize = 35;
+    cinTextFontSize = 35;
+    insertedNameFontSize = 30;
+    choosingCharacterFontSize = 45;
+    playerChoosedFontSize = 20;
+    menuFont.loadFromFile("font/8-BIT WONDER.TTF");
+    backButtonTexture.loadFromFile("img/BackButton.png");
+    backButtonSprite.setTexture(backButtonTexture);
+    backButtonSprite.setOrigin(getObjWidth(backButtonSprite) / 2.0,getObjHeight(backButtonSprite) / 2.0);
+    backButtonSprite.setPosition(50,windowHeight - 50);
+    backButtonSprite.setScale(0.7,0.7);
+    backButtonSprite.setRotation(-45);
 }
 
 void Game::render(){
         this->gameWindow->clear();
-        drawMenu();
+        switch(state.top()){
+            case Menu:
+                drawMenu();
+                break;
+            case ChoosePlayers:
+                drawChoosePlayers();
+                break;
+            case InsertName:
+                drawInsertName();
+                break;
+            case ChooseCharacters:
+                drawChooseCharacters();
+                break;
+            case Playing:
+                drawPlaying();
+                break;
+            case Setting:
+                break;
+        }
         this->gameWindow->display();
-}
-
-void Game::drawMenu(){
-    menuFont.loadFromFile("font/8-BIT WONDER.TTF");
-
-    play.setFont(menuFont);
-    play.setString("PLAY");
-    play.setCharacterSize(menuCharacterSize);
-    play.setPosition(windowWidth/2.0,windowHeight/2.0);
-
-    setting.setFont(menuFont);
-    setting.setString("SETTING");
-    setting.setCharacterSize(menuCharacterSize);
-    setting.setFillColor(Color::White);
-
-    quit.setFont(menuFont);
-    quit.setString("QUIT");
-    quit.setCharacterSize(menuCharacterSize);
-    quit.setFillColor(Color::White);
-
-    this->gameWindow->draw(play);
 }
 
 void Game::run(){
@@ -83,29 +207,445 @@ void Game::run(){
 }
 
 void Game::update(){
+    //Window
     updateSfmlEvent();
-    getMousePos();
-    updateButton();
+    //Menu
+    updateMousePos();
 }
 
-void Game::updateSfmlEvent(){
+Event Game::updateSfmlEvent(){
     while (this->gameWindow->pollEvent(sfEvent))
         {
-            if (sfEvent.type == Event::Closed){
+            switch(state.top()){
+                case InsertName:
+                    updateInsertNameTextBoxEvent(sfEvent);
+                    break;
+                default:
+                    break;
+            }
+            if(sfEvent.type == Event::Closed){
                 this->gameWindow->close();
             }
         }
+    return sfEvent;
 }
 
-void Game::getMousePos(){
+double Game::windowMidWidth(){
+    return windowWidth / 2.0;
+}
+
+double Game::windowMidHeight(){
+    return windowHeight / 2.0;
+}
+
+template <typename T>
+double Game::getObjWidth(T obj){
+    return obj.getLocalBounds().width;
+}
+
+template <typename T>
+double Game::getObjHeight(T obj){
+    return obj.getLocalBounds().height;
+}
+
+template <typename T>
+void Game::Swap(T &a, T&b){
+    T temp;
+    temp = a;
+    a = b;
+    b = temp;
+}
+
+/*#############################################################################################################
+##########                                                                                          ###########
+##########                                       MENU                                               ###########
+##########                                                                                          ###########
+#############################################################################################################*/
+
+void Game::initMenuVariables(){
+    menuBGTexture.loadFromFile("img/bg.jpg");
+    menuBGSprite.setTexture(menuBGTexture);
+    menuButton[0].setString("PLAY");
+    menuButton[1].setString("SETTING");
+    menuButton[2].setString("QUIT");
+}
+
+void Game::drawMenu(){
+    for(int i = 0;i < 3;i++){
+        setMenuButton(menuButton[i],i);
+    }
+
+    updateMenuButton();
+
+    this->gameWindow->draw(menuBGSprite);
+    for(int i = 0;i < 3;i++){
+        this->gameWindow->draw(menuButton[i]);
+    }
+}
+
+void Game::setMenuButton(Text &text, int index){
+    text.setFont(menuFont);
+    text.setOutlineColor(Color::White);
+    text.setOutlineThickness(4);
+    text.setLetterSpacing(1.5);
+    text.setCharacterSize(menuFontSize);
+    text.setOrigin(getObjWidth(text)/2.0,getObjHeight(text)/2.0);
+    text.setPosition(windowMidWidth(),(windowMidHeight() + index*90) + 25);
+}
+
+void Game::updateMousePos(){
     mousePosView = Mouse::getPosition(*this->gameWindow);
     mousePos = this->gameWindow->mapPixelToCoords(mousePosView);
 }
 
-void Game::updateButton(){
-    if(play.getGlobalBounds().contains(mousePos)){
-        play.setFillColor(Color::Red);
+void Game::updateMenuButton(){
+    for(int i = 0;i < 3;i++){
+        if(menuButton[i].getGlobalBounds().contains(mousePos)){
+            menuButton[i].setFillColor(Color::Red);
+            if(checkMouseClick()){
+                switch(i){
+                    case 0: //play
+                        this->gameWindow->clear();
+                        state.push(ChoosePlayers);
+                        break;
+                    case 1: //setting
+                        this->gameWindow->clear();
+                        state.push(Setting);
+                        break;
+                    case 2: //quit
+                        this->gameWindow->close();
+                }
+            }
+        }
+        else menuButton[i].setFillColor(Color::Black);
     }
-    else play.setFillColor(Color::White);
 }
-#endif // NESTZ_H
+
+bool Game::checkMouseClick(){
+    if(Mouse::isButtonPressed(Mouse::Left) && MouseReleased){
+        MouseReleased = false;
+        return true;
+    }
+    else if(!(Mouse::isButtonPressed(Mouse::Left))){
+        MouseReleased = true;
+        return false;
+    }
+}
+
+/*#############################################################################################################
+##########                                                                                          ###########
+##########                                   CHOOSE HOW MANY PLAYER                                 ###########
+##########                                                                                          ###########
+#############################################################################################################*/
+
+void Game::initChoosePlayersVariables(){
+    choosePlayersBGTexture.loadFromFile("img/choosePlayersBG.jpg");
+    choosePlayersBGSprite.setTexture(choosePlayersBGTexture);
+    chooseButton[0].setString("2 Players");
+    chooseButton[1].setString("3 Players");
+    chooseButton[2].setString("4 Players");
+}
+
+void Game::drawChoosePlayers(){
+    updateChoosePlayersButton();
+    updateBackButtonHMP();
+    this->gameWindow->draw(choosePlayersBGSprite);
+    this->gameWindow->draw(backButtonSprite);
+    for(int i = 0;i < 3;i++){
+        setChoosePlayersButton(chooseButton[i],i);
+        this->gameWindow->draw(chooseButton[i]);
+    }
+}
+
+void Game::setChoosePlayersButton(Text &text,int index){
+    text.setFont(menuFont);
+    text.setCharacterSize(choosePlayersFontSize);
+    text.setOutlineColor(Color::White);
+    text.setOutlineThickness(4);
+    text.setLetterSpacing(1.5);
+    text.setOrigin(getObjWidth(text)/2.0,getObjHeight(text)/2.0);
+    text.setPosition(windowMidWidth(),(windowHeight / 4.0) * (index + 1));
+}
+
+void Game::updateChoosePlayersButton(){
+    for(int i = 0;i < 3;i++){
+        if(chooseButton[i].getGlobalBounds().contains(mousePos)){
+            chooseButton[i].setFillColor(Color::Red);
+            if(checkMouseClick()){
+                switch(i){
+                    case 0: //2 players
+                        players = 2;
+                        break;
+                    case 1: //3 players
+                        players = 3;
+                        break;
+                    case 2: //4 players
+                        players = 4;
+                        break;
+                }
+                this->gameWindow->clear();
+                state.push(InsertName);
+            }
+        }
+        else chooseButton[i].setFillColor(Color::Black);
+    }
+}
+
+void Game::updateBackButtonHMP(){
+    if(backButtonSprite.getGlobalBounds().contains(mousePos)){
+        backButtonSprite.setScale(0.7,0.7);
+        if(checkMouseClick()){
+            this->gameWindow->clear();
+            state.pop();
+        }
+    }
+    else backButtonSprite.setScale(0.6,0.6);
+}
+
+/*#############################################################################################################
+##########                                                                                          ###########
+##########                                       INSERT NAME                                        ###########
+##########                                                                                          ###########
+#############################################################################################################*/
+
+void Game::initInsertNameVariables(){
+    playerNamingIndex = 0;
+    setCinText(cinText,0);
+    name = "";
+    insertNameBGTexture.loadFromFile("img/insertNameBG.jpg");
+    insertNameBGSprite.setTexture(insertNameBGTexture);
+}
+
+void Game::setCinText(Text &cinText,int index){
+    cinText.setString("Enter player " + to_string(index + 1) + " name");
+}
+
+void Game::setInsertNameText(){
+    cinText.setFont(menuFont);
+    cinText.setFillColor(Color::Black);
+    cinText.setCharacterSize(cinTextFontSize);
+    cinText.setOutlineColor(Color::White);
+    cinText.setOutlineThickness(4);
+    cinText.setLetterSpacing(1.5);
+    cinText.setOrigin(getObjWidth(cinText)/2.0,getObjHeight(cinText)/2.0);
+    cinText.setPosition(windowMidWidth(),windowMidHeight());
+    InsertedName.setFont(menuFont);
+    InsertedName.setFillColor(Color::White);
+    InsertedName.setCharacterSize(insertedNameFontSize);
+    InsertedName.setOrigin(getObjWidth(InsertedName)/2.0,getObjHeight(InsertedName)/2.0);
+    InsertedName.setPosition(windowMidWidth(),windowMidHeight() + 200);
+}
+
+void Game::drawInsertName(){
+    //resetIPN();
+    setInsertNameText();
+    this->gameWindow->draw(insertNameBGSprite);
+    this->gameWindow->draw(backButtonSprite);
+    updateBackButtonIPN();
+    this->gameWindow->draw(cinText);
+    this->gameWindow->draw(InsertedName);
+}
+
+void Game::updateInsertNameTextBoxEvent(Event InsertNameEvent){
+    if(InsertNameEvent.type == Event::TextEntered){
+        textEntered = InsertNameEvent.text.unicode;
+            updateInsertedName(textEntered);
+    }
+}
+
+bool Game::isValidCharacter(char character){
+    return  (character >= 48 && character <= 57)  ||  //Numbers
+            (character >= 65 && character <= 90)  ||  //Uppercase
+            (character >= 97 && character <= 122) ||  //Lowercase
+            character == 32;    //Space
+}
+
+void Game::updateInsertedName(char insertedChar){
+    if(isValidCharacter(insertedChar) && character.size() < MAX_TEXT){
+        character.push_back(insertedChar);
+    }
+    else if(insertedChar == 8 && character.size() > 0){
+        character.pop_back();
+    }
+    name = "";
+    for(unsigned int i = 0;i < character.size();i++){
+        name += character[i];
+    }
+    InsertedName.setString(name);
+    if(insertedChar == 13 && name.size() > 0){
+        playerName.push_back(name);
+        InsertedName.setString("");
+        while(!character.empty()){
+                character.pop_back();
+        }
+        cout << "player " << playerNamingIndex + 1 << " name's : " << playerName[playerNamingIndex] << "\n";
+        if(playerNamingIndex < players - 1){
+            playerNamingIndex++;
+            setCinText(cinText,playerNamingIndex);
+        }
+        else {
+            randomPick(playerName);
+            this->gameWindow->clear();
+            state.push(ChooseCharacters);
+        }
+    }
+}
+
+void Game::updateBackButtonIPN(){
+    if(backButtonSprite.getGlobalBounds().contains(mousePos)){
+        backButtonSprite.setScale(0.7,0.7);
+        if(checkMouseClick()){
+            resetIPN();
+            this->gameWindow->clear();
+            state.pop();
+        }
+    }
+    else backButtonSprite.setScale(0.6,0.6);
+}
+
+void Game::resetIPN(){
+    playerNamingIndex = 0;
+    name = "";
+    setCinText(cinText,playerNamingIndex);
+    while(!playerName.empty()){
+        playerName.pop_back();
+    }
+}
+
+/*#############################################################################################################
+##########                                                                                          ###########
+##########                                       CHOOSE CHARACTER                                   ###########
+##########                                                                                          ###########
+#############################################################################################################*/
+
+void Game::initChooseCharactersVariables(){
+    chooseIndex = 0;
+    for(int i = 0;i < 6;i++)choosed[i] = false;
+    charTexture[0].loadFromFile("img/Char1.png");
+    charTexture[1].loadFromFile("img/Char2.png");
+    charTexture[2].loadFromFile("img/Char3.png");
+    charTexture[3].loadFromFile("img/Char4.png");
+    charTexture[4].loadFromFile("img/Char5.png");
+    charTexture[5].loadFromFile("img/Char6.png");
+    for(int i = 0;i < 6;i++)charSprite[i].setTexture(charTexture[i]);
+    chooseCharacterBGTexture.loadFromFile("img/chooseCharacterBG.jpg");
+    chooseCharacterBGSprite.setTexture(chooseCharacterBGTexture);
+    choosedIconTexture.loadFromFile("img/ChoosedArrow.png");
+    for(int i = 0;i < 6;i++){
+        choosedIconSprite[i].setTexture(choosedIconTexture);
+        choosedIconSprite[i].setOrigin(getObjWidth(choosedIconSprite[i]) / 2.0,getObjHeight(choosedIconSprite[i]) / 2.0);
+        choosedIconSprite[i].setScale(0.4,0.4);
+    }
+    mainPlayerNameText.setFillColor(Color::Black);
+    mainPlayerNameText.setOutlineColor(Color::White);
+    mainPlayerNameText.setOutlineThickness(4);
+    for(int i = 0;i < 4;i++){
+        playerChoosedName[i].setPosition(-300,-300);
+    }
+}
+
+void Game::drawChooseCharacters(){
+    this->gameWindow->draw(chooseCharacterBGSprite);
+    this->gameWindow->draw(backButtonSprite);
+    updateBackButtonCC();
+    updateChoosingState();
+    updateChoosed();
+    this->gameWindow->draw(mainPlayerNameText);
+    for(int i = 0;i < 6;i++){
+        setCharacterIcon(charSprite[i],i);
+        this->gameWindow->draw(charSprite[i]);
+    }
+}
+
+void Game::setCharacterIcon(Sprite &sprite, int index){
+    sprite.setOrigin(getObjWidth(sprite) / 2.0,getObjHeight(sprite) / 2.0);
+    sprite.setPosition((index + 1) * (windowWidth / 7),windowMidHeight());
+}
+
+void Game::randomPick(vector<string> &playerName){
+    for(int i = 0;i < rand() % 100 + 1;i++){
+        randomIndexST = rand() % players;
+
+        do{
+            randomIndexND = rand() % players;
+        }while(randomIndexND == randomIndexST);
+
+        Swap(playerName[randomIndexST],playerName[randomIndexND]);
+    }
+    for(unsigned int i = 0;i < playerName.size();i++)cout << playerName[i] << "\n";
+}
+
+void Game::updateCharacterIcon(){
+    for(int i = 0;i < 6;i++){
+        if(charSprite[i].getGlobalBounds().contains(mousePos) && !choosed[i]){
+            charSprite[i].setScale(1.1,1.1);
+            if(checkMouseClick()){
+                choosed[i] = true;
+                playerChoosedName[chooseIndex].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 130);
+                if(chooseIndex < players - 1)chooseIndex++;
+                else state.push(Playing);
+            }
+        }
+        else charSprite[i].setScale(1,1);
+        if(choosed[i] == true)charSprite[i].setColor(Color(128,128,128,255));
+        else charSprite[i].setColor(Color(255,255,255,255));
+    }
+}
+
+void Game::updateChoosingState(){
+    updateCharacterIcon();
+    mainPlayerNameString = playerName[chooseIndex] + " pick turn";
+    mainPlayerNameText.setString(mainPlayerNameString);
+    mainPlayerNameText.setCharacterSize(choosingCharacterFontSize);
+    mainPlayerNameText.setFont(menuFont);
+    mainPlayerNameText.setOrigin(getObjWidth(mainPlayerNameText) / 2,getObjHeight(mainPlayerNameText) / 2);
+    mainPlayerNameText.setPosition(windowMidWidth(),100);
+    for(int i = 0;i < players;i++){
+        playerChoosedName[i].setFillColor(Color::Black);
+        playerChoosedName[i].setOutlineColor(Color::White);
+        playerChoosedName[i].setOutlineThickness(1.5);
+        playerChoosedName[i].setFont(menuFont);
+        playerChoosedName[i].setCharacterSize(playerChoosedFontSize);
+        playerChoosedName[i].setString(playerName[i]);
+        playerChoosedName[i].setOrigin(getObjWidth(playerChoosedName[i]) / 2.0,getObjHeight(playerChoosedName[i]) / 2.0);
+        this->gameWindow->draw(playerChoosedName[i]);
+    }
+}
+
+void Game::updateChoosed(){
+    for(int i = 0;i < 6;i++){
+        if(choosed[i] == true){
+            choosedIconSprite[i].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 100);
+            this->gameWindow->draw(choosedIconSprite[i]);
+        }
+    }
+}
+
+void Game::updateBackButtonCC(){
+    if(backButtonSprite.getGlobalBounds().contains(mousePos)){
+        backButtonSprite.setScale(0.7,0.7);
+        if(checkMouseClick()){
+            resetCC();
+            resetIPN();
+            this->gameWindow->clear();
+            state.pop();
+        }
+    }
+    else backButtonSprite.setScale(0.6,0.6);
+}
+
+void Game::resetCC(){
+    chooseIndex = 0;
+    for(int i = 0;i < 6;i++)choosed[i] = false;
+}
+
+/*#############################################################################################################
+##########                                                                                          ###########
+##########                                       PLAYING                                            ###########
+##########                                                                                          ###########
+#############################################################################################################*/
+
+void Game::drawPlaying(){
+
+}
+#endif
