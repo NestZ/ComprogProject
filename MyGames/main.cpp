@@ -12,11 +12,11 @@ Game game;
 int main()
 {
     srand(time(0));
-<<<<<<< HEAD
+
     Game game;
 
-=======
->>>>>>> refs/remotes/origin/master
+
+
     game.run();
 
     return 0;
