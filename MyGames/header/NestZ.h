@@ -88,15 +88,20 @@ class Game{
         //Setting
         int horizontalScrollSpeed;
         int verticalScrollSpeed;
-        int setting[2];
+        int setting[3];
         char temp[20];
         string settingString;
         Texture settingBGTexture;
         Sprite settingBGSprite;
-        Text settingText[2];
-        Text settingValue[2];
+        Text settingText[3];
+        Text settingValue[3];
         int settingFontSize;
         int settingIndex;
+        int soundVolume;
+        Texture plusT;
+        Sprite plusS[3];
+        Texture minusT;
+        Sprite minusS[3];
         //Window
         Texture backButtonTexture;
         Sprite backButtonSprite;
@@ -147,7 +152,6 @@ class Game{
         Texture insertNameBGTexture;
         Sprite insertNameBGSprite;
         //Playing
-        Texture movingCursorTexture;
         Texture mapTexture;
         Sprite mapSprite;
         View camera;
@@ -183,7 +187,7 @@ void Game::initFont(){
     insertedNameFontSize = 30;
     choosingCharacterFontSize = 45;
     playerChoosedFontSize = 20;
-    settingFontSize = 40;
+    settingFontSize = 35;
     menuFont.loadFromFile("font/8-BIT WONDER.TTF");
 }
 
@@ -212,7 +216,6 @@ void Game::initGlobalVariables(){
     backButtonSprite.setPosition(50,windowHeight - 50);
     backButtonSprite.setScale(0.7,0.7);
     backButtonSprite.setRotation(-45);
-    movingCursorTexture.loadFromFile("img/MovingCursor.png");
     mouseIconTexture.loadFromFile("img/MouseCursor.png");
     mouseIconTexture.setSmooth(true);
     mouseIconSprite.setTexture(mouseIconTexture);
@@ -382,27 +385,37 @@ bool Game::checkMouseClick(){
         MouseReleased = true;
         return false;
     }
+    return false;
 }
 
 /*#############################################################################################################
 ##########                                                                                          ###########
-##########                                       SETIING                                            ###########
+##########                                       SETTING                                            ###########
 ##########                                                                                          ###########
 #############################################################################################################*/
 
 void Game::initSettingVariables(){
-    settingIndex = 2;
+    plusT.loadFromFile("img/Plus.png");
+    minusT.loadFromFile("img/Minus.png");
+    settingIndex = 3;
     settingBGTexture.loadFromFile("img/SettingBG.jpg");
     settingBGSprite.setTexture(settingBGTexture);
     settingText[0].setString("Vertical Scroll Speed ");
     settingText[1].setString("Horizontal Scroll Speed ");
+    settingText[2].setString("Sound Volume ");
     for(int i = 0;i < settingIndex;i++){
         settingText[i].setFont(menuFont);
         settingText[i].setOutlineColor(Color::White);
         settingText[i].setOutlineThickness(4);
         settingText[i].setFillColor(Color::Black);
         settingText[i].setCharacterSize(settingFontSize);
-        settingText[i].setPosition(100,(windowHeight / 3) * (i + 1));
+        settingText[i].setPosition(100,(windowHeight / 4) * (i + 1));
+    }
+    for(int i = 0;i < 3;i++){
+        plusS[i].setTexture(plusT);
+        minusS[i].setTexture(minusT);
+        plusS[i].setOrigin(getObjWidth(plusS[i]) / 2,getObjHeight(plusS[i]) / 2);
+        minusS[i].setOrigin(getObjWidth(minusS[i]) / 2,getObjHeight(minusS[i]) / 2);
     }
     int i = 0;
     char format[] = "%s : %d";
@@ -415,9 +428,11 @@ void Game::initSettingVariables(){
     fileIn.close();
     verticalScrollSpeed = setting[0];
     horizontalScrollSpeed = setting[1];
+    soundVolume = setting[2];
 
     settingValue[0].setString(to_string(verticalScrollSpeed));
     settingValue[1].setString(to_string(horizontalScrollSpeed));
+    settingValue[2].setString(to_string(soundVolume));
     for(int i = 0;i < settingIndex;i++){
         settingValue[i].setFont(menuFont);
         settingValue[i].setOutlineColor(Color::White);
@@ -433,7 +448,7 @@ void Game::drawSetting(){
     for(int i = 0;i < settingIndex;i++){
         settingText[i].setOrigin(0,getObjHeight(settingText[i]) / 2);
         this->gameWindow->draw(settingText[i]);
-        settingValue[i].setOrigin(0,getObjHeight(settingValue[i]) / 2);
+        settingValue[i].setOrigin(getObjWidth(settingValue[i]) / 2,getObjHeight(settingValue[i]) / 2);
         this->gameWindow->draw(settingValue[i]);
     }
     updateBackButtonST();
