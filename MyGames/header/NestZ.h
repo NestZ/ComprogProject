@@ -45,6 +45,9 @@ class Game{
         void initSettingVariables();
         void drawSetting();
         void updateBackButtonST();
+        void updatePlusMinus(int);
+        void updateSettingValue();
+        void updateSettingIni();
         //ChoosePlayers
         void drawChoosePlayers();
         void setChoosePlayersButton(Text &, int);
@@ -416,6 +419,10 @@ void Game::initSettingVariables(){
         minusS[i].setTexture(minusT);
         plusS[i].setOrigin(getObjWidth(plusS[i]) / 2,getObjHeight(plusS[i]) / 2);
         minusS[i].setOrigin(getObjWidth(minusS[i]) / 2,getObjHeight(minusS[i]) / 2);
+        plusS[i].setPosition(1200,settingText[i].getPosition().y);
+        minusS[i].setPosition(1000,settingText[i].getPosition().y);
+        plusS[i].setScale(0.8,0.8);
+        minusS[i].setScale(0.8,0.8);
     }
     int i = 0;
     char format[] = "%s : %d";
@@ -426,13 +433,9 @@ void Game::initSettingVariables(){
         i++;
     }
     fileIn.close();
-    verticalScrollSpeed = setting[0];
-    horizontalScrollSpeed = setting[1];
-    soundVolume = setting[2];
 
-    settingValue[0].setString(to_string(verticalScrollSpeed));
-    settingValue[1].setString(to_string(horizontalScrollSpeed));
-    settingValue[2].setString(to_string(soundVolume));
+    updateSettingValue();
+
     for(int i = 0;i < settingIndex;i++){
         settingValue[i].setFont(menuFont);
         settingValue[i].setOutlineColor(Color::White);
@@ -451,16 +454,65 @@ void Game::drawSetting(){
         settingValue[i].setOrigin(getObjWidth(settingValue[i]) / 2,getObjHeight(settingValue[i]) / 2);
         this->gameWindow->draw(settingValue[i]);
     }
+    for(int i = 0;i < settingIndex;i++){
+        updatePlusMinus(i);
+        this->gameWindow->draw(plusS[i]);
+        this->gameWindow->draw(minusS[i]);
+    }
+    updateSettingValue();
     updateBackButtonST();
     this->gameWindow->draw(backButtonSprite);
     updateMouseIcon();
     this->gameWindow->draw(mouseIconSprite);
 }
 
+void Game::updatePlusMinus(int index){
+        if(plusS[index].getGlobalBounds().contains(mousePos)){
+            plusS[index].setScale(0.9,0.9);
+            if(checkMouseClick()){
+                if(index != 2 && setting[index] < 25){
+                    setting[index]++;
+                }
+                else if(index == 2 && setting[index] < 100){
+                    setting[index]++;
+                }
+            }
+        }
+        else plusS[index].setScale(0.8,0.8);
+        if(minusS[index].getGlobalBounds().contains(mousePos)){
+            minusS[index].setScale(0.9,0.9);
+            if(checkMouseClick()){
+                if(setting[index] > 0){
+                    setting[index]--;
+                }
+            }
+        }
+        else minusS[index].setScale(0.8,0.8);
+}
+
+void Game::updateSettingValue(){
+    verticalScrollSpeed = setting[0];
+    horizontalScrollSpeed = setting[1];
+    soundVolume = setting[2];
+
+    settingValue[0].setString(to_string(verticalScrollSpeed));
+    settingValue[1].setString(to_string(horizontalScrollSpeed));
+    settingValue[2].setString(to_string(soundVolume));
+}
+
+void Game::updateSettingIni(){
+    ofstream fileOut("Setting.ini");
+    fileOut << "VerticalScrollSpeed : " << setting[0] << "\n";
+    fileOut << "HorizontalScrollSpeed : " << setting[1] << "\n";
+    fileOut << "SoundVolume : " << setting[2] << "\n";
+    fileOut.close();
+}
+
 void Game::updateBackButtonST(){
     if(backButtonSprite.getGlobalBounds().contains(mousePos)){
         backButtonSprite.setScale(0.7,0.7);
         if(checkMouseClick()){
+            updateSettingIni();
             this->gameWindow->clear();
             state.pop();
         }
