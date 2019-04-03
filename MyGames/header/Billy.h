@@ -9,6 +9,7 @@ struct chara{
 	int stat[6],lv[3],inven[5];//[0]lv [1]nowexp//[2]need[exp] ,,statas str agi luk  vit atk hp
 	string clas;
 };
+
 void upstat(chara []);
 void battlephase(int n,int[]);
 void edit ();
@@ -108,7 +109,7 @@ while(mon[1]>0&&chara[n].stat[5]>0){
 	cout<<" Damage "<<dam<<" Hp"<<chara[n].stat[5]<<" Target Hp"<<mon[1]<<endl<<p<<" "<<mp<<endl;
 }
 	else {
-		
+
 		if(percrimon<=mon[3]*3){
 		cout<<"Monster Criticalhit";
 		damm=mon[0]*1.5;
@@ -121,7 +122,7 @@ while(mon[1]>0&&chara[n].stat[5]>0){
 	damm-mon[0];
 	cds--;
 }
-	
+
 	if(mon[1]<0&&chara[n].stat[5]>0){
 		chara[n].lv[1]+=100;
 		cout<<"Your Win \n Recive Exp: "<<100;
