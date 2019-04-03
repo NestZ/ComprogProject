@@ -17,7 +17,7 @@ struct path_st
     float pos_x = 0;
     float pos_y = 0;
     int this_path_is = 0;
-    vector<int> nextpath;
+    std::vector<int> nextpath;
 };
 
 path_st path[3];
@@ -87,48 +87,49 @@ void useThisItem(Player & that_player,bool high_grade){
     int x = rand()%100+1;
     if(high_grade == false){
         if(x > 30){
-            cout << "pick weapon 1 ??";
-            cin >> x;
+            std::cout << "pick weapon 1 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 1;
         }else if(x > 50){
-            cout << "pick weapon 2 ??";
-            cin >> x;
+            std::cout << "pick weapon 2 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 2;
         }else if(x > 60){
-            cout << "pick weapon 3 ??";
-            cin >> x;
+            std::cout << "pick weapon 3 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 3;
         }else if(x > 70){
-            cout << "pick weapon 4 ??";
-            cin >> x;
+            std::cout << "pick weapon 4 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 4;
         }else if(x > 80){
-            cout << "pick weapon 5 ??";
-            cin >> x;
+            std::cout << "pick weapon 5 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 5;
         }else if(x > 90){
-            cout << "pick weapon 6 ??";
-            cin >> x;
+            std::cout << "pick weapon 6 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 6;
         }else if(x > 95){
-            cout << "pick weapon 7 ??";
-            cin >> x;
+            std::cout << "pick weapon 7 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 7;
         }
     }else{
         if(x > 50){
-            cout << "pick weapon 8 ??";
-            cin >> x;
+            std::cout << "pick weapon 8 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 8;
         }else if(x > 80){
-            cout << "pick weapon 9 ??";
-            cin >> x;
+            std::cout << "pick weapon 9 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 9;
         }else{
-            cout << "pick weapon 10 ??";
-            cin >> x;
+            std::cout << "pick weapon 10 ??";
+            std::cin >> x;
             if(x) that_player.weapon = 10;
         }
+    }
 }
 
 class Path_Ef{
@@ -151,7 +152,9 @@ class Path_Ef{
         void House(Player &,int house_number);
 
 };
-void Path_Ef::Open_Shop(sf::RenderWindow *gameWindow){
+
+/*void Path_Ef::Open_Shop(sf::RenderWindow *gameWindow){
+
     sf::Texture shop_texture;
     if(!shop_texture.loadFromFile("texture/store.png")){
 
@@ -161,7 +164,8 @@ void Path_Ef::Open_Shop(sf::RenderWindow *gameWindow){
     shop_sprite.setTextureRect(sf::IntRect(0,0,64,64));
 
     gameWindow->draw(shop_sprite);
-}
+
+}*/
 
 void Path_Ef::Get_Heal(Player & that_player){
     int x;
@@ -193,24 +197,24 @@ void Path_Ef::Item(Player & that_player){
     int x = (rand()%80)+1;
     x += (rand()%that_playerluk());
     if(x <= 50){
-        cout << "1 red potion";
+        std::cout << "1 red potion";
         that_player.red_potion += 1;
     }else if(x <= 60){
-        cout << "1 green potion";
+        std::cout << "1 green potion";
         that_player.green_potion += 1;
     }else if(x <= 65){
-        cout << "money!";
+        std::cout << "money!";
         that_player.money += (rand()%10)+6;
     }else if(x <= 75){
-        cout << "money!!"
+        std::cout << "money!!";
         that_player.money += (rand()%20)+10;
     }else if(x <= 90){
         useThisItem(that_player,false);
     }else if(x == 100){
-        cout << "star!!!!";
+        std::cout << "star!!!!";
         that_player.star++;
     }else if(x <= 100){
-        cout << "money!!!"
+        std::cout << "money!!!";
         that_player.money += (rand()%30)+20;
     }else{
         useThisItem(that_player,true);
