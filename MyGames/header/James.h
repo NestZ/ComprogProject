@@ -16,8 +16,11 @@ struct path_st
     int number = 0 ;
     float pos_x = 0;
     float pos_y = 0;
+    int this_path_is = 0;
     vector<int> nextpath;
 };
+
+path_st path[3];
 
 struct Special_item{
     int extra_vit = 0;
@@ -28,11 +31,6 @@ struct Special_item{
 };
 
 Special_item specialitem[5];
-specialitem[0] = {1,1,1,1,1};
-specialitem[1] = {2,2,2,2,2};
-specialitem[2] = {10,0,0,0,0};
-specialitem[3] = {0,10,0,0,0};
-specialitem[4] = {5,5,5,5,5};
 
 /*
 class Hero_item{
@@ -48,9 +46,10 @@ class Hero_item{
 
 class Player{
     public:
-        int hp,weapon,shield,specialitem_number;
+        int character_number,now_path;
+        int hp,weapon = 0,shield_number = 0,specialitem_number = 0,star = 0,money = 0;
         int std_str,std_vid,std_agi,std_luk,std_atk,std_def;
-        int red_potion,green_potion;
+        int red_potion = 0,green_potion = 0;
         int pos_x,pos_y,now_player_path;
         int atk();
         int def();
@@ -58,21 +57,78 @@ class Player{
         int vit();
         int agi();
         int luk();
+        int hp_max();
 };
+
 int Player::atk(){
     return std_atk + str()/2 + specialitem[specialitem_number].extra_atk;
 }
 int Player::def(){
-    return
+    return std_def + vit() + shield[shield_number].shield_stat[1];
 }
 int Player::agi(){
-    return std_agi + specialitem[specialitem_number].extra_agi;
+    return std_agi + specialitem[specialitem_number].extra_agi + sword[weapon].sword_stat[1];
 }
 int Player::str(){
     return  std_str + specialitem[specialitem_number].extra_str + sword[weapon].sword_stat[0];
 }
 int Player::luk(){
-    return std_luk + specialitem[specialitem_number].extra_luck;
+    return std_luk + specialitem[specialitem_number].extra_luck + sword[weapon].sword_stat[2];
+}
+int Player::vit(){
+    return std_vid + specialitem[specialitem_number].extra_vit + shield[shield_number].shield_stat[0];
+}
+int hp_max(){
+    return vit()*5;
+}
+
+
+void useThisItem(Player & that_player,bool high_grade){
+    int x = rand()%100+1;
+    if(high_grade == false){
+        if(x > 30){
+            cout << "pick weapon 1 ??";
+            cin >> x;
+            if(x) that_player.weapon = 1;
+        }else if(x > 50){
+            cout << "pick weapon 2 ??";
+            cin >> x;
+            if(x) that_player.weapon = 2;
+        }else if(x > 60){
+            cout << "pick weapon 3 ??";
+            cin >> x;
+            if(x) that_player.weapon = 3;
+        }else if(x > 70){
+            cout << "pick weapon 4 ??";
+            cin >> x;
+            if(x) that_player.weapon = 4;
+        }else if(x > 80){
+            cout << "pick weapon 5 ??";
+            cin >> x;
+            if(x) that_player.weapon = 5;
+        }else if(x > 90){
+            cout << "pick weapon 6 ??";
+            cin >> x;
+            if(x) that_player.weapon = 6;
+        }else if(x > 95){
+            cout << "pick weapon 7 ??";
+            cin >> x;
+            if(x) that_player.weapon = 7;
+        }
+    }else{
+        if(x > 50){
+            cout << "pick weapon 8 ??";
+            cin >> x;
+            if(x) that_player.weapon = 8;
+        }else if(x > 80){
+            cout << "pick weapon 9 ??";
+            cin >> x;
+            if(x) that_player.weapon = 9;
+        }else{
+            cout << "pick weapon 10 ??";
+            cin >> x;
+            if(x) that_player.weapon = 10;
+        }
 }
 
 class Path_Ef{
@@ -87,12 +143,12 @@ class Path_Ef{
                 return (rand()%10)+1;
             }
         }
-        void Item();
+        void Item(Player &);
         void Open_Shop(sf::RenderWindow *gameWindow);
 
-        int Get_Heal(int cha_no);
+        void Get_Heal(Player &);
 
-        void House(int hero_number,int house_number);
+        void House(Player &,int house_number);
 
 };
 void Path_Ef::Open_Shop(sf::RenderWindow *gameWindow){
@@ -107,17 +163,57 @@ void Path_Ef::Open_Shop(sf::RenderWindow *gameWindow){
     gameWindow->draw(shop_sprite);
 }
 
-int Path_Ef::Get_Heal(int cha_no){
-    if(cha_no == 1){    //เลขตัวละคร
-        return 10;
+void Path_Ef::Get_Heal(Player & that_player){
+    int x;
+    if(that_player.character_number == 1){
+        x = (rand()%20)+1;
+        if(that_player.hp + x >  that_player.hp_max()){
+            that_player.hp = that_player.hp_max();
+        }else{
+            that_player.hp += x;
+        }
     }else{
-        return 5;
+        x = (rand()%10)+1;
+        if(that_player.hp + x > that_player.hp_max()){
+            that_player.hp = that_player.hp_max();
+        }else{
+            that_player.hp += x;
+        }
     }
 }
 
-void Path_Ef::House(int hero_number, int house_number){
-    if(hero_number == house_number){
-        //nowplayer.redpotion ++++++
+void Path_Ef::House(Player & that_player, int house_number){
+    if(that_player.character_number == house_number){
+        that_player.green_potion += 1;
+        that_player.red_potion += 3;
+    }
+}
+
+void Path_Ef::Item(Player & that_player){
+    int x = (rand()%80)+1;
+    x += (rand()%that_playerluk());
+    if(x <= 50){
+        cout << "1 red potion";
+        that_player.red_potion += 1;
+    }else if(x <= 60){
+        cout << "1 green potion";
+        that_player.green_potion += 1;
+    }else if(x <= 65){
+        cout << "money!";
+        that_player.money += (rand()%10)+6;
+    }else if(x <= 75){
+        cout << "money!!"
+        that_player.money += (rand()%20)+10;
+    }else if(x <= 90){
+        useThisItem(that_player,false);
+    }else if(x == 100){
+        cout << "star!!!!";
+        that_player.star++;
+    }else if(x <= 100){
+        cout << "money!!!"
+        that_player.money += (rand()%30)+20;
+    }else{
+        useThisItem(that_player,true);
     }
 }
 
@@ -181,13 +277,10 @@ void find_path(int can_walk,path_st allpath[],int nowpath_of_player){
             break;
         }
     }
-    cout << now_path.number << endl;
+    //cout << now_path.number << endl;
     cal_path(now_path,allpath,can_walk);
 
 
 }
 
 #endif // JAMES_H
-
-//titi add char number
-//nestz add now player by number
