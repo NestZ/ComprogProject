@@ -7,6 +7,7 @@ using namespace std;
 
 struct object{
     int sword_stat[3],potion_effect; // 0str 1agi 2luk
+    int shield_stat[3]; // 0vit 1def 2hp
     string name_object;
 };
 
@@ -15,8 +16,10 @@ void get_item(string name,int number_chara);
 void Equip_item(int n_2,int number_chara);
 void use_potion(int number_potion);
 
+object shield[10];
 object sword[10];
 object potion[5];
+
 void inputstat_object(){
 
     sword[0].name_object = "Kusanagi";          sword[0].sword_stat[0] = 3;sword[0].sword_stat[1] = 1;sword[0].sword_stat[2] = 2;
@@ -30,11 +33,22 @@ void inputstat_object(){
     sword[8].name_object = "Wado Ichimonji";    sword[8].sword_stat[0] = 3;sword[8].sword_stat[1] = 1;sword[8].sword_stat[2] = 2;
     sword[9].name_object = "Excalibur";         sword[9].sword_stat[0] = 3;sword[9].sword_stat[1] = 1;sword[9].sword_stat[2] = 2;
 
-    potion[0].name_object ="extra vit";     potion[0].potion_effect = 3;
-    potion[1].name_object ="extra atk";     potion[1].potion_effect = 3;
-    potion[2].name_object ="extra luk";     potion[2].potion_effect = 3;
-    potion[3].name_object ="Green potion";  potion[3].potion_effect = 10;
-    potion[4].name_object ="Red potion";    potion[4].potion_effect = 30;
+    potion[0].name_object ="extra vit";         potion[0].potion_effect = 3;
+    potion[1].name_object ="extra atk";         potion[1].potion_effect = 3;
+    potion[2].name_object ="extra luk";         potion[2].potion_effect = 3;
+    potion[3].name_object ="Green potion";      potion[3].potion_effect = 10;
+    potion[4].name_object ="Red potion";        potion[4].potion_effect = 30;
+
+    shield[0].name_object = "shield 1";          shield[0].shield_stat[0] = 2;shield[0].shield_stat[1]= 2;shield[0].shield_stat[2]= 2;
+    shield[1].name_object = "shield 2";          shield[1].shield_stat[0] = 2;shield[1].shield_stat[1]= 2;shield[1].shield_stat[2]= 2;
+    shield[2].name_object = "shield 3";          shield[2].shield_stat[0] = 2;shield[2].shield_stat[1]= 2;shield[2].shield_stat[2]= 2;
+    shield[3].name_object = "shield 4";          shield[3].shield_stat[0] = 2;shield[3].shield_stat[1]= 2;shield[3].shield_stat[2]= 2;
+    shield[4].name_object = "shield 5";          shield[4].shield_stat[0] = 2;shield[4].shield_stat[1]= 2;shield[4].shield_stat[2]= 2;
+    shield[5].name_object = "shield 6";          shield[5].shield_stat[0] = 2;shield[5].shield_stat[1]= 2;shield[5].shield_stat[2]= 2;
+    shield[6].name_object = "shield 7";          shield[6].shield_stat[0] = 2;shield[6].shield_stat[1]= 2;shield[6].shield_stat[2]= 2;
+    shield[7].name_object = "shield 8";          shield[7].shield_stat[0] = 2;shield[7].shield_stat[1]= 2;shield[7].shield_stat[2]= 2;
+    shield[8].name_object = "shield 9";          shield[8].shield_stat[0] = 2;shield[8].shield_stat[1]= 2;shield[8].shield_stat[2]= 2;
+    shield[9].name_object = "shield 10";         shield[9].shield_stat[0] = 2;shield[9].shield_stat[1]= 2;shield[9].shield_stat[2]= 2;
 }
 
 void get_item(string name ,int number_chara){
