@@ -34,6 +34,7 @@ class Game{
         template <typename T>
         void Swap(T &, T&);
         void updateMouseIcon();
+        bool checkEscape();
         //Menu
         void initMenuVariables();
         void checkMouseClick(int);
@@ -111,6 +112,7 @@ class Game{
         Texture mouseIconTexture;
         Sprite mouseIconSprite;
         bool MouseReleased;
+        bool keyReleased;
         int windowWidth;
         int windowHeight;
         const string GameName = "MyGame";
@@ -209,6 +211,7 @@ void Game::initWindowVariables(){
     windowWidth = 1280;
     windowHeight = 720;
     MouseReleased = true;
+    keyReleased = true;
 }
 
 void Game::initGlobalVariables(){
@@ -391,6 +394,18 @@ bool Game::checkMouseClick(){
     return false;
 }
 
+bool Game::checkEscape(){
+    if(Keyboard::isKeyPressed(Keyboard::Escape) && keyReleased){
+        keyReleased = false;
+        return true;
+    }
+    else if(!Keyboard::isKeyPressed(Keyboard::Escape)){
+        keyReleased = true;
+        return false;
+    }
+    return false;
+}
+
 /*#############################################################################################################
 ##########                                                                                          ###########
 ##########                                       SETTING                                            ###########
@@ -518,6 +533,11 @@ void Game::updateBackButtonST(){
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
+    if(checkEscape()){
+        updateSettingIni();
+        this->gameWindow->clear();
+        state.pop();
+    }
 }
 
 /*#############################################################################################################
@@ -589,6 +609,10 @@ void Game::updateBackButtonHMP(){
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
+    if(checkEscape()){
+        this->gameWindow->clear();
+        state.pop();
+    }
 }
 
 /*#############################################################################################################
@@ -691,6 +715,11 @@ void Game::updateBackButtonIPN(){
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
+    if(checkEscape()){
+        resetIPN();
+        this->gameWindow->clear();
+        state.pop();
+    }
 }
 
 void Game::resetIPN(){
@@ -824,6 +853,12 @@ void Game::updateBackButtonCC(){
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
+    if(checkEscape()){
+        resetCC();
+        resetIPN();
+        this->gameWindow->clear();
+        state.pop();
+    }
 }
 
 void Game::resetCC(){

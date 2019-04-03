@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1554274818 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\main.cpp
+1554280775 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\main.cpp
 	"header/NestZ.h"
 	"header/Pound.h"
 	"header/Billy.h"
@@ -7,7 +7,7 @@
 	<cstdlib>
 	<ctime>
 
-1554277889 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
+1554282629 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
 	<SFML/Graphics.hpp>
 	<string>
 	<iostream>
@@ -426,13 +426,17 @@
 
 1552533893 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\pound.h
 
-<<<<<<< HEAD
-1554026429 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\billy.h
-=======
-<<<<<<< HEAD
-1552533891 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\billy.h
+1554017738 D
 
-1553097928 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\titi.h
+1554026429 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\billy.h
+	<iostream>
+	<vector>
+	<cmath>
+	<cstdlib>
+	<ctime>
+	<string>
+
+1554278119 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\titi.h
 	<iostream>
 	<cstdlib>
 
@@ -447,8 +451,6 @@
 
 1552637205 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\source\game.cpp
 	"Game.h"
-
-1552637205 D
 
 1554022242 source:c:\users\user\desktop\engineer\comprog project\mygames\main.cpp
 	"header/James.h"
@@ -477,7 +479,8 @@
 1552901267 c:\users\user\desktop\engineer\comprog project\mygames\header\pound.h
 
 1554017738 c:\users\user\desktop\engineer\comprog project\mygames\header\billy.h
->>>>>>> d2b1724a9cb0fb1ed2cfe2d0d8a3ee0bfdc04cff
+
+1553326037 1724a9cb0fb1ed2cfe2d0d8a3ee0bfdc04cff
 	<iostream>
 	<vector>
 	<cmath>
@@ -485,12 +488,8 @@
 	<ctime>
 	<string>
 
-<<<<<<< HEAD
-1554026429 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\titi.h
-	<iostream>
-	<cstdlib>
+1554026429 
 
-=======
 1554276451 c:\users\user\desktop\engineer\comprog project\mygames\header\titi.h
 	<iostream>
 	<cstdlib>
@@ -924,6 +923,5 @@
 
 1553326037 s/remotes/origin/master
 
-=======
->>>>>>> de77ae2166b4349ed2b50bb03399710df0daee78
->>>>>>> d2b1724a9cb0fb1ed2cfe2d0d8a3ee0bfdc04cff
+1553326037 7ae2166b4349ed2b50bb03399710df0daee78
+
