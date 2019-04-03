@@ -13,6 +13,7 @@ int main()
 {
     int ab;
     srand(time(0));
+<<<<<<< HEAD
     init ();
     inputstat_object();
     cout << chara[0].clas<<endl;
@@ -23,6 +24,8 @@ int main()
     use_potion(ab,0);
     cout << chara[0].stat[0] << " " <<chara[0].stat[1] <<" " << chara[0].stat[2] <<" " << chara[0].stat[3]<<" " << chara[0].stat[4]<<" " << chara[0].stat[5]<<endl;
     Game game;
+=======
+>>>>>>> de77ae2166b4349ed2b50bb03399710df0daee78
 
     game.run();
 

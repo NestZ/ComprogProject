@@ -1,12 +1,17 @@
 # depslib dependency file v1.0
-1553361676 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\main.cpp
-	"header/James.h"
+1554219509 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\main.cpp
 	"header/NestZ.h"
 	"header/Pound.h"
-	"header/Billy.h"
-	"header/Titi.h"
 	<cstdlib>
 	<ctime>
+
+1554223858 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
+	<SFML/Graphics.hpp>
+	<string>
+	<iostream>
+	<stack>
+	<vector>
+	<fstream>
 
 1525812018 d:\project\cmu cpe\comprog 261102\project\games\sfml-2.5.1\include\sfml\graphics.hpp
 	<SFML/Window.hpp>
@@ -417,51 +422,9 @@
 	<SFML/Graphics/Drawable.hpp>
 	<SFML/Window/GlResource.hpp>
 
-1552533894 d:\project\cmu cpe\comprog 261102\project\games\mygames\titi.h
-
-1552533892 d:\project\cmu cpe\comprog 261102\project\games\mygames\james.h
-
-1552623839 d:\project\cmu cpe\comprog 261102\project\games\mygames\nestz.h
-
-1552533893 d:\project\cmu cpe\comprog 261102\project\games\mygames\pound.h
-
-1552533891 d:\project\cmu cpe\comprog 261102\project\games\mygames\billy.h
-
-1552545727 source:c:\users\user\desktop\project\mygames\main.cpp
-	<SFML/Graphics.hpp>
-	"James.h"
-	"NestZ.h"
-	"Pound.h"
-	"Billy.h"
-	"Titi.h"
-
-1552545727 c:\users\user\desktop\project\mygames\james.h
-
-1552545727 c:\users\user\desktop\project\mygames\nestz.h
-
-1552545727 c:\users\user\desktop\project\mygames\pound.h
-
-1552545727 c:\users\user\desktop\project\mygames\billy.h
-
-1552545727 c:\users\user\desktop\project\mygames\titi.h
-
-1553402524 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\james.h
-	<iostream>
-	<SFML/Graphics.hpp>
-	<cmath>
-	<cstdlib>
-	<string>
-	<ctime>
-
-1553770005 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
-	<SFML/Graphics.hpp>
-	<string>
-	<iostream>
-	<stack>
-	<vector>
-
 1552533893 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\pound.h
 
+<<<<<<< HEAD
 1552533891 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\billy.h
 
 1553097928 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\titi.h
@@ -949,3 +912,5 @@
 
 1553326037 s/remotes/origin/master
 
+=======
+>>>>>>> de77ae2166b4349ed2b50bb03399710df0daee78
