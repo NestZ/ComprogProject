@@ -186,10 +186,10 @@ void Game::initVariables(){
 }
 
 void Game::initFont(){
-    menuFontSize = 45;
-    choosePlayersFontSize = 35;
+    menuFontSize = 50;
+    choosePlayersFontSize = 45;
     cinTextFontSize = 35;
-    insertedNameFontSize = 30;
+    insertedNameFontSize = 35;
     choosingCharacterFontSize = 45;
     playerChoosedFontSize = 20;
     settingFontSize = 35;
