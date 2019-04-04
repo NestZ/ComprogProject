@@ -6,11 +6,10 @@
 #include <stack>
 #include <vector>
 #include <fstream>
+#include <cmath>
 
 using namespace std;
 using namespace sf;
-
-int now_player;
 
 class Game{
     public:
@@ -82,6 +81,7 @@ class Game{
         void drawPlaying();
         void initPlayingVariables();
         void updateView();
+        void updateMiniMenu();
     private:
         //Menu
         Vector2i mousePosView;
@@ -162,6 +162,10 @@ class Game{
         Texture mapTexture;
         Sprite mapSprite;
         View camera;
+        bool isMenuOpen;
+        Text miniMenuText[3];
+        int miniMenuFontSize;
+        int arrIndex[3] = {-1,0,1};
 };
 
 Game::Game(){
@@ -195,6 +199,7 @@ void Game::initFont(){
     choosingCharacterFontSize = 45;
     playerChoosedFontSize = 20;
     settingFontSize = 35;
+    miniMenuFontSize = 35;
     menuFont.loadFromFile("font/8-BIT WONDER.TTF");
 }
 
@@ -875,19 +880,40 @@ void Game::resetCC(){
 #############################################################################################################*/
 
 void Game::initPlayingVariables(){
+    isMenuOpen = false;
     mapTexture.loadFromFile("img/Map.jpg");
     mapSprite.setTexture(mapTexture);
     mapSprite.setPosition(0,0);
     camera.setCenter(Vector2f(300,300));
     camera.setSize(Vector2f(300,300));
     camera.setViewport(FloatRect(0,0,1,1));
+    miniMenuText[0].setString("Reseum");
+    miniMenuText[1].setString("Setting");
+    miniMenuText[2].setString("Exit Game");
+    for(int i = 0;i < 3;i++){
+        miniMenuText[i].setFillColor(Color::Black);
+        miniMenuText[i].setOutlineColor(Color::White);
+        miniMenuText[i].setOutlineThickness(2.5);
+        miniMenuText[i].setFont(menuFont);
+        miniMenuText[i].setCharacterSize(miniMenuFontSize);
+    }
 }
 
 void Game::drawPlaying(){
     this->gameWindow->setView(camera);
     this->gameWindow->draw(mapSprite);
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
-    updateView();
+    updateMiniMenu();
+    if(isMenuOpen){
+        for(int i = 0;i < 3;i++){
+            miniMenuText[i].setOrigin(getObjWidth(miniMenuText[i]) / 2.0,getObjHeight(miniMenuText[i]) / 2.0);
+            miniMenuText[i].setPosition(windowWidth / 2,windowHeight / 2 + 70 * arrIndex[i]);
+            this->gameWindow->draw(miniMenuText[i]);
+        }
+    }
+    else {
+        updateView();
+    }
     this->gameWindow->draw(mouseIconSprite);
 }
 
@@ -903,6 +929,13 @@ void Game::updateView(){
     }
     else if(Mouse::getPosition(*this->gameWindow).y < 3){
         camera.move(0,-verticalScrollSpeed);
+    }
+}
+
+void Game::updateMiniMenu(){
+    if(checkEscape()){
+        if(isMenuOpen)isMenuOpen = false;
+        else isMenuOpen = true;
     }
 }
 #endif
