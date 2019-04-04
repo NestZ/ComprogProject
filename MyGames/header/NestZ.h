@@ -82,6 +82,7 @@ class Game{
         void initPlayingVariables();
         void updateView();
         void updateMiniMenu();
+        void updateMiniMenuClick();
     private:
         //Menu
         Vector2i mousePosView;
@@ -161,6 +162,8 @@ class Game{
         //Playing
         Texture mapTexture;
         Sprite mapSprite;
+        Texture miniMenuT;
+        Sprite miniMenuS;
         View camera;
         bool isMenuOpen;
         Text miniMenuText[3];
@@ -193,7 +196,7 @@ void Game::initVariables(){
 
 void Game::initFont(){
     menuFontSize = 50;
-    choosePlayersFontSize = 45;
+    choosePlayersFontSize = 40;
     cinTextFontSize = 35;
     insertedNameFontSize = 35;
     choosingCharacterFontSize = 45;
@@ -373,11 +376,9 @@ void Game::updateMenuButton(){
             if(checkMouseClick()){
                 switch(i){
                     case 0: //play
-                        this->gameWindow->clear();
                         state.push(ChoosePlayers);
                         break;
                     case 1: //setting
-                        this->gameWindow->clear();
                         state.push(Setting);
                         break;
                     case 2: //quit
@@ -535,14 +536,12 @@ void Game::updateBackButtonST(){
         backButtonSprite.setScale(0.7,0.7);
         if(checkMouseClick()){
             updateSettingIni();
-            this->gameWindow->clear();
             state.pop();
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
     if(checkEscape()){
         updateSettingIni();
-        this->gameWindow->clear();
         state.pop();
     }
 }
@@ -599,7 +598,6 @@ void Game::updateChoosePlayersButton(){
                         players = 4;
                         break;
                 }
-                this->gameWindow->clear();
                 state.push(InsertName);
             }
         }
@@ -611,13 +609,11 @@ void Game::updateBackButtonHMP(){
     if(backButtonSprite.getGlobalBounds().contains(mousePos)){
         backButtonSprite.setScale(0.7,0.7);
         if(checkMouseClick()){
-            this->gameWindow->clear();
             state.pop();
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
     if(checkEscape()){
-        this->gameWindow->clear();
         state.pop();
     }
 }
@@ -706,7 +702,6 @@ void Game::updateInsertedName(char insertedChar){
         }
         else {
             randomPick(playerName);
-            this->gameWindow->clear();
             state.push(ChooseCharacters);
         }
     }
@@ -717,14 +712,12 @@ void Game::updateBackButtonIPN(){
         backButtonSprite.setScale(0.7,0.7);
         if(checkMouseClick()){
             resetIPN();
-            this->gameWindow->clear();
             state.pop();
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
     if(checkEscape()){
         resetIPN();
-        this->gameWindow->clear();
         state.pop();
     }
 }
@@ -809,7 +802,6 @@ void Game::updateCharacterIcon(){
             if(checkMouseClick()){
                 choosed[i] = true;
                 playerChoosedName[chooseIndex].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 130);
-                //setPlayer's Character
                 if(chooseIndex < players - 1)chooseIndex++;
                 else state.push(Playing);
             }
@@ -855,7 +847,6 @@ void Game::updateBackButtonCC(){
         if(checkMouseClick()){
             resetCC();
             resetIPN();
-            this->gameWindow->clear();
             state.pop();
         }
     }
@@ -863,7 +854,6 @@ void Game::updateBackButtonCC(){
     if(checkEscape()){
         resetCC();
         resetIPN();
-        this->gameWindow->clear();
         state.pop();
     }
 }
@@ -871,6 +861,9 @@ void Game::updateBackButtonCC(){
 void Game::resetCC(){
     chooseIndex = 0;
     for(int i = 0;i < 6;i++)choosed[i] = false;
+    for(int i = 0;i < 4;i++){
+        playerChoosedName[i].setPosition(-300,-300);
+    }
 }
 
 /*#############################################################################################################
@@ -884,12 +877,17 @@ void Game::initPlayingVariables(){
     mapTexture.loadFromFile("img/Map.jpg");
     mapSprite.setTexture(mapTexture);
     mapSprite.setPosition(0,0);
+    miniMenuT.loadFromFile("img/miniMenuBG.png");
+    miniMenuS.setTexture(miniMenuT);
+    miniMenuS.setOrigin(getObjWidth(miniMenuS) / 2,getObjHeight(miniMenuS) / 2);
+    miniMenuS.setScale(0.9,0.7);
+    miniMenuS.setColor(Color(255,255,255,128));
     camera.setCenter(Vector2f(300,300));
     camera.setSize(Vector2f(300,300));
     camera.setViewport(FloatRect(0,0,1,1));
     miniMenuText[0].setString("Reseum");
     miniMenuText[1].setString("Setting");
-    miniMenuText[2].setString("Exit Game");
+    miniMenuText[2].setString("Main Menu");
     for(int i = 0;i < 3;i++){
         miniMenuText[i].setFillColor(Color::Black);
         miniMenuText[i].setOutlineColor(Color::White);
@@ -905,9 +903,12 @@ void Game::drawPlaying(){
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
     updateMiniMenu();
     if(isMenuOpen){
+        miniMenuS.setPosition(windowWidth / 2,windowHeight / 2);
+        this->gameWindow->draw(miniMenuS);
         for(int i = 0;i < 3;i++){
             miniMenuText[i].setOrigin(getObjWidth(miniMenuText[i]) / 2.0,getObjHeight(miniMenuText[i]) / 2.0);
-            miniMenuText[i].setPosition(windowWidth / 2,windowHeight / 2 + 70 * arrIndex[i]);
+            miniMenuText[i].setPosition(windowWidth / 2,windowHeight / 2 + 100 * arrIndex[i]);
+            updateMiniMenuClick();
             this->gameWindow->draw(miniMenuText[i]);
         }
     }
@@ -936,6 +937,31 @@ void Game::updateMiniMenu(){
     if(checkEscape()){
         if(isMenuOpen)isMenuOpen = false;
         else isMenuOpen = true;
+    }
+}
+
+void Game::updateMiniMenuClick(){
+    for(int i = 0;i < 3;i++){
+        if(miniMenuText[i].getGlobalBounds().contains(mousePos)){
+            miniMenuText[i].setFillColor(Color::Red);
+            if(checkMouseClick()){
+                switch(i){
+                    case 0:
+                        isMenuOpen = false;
+                        break;
+                    case 1:
+                        state.push(Setting);
+                        break;
+                    case 2:
+                        resetCC();
+                        resetIPN();
+                        isMenuOpen = false;
+                        while(state.top() != Menu)state.pop();
+                        break;
+                }
+            }
+        }
+        else miniMenuText[i].setFillColor(Color::Black);
     }
 }
 #endif
