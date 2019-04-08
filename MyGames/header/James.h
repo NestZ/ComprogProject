@@ -154,17 +154,13 @@ class Path_Ef{
 };
 
 /*void Path_Ef::Open_Shop(sf::RenderWindow *gameWindow){
-
     sf::Texture shop_texture;
     if(!shop_texture.loadFromFile("texture/store.png")){
-
     }
     sf::Sprite shop_sprite;
     shop_sprite.setTexture(shop_texture);
     shop_sprite.setTextureRect(sf::IntRect(0,0,64,64));
-
     gameWindow->draw(shop_sprite);
-
 }*/
 
 void Path_Ef::Get_Heal(Player & that_player){

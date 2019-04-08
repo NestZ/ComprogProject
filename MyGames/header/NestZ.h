@@ -11,6 +11,98 @@
 using namespace std;
 using namespace sf;
 
+class Game;
+class Player;
+struct itemStat;
+
+struct itemStat{
+    int sword_stat[3];
+    int potion_effect;
+    int shield_stat[3];
+    string name_object;
+};
+itemStat sword[10];
+itemStat shield[10];
+itemStat potion[2];
+
+struct accessoryStat{
+    int extra_vit = 0;
+    int extra_atk = 0;
+    int extra_luck = 0;
+    int extra_str = 0;
+    int extra_agi = 0;
+}accessoryStat[10];
+
+class Player{
+    public:
+        //Variables
+        int character_number;
+        int level;
+        int exp;
+        int now_path;
+        int hp;
+        int weaponIndex;
+        int shieldIndex;
+        int accessoryIndex;
+        int star;
+        int money;
+        int std_str;
+        int std_vit;
+        int std_agi;
+        int std_luk;
+        int std_atk;
+        int std_def;
+        int red_potion;
+        int green_potion;
+        double pos_x;
+        double pos_y;
+        int now_player_path;
+        //Function
+        Player();
+        int getAtk();
+        int getDef();
+        int getStr();
+        int getVit();
+        int getAgi();
+        int getLuk();
+        int HpMax();
+};
+
+Player::Player(){
+    level = 1;
+    exp = 0;
+    money = 0;
+    red_potion = 0;
+    green_potion = 0;
+    star = 0;
+    weaponIndex = 0;
+    shieldIndex = 0;
+    accessoryIndex = 0;
+    hp = HpMax();
+}
+
+int Player::getAtk(){
+    return std_atk + getStr()/2 + accessoryStat[accessoryIndex].extra_atk;
+}
+int Player::getDef(){
+    return std_def + getVit() + shield[shieldIndex].shield_stat[1];
+}
+int Player::getAgi(){
+    return std_agi + accessoryStat[accessoryIndex].extra_agi + sword[weaponIndex].sword_stat[1];
+}
+int Player::getStr(){
+    return  std_str + accessoryStat[accessoryIndex].extra_str + sword[weaponIndex].sword_stat[0];
+}
+int Player::getLuk(){
+    return std_luk + accessoryStat[accessoryIndex].extra_luck + sword[weaponIndex].sword_stat[2];
+}
+int Player::getVit(){
+    return std_vit + accessoryStat[accessoryIndex].extra_vit + shield[shieldIndex].shield_stat[0];
+}
+int Player::HpMax(){
+    return getVit()*5;
+}
+int now_player = 0;
 class Game{
     public:
         //Window
@@ -83,6 +175,9 @@ class Game{
         void updateView();
         void updateMiniMenu();
         void updateMiniMenuClick();
+        void updateUI();
+        void setItemStat();
+        void get_item_boss();
     private:
         //Menu
         Vector2i mousePosView;
@@ -160,6 +255,9 @@ class Game{
         Texture insertNameBGTexture;
         Sprite insertNameBGSprite;
         //Playing
+        vector<int> expMax;
+        int startExp;
+        int UIFontSize;
         Texture mapTexture;
         Sprite mapSprite;
         Texture miniMenuT;
@@ -169,6 +267,28 @@ class Game{
         Text miniMenuText[3];
         int miniMenuFontSize;
         int arrIndex[3] = {-1,0,1};
+        Player *player;
+        Text UI_name;
+        Text UI_hpText;
+        Text UI_level;
+        Text UI_class;
+        Text UI_expText;
+        Text UI_hpValue;
+        Text UI_expValue;
+        Texture UI_maxExpT;
+        Sprite UI_maxExpS;
+        Texture UI_expBarT;
+        Sprite UI_expBarS;
+        Texture UI_expBorderT;
+        Sprite UI_expBorderS;
+        Texture UI_hpBorderT;
+        Sprite UI_hpBorderS;
+        Texture UI_maxHpT;
+        Sprite UI_maxHpS;
+        Texture UI_hpBarT;
+        Sprite UI_hpBarS;
+        Texture UI_charFaceT[6];
+        Sprite UI_charFaceS;
 };
 
 Game::Game(){
@@ -195,19 +315,20 @@ void Game::initVariables(){
 }
 
 void Game::initFont(){
-    menuFontSize = 50;
-    choosePlayersFontSize = 40;
-    cinTextFontSize = 35;
-    insertedNameFontSize = 35;
-    choosingCharacterFontSize = 45;
-    playerChoosedFontSize = 20;
-    settingFontSize = 35;
-    miniMenuFontSize = 35;
-    menuFont.loadFromFile("font/8-BIT WONDER.TTF");
+    menuFontSize = 55;
+    choosePlayersFontSize = 45;
+    cinTextFontSize = 40;
+    insertedNameFontSize = 45;
+    choosingCharacterFontSize = 50;
+    playerChoosedFontSize = 25;
+    settingFontSize = 40;
+    miniMenuFontSize = 40;
+    UIFontSize = 35;
+    menuFont.loadFromFile("font/ka1.TTF");
 }
 
 void Game::initWindow(){
-    gameWindow = new RenderWindow(VideoMode(windowWidth,windowHeight),GameName,Style::Close);
+    gameWindow = new RenderWindow(VideoMode(),GameName,Style::Fullscreen);
     this->gameWindow->setVerticalSyncEnabled(false);
     this->gameWindow->setFramerateLimit(60);
     this->gameWindow->setKeyRepeatEnabled(true);
@@ -217,9 +338,10 @@ void Game::initWindow(){
 
 void Game::initWindowVariables(){
     state.push(Menu);
+    player = NULL;
     gameWindow = NULL;
-    windowWidth = 1280;
-    windowHeight = 720;
+    windowWidth = 1920;
+    windowHeight = 1080;
     MouseReleased = true;
     keyReleased = true;
 }
@@ -338,6 +460,9 @@ void Game::initMenuVariables(){
     menuButton[0].setString("PLAY");
     menuButton[1].setString("SETTING");
     menuButton[2].setString("QUIT");
+    for(int i = 0;i < 3;i++){
+        menuButton[i].setFillColor(Color::Black);
+    }
 }
 
 void Game::drawMenu(){
@@ -361,7 +486,7 @@ void Game::setMenuButton(Text &text, int index){
     text.setLetterSpacing(1.5);
     text.setCharacterSize(menuFontSize);
     text.setOrigin(getObjWidth(text)/2.0,getObjHeight(text)/2.0);
-    text.setPosition(windowMidWidth(),(windowMidHeight() + index*90) + 25);
+    text.setPosition(windowMidWidth(),(windowMidHeight() + index*100) + 15);
 }
 
 void Game::updateMousePos(){
@@ -372,7 +497,7 @@ void Game::updateMousePos(){
 void Game::updateMenuButton(){
     for(int i = 0;i < 3;i++){
         if(menuButton[i].getGlobalBounds().contains(mousePos)){
-            menuButton[i].setFillColor(Color::Red);
+            menuButton[i].setScale(1.02,1.02);
             if(checkMouseClick()){
                 switch(i){
                     case 0: //play
@@ -386,7 +511,7 @@ void Game::updateMenuButton(){
                 }
             }
         }
-        else menuButton[i].setFillColor(Color::Black);
+        else menuButton[i].setScale(1,1);
     }
 }
 
@@ -432,18 +557,18 @@ void Game::initSettingVariables(){
     for(int i = 0;i < settingIndex;i++){
         settingText[i].setFont(menuFont);
         settingText[i].setOutlineColor(Color::White);
-        settingText[i].setOutlineThickness(4);
+        settingText[i].setOutlineThickness(3);
         settingText[i].setFillColor(Color::Black);
         settingText[i].setCharacterSize(settingFontSize);
-        settingText[i].setPosition(100,(windowHeight / 4) * (i + 1));
+        settingText[i].setPosition(300,(windowHeight / 4) * (i + 1));
     }
     for(int i = 0;i < 3;i++){
         plusS[i].setTexture(plusT);
         minusS[i].setTexture(minusT);
         plusS[i].setOrigin(getObjWidth(plusS[i]) / 2,getObjHeight(plusS[i]) / 2);
         minusS[i].setOrigin(getObjWidth(minusS[i]) / 2,getObjHeight(minusS[i]) / 2);
-        plusS[i].setPosition(1200,settingText[i].getPosition().y);
-        minusS[i].setPosition(1000,settingText[i].getPosition().y);
+        plusS[i].setPosition(windowWidth - 300,settingText[i].getPosition().y);
+        minusS[i].setPosition(windowWidth - 500,settingText[i].getPosition().y);
         plusS[i].setScale(0.8,0.8);
         minusS[i].setScale(0.8,0.8);
     }
@@ -452,7 +577,6 @@ void Game::initSettingVariables(){
     ifstream fileIn("Setting.ini");
     while(getline(fileIn,settingString)){
         sscanf(settingString.c_str(),format,temp,&setting[i]);
-        cout << temp << " " << setting[i] << '\n';
         i++;
     }
     fileIn.close();
@@ -462,10 +586,10 @@ void Game::initSettingVariables(){
     for(int i = 0;i < settingIndex;i++){
         settingValue[i].setFont(menuFont);
         settingValue[i].setOutlineColor(Color::White);
-        settingValue[i].setOutlineThickness(4);
+        settingValue[i].setOutlineThickness(3);
         settingValue[i].setFillColor(Color::Black);
         settingValue[i].setCharacterSize(settingFontSize);
-        settingValue[i].setPosition(1100,settingText[i].getPosition().y);
+        settingValue[i].setPosition(windowWidth - 400,settingText[i].getPosition().y);
     }
 }
 
@@ -574,34 +698,38 @@ void Game::drawChoosePlayers(){
 
 void Game::setChoosePlayersButton(Text &text,int index){
     text.setFont(menuFont);
+    text.setFillColor(Color::Black);
     text.setCharacterSize(choosePlayersFontSize);
     text.setOutlineColor(Color::White);
     text.setOutlineThickness(4);
     text.setLetterSpacing(1.5);
     text.setOrigin(getObjWidth(text)/2.0,getObjHeight(text)/2.0);
-    text.setPosition(windowMidWidth(),(windowHeight / 4.0) * (index + 1));
+    text.setPosition(windowMidWidth(),windowHeight / 2 + 150 * arrIndex[index]);
 }
 
 void Game::updateChoosePlayersButton(){
     for(int i = 0;i < 3;i++){
         if(chooseButton[i].getGlobalBounds().contains(mousePos)){
-            chooseButton[i].setFillColor(Color::Red);
+            chooseButton[i].setScale(1.02,1.02);
             if(checkMouseClick()){
                 switch(i){
                     case 0: //2 players
                         players = 2;
+                        player = new Player[2];
                         break;
                     case 1: //3 players
                         players = 3;
+                        player = new Player[3];
                         break;
                     case 2: //4 players
                         players = 4;
+                        player = new Player[4];
                         break;
                 }
                 state.push(InsertName);
             }
         }
-        else chooseButton[i].setFillColor(Color::Black);
+        else chooseButton[i].setScale(1,1);
     }
 }
 
@@ -644,12 +772,13 @@ void Game::setInsertNameText(){
     cinText.setOutlineThickness(4);
     cinText.setLetterSpacing(1.5);
     cinText.setOrigin(getObjWidth(cinText)/2.0,getObjHeight(cinText)/2.0);
-    cinText.setPosition(windowMidWidth(),windowMidHeight());
+    cinText.setPosition(windowMidWidth(),windowMidHeight() - 100);
     InsertedName.setFont(menuFont);
+    InsertedName.setLetterSpacing(2);
     InsertedName.setFillColor(Color::White);
     InsertedName.setCharacterSize(insertedNameFontSize);
     InsertedName.setOrigin(getObjWidth(InsertedName)/2.0,getObjHeight(InsertedName)/2.0);
-    InsertedName.setPosition(windowMidWidth(),windowMidHeight() + 200);
+    InsertedName.setPosition(windowMidWidth(),windowMidHeight() + 100);
 }
 
 void Game::drawInsertName(){
@@ -801,6 +930,7 @@ void Game::updateCharacterIcon(){
             charSprite[i].setScale(1.1,1.1);
             if(checkMouseClick()){
                 choosed[i] = true;
+                player[chooseIndex].character_number = i;
                 playerChoosedName[chooseIndex].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 130);
                 if(chooseIndex < players - 1)chooseIndex++;
                 else state.push(Playing);
@@ -819,11 +949,11 @@ void Game::updateChoosingState(){
     mainPlayerNameText.setCharacterSize(choosingCharacterFontSize);
     mainPlayerNameText.setFont(menuFont);
     mainPlayerNameText.setOrigin(getObjWidth(mainPlayerNameText) / 2,getObjHeight(mainPlayerNameText) / 2);
-    mainPlayerNameText.setPosition(windowMidWidth(),100);
+    mainPlayerNameText.setPosition(windowMidWidth(),120);
     for(int i = 0;i < players;i++){
         playerChoosedName[i].setFillColor(Color::Black);
         playerChoosedName[i].setOutlineColor(Color::White);
-        playerChoosedName[i].setOutlineThickness(1.5);
+        playerChoosedName[i].setOutlineThickness(2.1);
         playerChoosedName[i].setFont(menuFont);
         playerChoosedName[i].setCharacterSize(playerChoosedFontSize);
         playerChoosedName[i].setString(playerName[i]);
@@ -873,7 +1003,13 @@ void Game::resetCC(){
 #############################################################################################################*/
 
 void Game::initPlayingVariables(){
+    startExp = 100;
+    expMax.push_back(startExp);
+    while(expMax.size() != 29){
+        expMax.push_back(expMax.back() * 1.5);
+    }
     isMenuOpen = false;
+    setItemStat();
     mapTexture.loadFromFile("img/Map.jpg");
     mapSprite.setTexture(mapTexture);
     mapSprite.setPosition(0,0);
@@ -891,10 +1027,69 @@ void Game::initPlayingVariables(){
     for(int i = 0;i < 3;i++){
         miniMenuText[i].setFillColor(Color::Black);
         miniMenuText[i].setOutlineColor(Color::White);
-        miniMenuText[i].setOutlineThickness(2.5);
+        miniMenuText[i].setOutlineThickness(3.5);
         miniMenuText[i].setFont(menuFont);
         miniMenuText[i].setCharacterSize(miniMenuFontSize);
     }
+    UI_charFaceT[0].loadFromFile("img/Face1.png");
+    UI_charFaceT[1].loadFromFile("img/Face2.png");
+    UI_charFaceT[2].loadFromFile("img/Face3.png");
+    UI_charFaceT[3].loadFromFile("img/Face4.png");
+    UI_charFaceT[4].loadFromFile("img/Face5.png");
+    UI_charFaceT[5].loadFromFile("img/Face6.png");
+    UI_charFaceS.setPosition(110,110);
+    UI_name.setFillColor(Color::Black);
+    UI_name.setOutlineColor(Color::White);
+    UI_name.setOutlineThickness(3.5);
+    UI_name.setFont(menuFont);
+    UI_name.setCharacterSize(UIFontSize);
+    UI_name.setPosition(UI_charFaceS.getPosition().x,UI_charFaceS.getPosition().y + 110);
+    UI_level.setFillColor(Color::Black);
+    UI_level.setOutlineColor(Color::White);
+    UI_level.setOutlineThickness(3.5);
+    UI_level.setFont(menuFont);
+    UI_level.setCharacterSize(UIFontSize);
+    UI_level.setPosition(230,30);
+    UI_hpBorderT.loadFromFile("img/HpBorder.png");
+    UI_hpBorderS.setTexture(UI_hpBorderT);
+    UI_hpBorderS.setPosition(360,85);
+    UI_maxHpT.loadFromFile("img/HpBarMax.png");
+    UI_maxHpS.setTexture(UI_maxHpT);
+    UI_maxHpS.setPosition(360,85);
+    UI_hpBarT.loadFromFile("img/HpBar.png");
+    UI_hpBarS.setTexture(UI_hpBarT);
+    UI_hpBarS.setPosition(360,85);
+    UI_hpText.setString("HP");
+    UI_hpText.setFillColor(Color::Black);
+    UI_hpText.setOutlineColor(Color::White);
+    UI_hpText.setOutlineThickness(3.5);
+    UI_hpText.setFont(menuFont);
+    UI_hpText.setCharacterSize(UIFontSize);
+    UI_hpValue.setFillColor(Color::Black);
+    UI_hpValue.setOutlineColor(Color::White);
+    UI_hpValue.setOutlineThickness(2);
+    UI_hpValue.setFont(menuFont);
+    UI_hpValue.setCharacterSize(UIFontSize - 15);
+    UI_expBorderT.loadFromFile("img/HpBorder.png");
+    UI_expBorderS.setTexture(UI_expBorderT);
+    UI_expBorderS.setPosition(UI_hpBorderS.getPosition().x,UI_hpBorderS.getPosition().y + 55);
+    UI_maxExpT.loadFromFile("img/HpBarMax.png");
+    UI_maxExpS.setTexture(UI_maxHpT);
+    UI_maxExpS.setPosition(UI_expBorderS.getPosition().x,UI_expBorderS.getPosition().y);
+    UI_expBarT.loadFromFile("img/ExpBar.png");
+    UI_expBarS.setTexture(UI_expBarT);
+    UI_expBarS.setPosition(UI_expBorderS.getPosition().x,UI_expBorderS.getPosition().y);
+    UI_expText.setString("EXP");
+    UI_expText.setFillColor(Color::Black);
+    UI_expText.setOutlineColor(Color::White);
+    UI_expText.setOutlineThickness(3.5);
+    UI_expText.setFont(menuFont);
+    UI_expText.setCharacterSize(UIFontSize);
+    UI_expValue.setFillColor(Color::Black);
+    UI_expValue.setOutlineColor(Color::White);
+    UI_expValue.setOutlineThickness(2);
+    UI_expValue.setFont(menuFont);
+    UI_expValue.setCharacterSize(UIFontSize - 15);
 }
 
 void Game::drawPlaying(){
@@ -911,9 +1106,11 @@ void Game::drawPlaying(){
             updateMiniMenuClick();
             this->gameWindow->draw(miniMenuText[i]);
         }
+        updateUI();
     }
     else {
         updateView();
+        updateUI();
     }
     this->gameWindow->draw(mouseIconSprite);
 }
@@ -943,7 +1140,7 @@ void Game::updateMiniMenu(){
 void Game::updateMiniMenuClick(){
     for(int i = 0;i < 3;i++){
         if(miniMenuText[i].getGlobalBounds().contains(mousePos)){
-            miniMenuText[i].setFillColor(Color::Red);
+            miniMenuText[i].setScale(1.02,1.02);
             if(checkMouseClick()){
                 switch(i){
                     case 0:
@@ -961,7 +1158,130 @@ void Game::updateMiniMenuClick(){
                 }
             }
         }
-        else miniMenuText[i].setFillColor(Color::Black);
+        else miniMenuText[i].setScale(1,1);
+    }
+}
+
+void Game::updateUI(){
+    player[0].hp = 100;
+    player[0].exp = 50;
+    UI_level.setString("LV. " + to_string(player[now_player].level));
+    UI_name.setString(playerName[now_player]);
+    UI_name.setOrigin(getObjWidth(UI_name) / 2,getObjHeight(UI_name) / 2);
+    UI_charFaceS.setTexture(UI_charFaceT[player[now_player].character_number]);
+    UI_charFaceS.setOrigin(getObjWidth(UI_charFaceS) / 2,getObjHeight(UI_charFaceS) / 2);
+    UI_expBarS.setScale((double)player[now_player].exp / expMax[player[now_player].level - 1],1);
+    UI_hpText.setPosition(UI_hpBorderS.getPosition().x - 130,UI_hpBorderS.getPosition().y);
+    UI_hpValue.setPosition(UI_hpBorderS.getPosition().x + ((getObjWidth(UI_hpBorderS) / 2) - getObjWidth(UI_hpValue) / 2),UI_hpBorderS.getPosition().y + ((getObjHeight(UI_hpBorderS) / 2) - getObjHeight(UI_hpValue) / 2) - 3);
+    UI_expText.setPosition(UI_hpText.getPosition().x,UI_expBorderS.getPosition().y);
+    UI_expValue.setPosition(UI_expBorderS.getPosition().x + ((getObjWidth(UI_expBorderS) / 2) - getObjWidth(UI_expValue) / 2),UI_expBorderS.getPosition().y + ((getObjHeight(UI_expBorderS) / 2) - getObjHeight(UI_expValue) / 2) - 3);
+    UI_hpValue.setString(to_string(player[now_player].hp) + "/" + to_string(player[now_player].HpMax()));
+    UI_expValue.setString(to_string(player[now_player].exp) + "/" + to_string(expMax[player[now_player].level - 1]));
+    this->gameWindow->draw(UI_maxHpS);
+    this->gameWindow->draw(UI_hpBarS);
+    this->gameWindow->draw(UI_hpBorderS);
+    this->gameWindow->draw(UI_hpText);
+    this->gameWindow->draw(UI_hpValue);
+    this->gameWindow->draw(UI_maxExpS);
+    this->gameWindow->draw(UI_expBarS);
+    this->gameWindow->draw(UI_expBorderS);
+    this->gameWindow->draw(UI_expText);
+    this->gameWindow->draw(UI_expValue);
+    this->gameWindow->draw(UI_charFaceS);
+    this->gameWindow->draw(UI_name);
+    this->gameWindow->draw(UI_level);
+}
+
+void Game::setItemStat(){
+    sword[0].name_object = "hand";              sword[0].sword_stat[0] = 0;sword[0].sword_stat[1] = 0;sword[0].sword_stat[2] = 0;
+    sword[1].name_object = "Durandal";          sword[1].sword_stat[0] = 3;sword[1].sword_stat[1] = 1;sword[1].sword_stat[2] = 2;
+    sword[2].name_object = "Muramasas";         sword[2].sword_stat[0] = 3;sword[2].sword_stat[1] = 1;sword[2].sword_stat[2] = 2;
+    sword[3].name_object = "Murasame";          sword[3].sword_stat[0] = 3;sword[3].sword_stat[1] = 1;sword[3].sword_stat[2] = 2;
+    sword[4].name_object = "Masamune";          sword[4].sword_stat[0] = 3;sword[4].sword_stat[1] = 1;sword[4].sword_stat[2] = 2;
+    sword[5].name_object = "Shusui";            sword[5].sword_stat[0] = 3;sword[5].sword_stat[1] = 1;sword[5].sword_stat[2] = 2;
+    sword[6].name_object = "Yubashiri";         sword[6].sword_stat[0] = 3;sword[6].sword_stat[1] = 1;sword[6].sword_stat[2] = 2;
+    sword[7].name_object = "Kitetsu Sandai";    sword[7].sword_stat[0] = 3;sword[7].sword_stat[1] = 1;sword[7].sword_stat[2] = 2;
+    sword[8].name_object = "Wado Ichimonji";    sword[8].sword_stat[0] = 3;sword[8].sword_stat[1] = 1;sword[8].sword_stat[2] = 2;
+    sword[9].name_object = "Excalibur";         sword[9].sword_stat[0] = 3;sword[9].sword_stat[1] = 1;sword[9].sword_stat[2] = 2;
+
+    potion[0].name_object ="Green potion" ;      potion[0].potion_effect = 30;
+    potion[1].name_object ="Red potion";         potion[1].potion_effect = 10;
+
+    shield[0].name_object = "hand";              shield[0].shield_stat[0] = 0;shield[0].shield_stat[1]= 0;shield[0].shield_stat[2]= 0;
+    shield[1].name_object = "Aegis Shield ";     shield[1].shield_stat[0] = 2;shield[1].shield_stat[1]= 2;shield[1].shield_stat[2]= 2;
+    shield[2].name_object = "shield 3";          shield[2].shield_stat[0] = 2;shield[2].shield_stat[1]= 2;shield[2].shield_stat[2]= 2;
+    shield[3].name_object = "shield 4";          shield[3].shield_stat[0] = 2;shield[3].shield_stat[1]= 2;shield[3].shield_stat[2]= 2;
+    shield[4].name_object = "shield 5";          shield[4].shield_stat[0] = 2;shield[4].shield_stat[1]= 2;shield[4].shield_stat[2]= 2;
+    shield[5].name_object = "shield 6";          shield[5].shield_stat[0] = 2;shield[5].shield_stat[1]= 2;shield[5].shield_stat[2]= 2;
+    shield[6].name_object = "shield 7";          shield[6].shield_stat[0] = 2;shield[6].shield_stat[1]= 2;shield[6].shield_stat[2]= 2;
+    shield[7].name_object = "shield 8";          shield[7].shield_stat[0] = 2;shield[7].shield_stat[1]= 2;shield[7].shield_stat[2]= 2;
+    shield[8].name_object = "shield 9";          shield[8].shield_stat[0] = 2;shield[8].shield_stat[1]= 2;shield[8].shield_stat[2]= 2;
+    shield[9].name_object = "shield 10";         shield[9].shield_stat[0] = 2;shield[9].shield_stat[1]= 2;shield[9].shield_stat[2]= 2;
+}
+
+void Game::get_item_boss(){
+    int b = player[now_player].getLuk()*0.7;
+    int a = rand()%100+1;
+    int c = a+b;
+    int d;
+    int ea;
+    string e[3] = {"sword","potion","shield"};
+    int i = rand()%3;
+    int command_item_boss;
+    int potion_random = rand()%2;
+
+    if(potion_random == 0){
+         ea = rand()%3+1;
+    }
+    if(potion_random == 1){
+         ea = rand()%6+1;
+    }
+
+    if(c >95){     //5
+        d = 9;
+        i = 0;
+    }
+    if(c > 85 && c <= 95){  //10
+        d = 8;
+        i = 0;
+    }
+    if(c > 70 && c <= 85){ //15
+        d = 7;
+        i = 0;    }
+    if(c > 50 && c <= 70){ //20
+        d = rand()%3+4;
+        i = 0;
+    }
+    if(c > 0 && c <= 50){ // 50
+        d = rand()%3+1;
+        i = 2;
+    }
+    if(e[i] == "sword"){
+        cout << "You get the " << sword[d].name_object << "Stat : STR = " << sword[d].sword_stat[0] << "  AGI = " << sword[d].sword_stat[1] << "  Luk = " << sword[d].sword_stat[2] << endl;
+        cout << "Choose (1):OK (2):Cancel " ;
+        cin >> command_item_boss;
+        if(command_item_boss == 1){
+        player[now_player].weaponIndex = d;
+        }
+        else player[now_player].weaponIndex = player[now_player].weaponIndex;
+    }
+    if(e[i] == "potion"){
+        cout << "You get a " << potion[potion_random].name_object << "  " << ea << " EA"<< endl;
+        if(potion_random == 0){
+        player[now_player].green_potion += ea;
+        }
+        if(potion_random == 1){
+        player[now_player].red_potion += ea;
+        }
+    }
+    if(e[i] == "shield"){
+        cout << "You get the " << shield[d].name_object << "Stat : VIT = " << shield[d].shield_stat[0] << "  DEF = " << shield[d].shield_stat[1] << "  HP = " << shield[d].shield_stat[2] << endl;
+        cout << "Choose (1):OK (2):Cancel " ;
+        cin >> command_item_boss;
+        if(command_item_boss == 1){
+        player[now_player].shieldIndex = d;
+        }
+        else player[now_player].shieldIndex = player[now_player].shieldIndex;
     }
 }
 #endif

@@ -67,6 +67,7 @@ void get_item_boss(){
          ea = rand()%6+1;
     }
 
+
     if(c >95){     //5
         d = 9;
         i = 0;
