@@ -397,7 +397,6 @@ void Game::update(){
     //Window
     updateSfmlEvent();
     updateMouseIcon();
-    //Menu
     updateMousePos();
 }
 
@@ -1171,6 +1170,7 @@ void Game::updateUI(){
     UI_charFaceS.setTexture(UI_charFaceT[player[now_player].character_number]);
     UI_charFaceS.setOrigin(getObjWidth(UI_charFaceS) / 2,getObjHeight(UI_charFaceS) / 2);
     UI_expBarS.setScale((double)player[now_player].exp / expMax[player[now_player].level - 1],1);
+    UI_hpBarS.setScale((double)player[now_player].hp / player[now_player].HpMax(),1);
     UI_hpText.setPosition(UI_hpBorderS.getPosition().x - 130,UI_hpBorderS.getPosition().y);
     UI_hpValue.setPosition(UI_hpBorderS.getPosition().x + ((getObjWidth(UI_hpBorderS) / 2) - getObjWidth(UI_hpValue) / 2),UI_hpBorderS.getPosition().y + ((getObjHeight(UI_hpBorderS) / 2) - getObjHeight(UI_hpValue) / 2) - 3);
     UI_expText.setPosition(UI_hpText.getPosition().x,UI_expBorderS.getPosition().y);
@@ -1181,15 +1181,19 @@ void Game::updateUI(){
     this->gameWindow->draw(UI_hpBarS);
     this->gameWindow->draw(UI_hpBorderS);
     this->gameWindow->draw(UI_hpText);
-    this->gameWindow->draw(UI_hpValue);
     this->gameWindow->draw(UI_maxExpS);
     this->gameWindow->draw(UI_expBarS);
     this->gameWindow->draw(UI_expBorderS);
     this->gameWindow->draw(UI_expText);
-    this->gameWindow->draw(UI_expValue);
     this->gameWindow->draw(UI_charFaceS);
     this->gameWindow->draw(UI_name);
     this->gameWindow->draw(UI_level);
+    if(UI_maxHpS.getGlobalBounds().contains(mousePos)){
+        this->gameWindow->draw(UI_hpValue);
+    }
+    if(UI_maxExpS.getGlobalBounds().contains(mousePos)){
+        this->gameWindow->draw(UI_expValue);
+    }
 }
 
 void Game::setItemStat(){
