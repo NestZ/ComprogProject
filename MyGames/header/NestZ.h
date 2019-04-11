@@ -25,13 +25,14 @@ itemStat sword[10];
 itemStat shield[10];
 itemStat potion[2];
 
-struct accessoryStat{
+struct accessory{
+    string name;
     int extra_vit = 0;
     int extra_atk = 0;
     int extra_luck = 0;
     int extra_str = 0;
     int extra_agi = 0;
-}accessoryStat[10];
+}accessory[10];
 
 class Player{
     public:
@@ -46,12 +47,12 @@ class Player{
         int accessoryIndex;
         int star;
         int money;
-        int std_str;
-        int std_vit;
-        int std_agi;
-        int std_luk;
-        int std_atk;
-        int std_def;
+        int std_str = 20;
+        int std_vit = 20;
+        int std_agi = 20;
+        int std_luk = 20;
+        int std_atk = 20;
+        int std_def = 20;
         int red_potion;
         int green_potion;
         double pos_x;
@@ -82,22 +83,22 @@ Player::Player(){
 }
 
 int Player::getAtk(){
-    return std_atk + getStr()/2 + accessoryStat[accessoryIndex].extra_atk;
+    return std_atk + getStr()/2 + accessory[accessoryIndex].extra_atk;
 }
 int Player::getDef(){
     return std_def + getVit() + shield[shieldIndex].shield_stat[1];
 }
 int Player::getAgi(){
-    return std_agi + accessoryStat[accessoryIndex].extra_agi + sword[weaponIndex].sword_stat[1];
+    return std_agi + accessory[accessoryIndex].extra_agi + sword[weaponIndex].sword_stat[1];
 }
 int Player::getStr(){
-    return  std_str + accessoryStat[accessoryIndex].extra_str + sword[weaponIndex].sword_stat[0];
+    return  std_str + accessory[accessoryIndex].extra_str + sword[weaponIndex].sword_stat[0];
 }
 int Player::getLuk(){
-    return std_luk + accessoryStat[accessoryIndex].extra_luck + sword[weaponIndex].sword_stat[2];
+    return std_luk + accessory[accessoryIndex].extra_luck + sword[weaponIndex].sword_stat[2];
 }
 int Player::getVit(){
-    return std_vit + accessoryStat[accessoryIndex].extra_vit + shield[shieldIndex].shield_stat[0];
+    return std_vit + accessory[accessoryIndex].extra_vit + shield[shieldIndex].shield_stat[0];
 }
 int Player::HpMax(){
     return getVit()*5;
@@ -116,7 +117,6 @@ class Game{
         void update();
         Event updateSfmlEvent();
         void render();
-        enum States {Menu, ChoosePlayers, ChooseCharacters, Setting, InsertName, Playing};
         bool checkMouseClick();
         double windowMidWidth();
         double windowMidHeight();
@@ -176,6 +176,8 @@ class Game{
         void updateMiniMenu();
         void updateMiniMenuClick();
         void updateUI();
+        void updateTurn();
+        void randomDiceAnimation();
         void setItemStat();
         void get_item_boss();
     private:
@@ -205,6 +207,7 @@ class Game{
         Texture minusT;
         Sprite minusS[3];
         //Window
+        enum States {Menu, ChoosePlayers, ChooseCharacters, Setting, InsertName, Playing};
         Texture backButtonTexture;
         Sprite backButtonSprite;
         Texture mouseIconTexture;
@@ -255,6 +258,12 @@ class Game{
         Texture insertNameBGTexture;
         Sprite insertNameBGSprite;
         //Playing
+        Clock clock;
+        float deltaTime;
+        float totalTime;
+        float animationSpeed;
+        int diceNum;
+        Font cordiaFont;
         vector<int> expMax;
         int startExp;
         int UIFontSize;
@@ -267,6 +276,7 @@ class Game{
         Text miniMenuText[3];
         int miniMenuFontSize;
         int arrIndex[3] = {-1,0,1};
+        int turn;
         Player *player;
         Text UI_name;
         Text UI_hpText;
@@ -275,6 +285,8 @@ class Game{
         Text UI_expText;
         Text UI_hpValue;
         Text UI_expValue;
+        Texture UI_starT;
+        Sprite UI_starS[3];
         Texture UI_maxExpT;
         Sprite UI_maxExpS;
         Texture UI_expBarT;
@@ -324,7 +336,8 @@ void Game::initFont(){
     settingFontSize = 40;
     miniMenuFontSize = 40;
     UIFontSize = 35;
-    menuFont.loadFromFile("font/ka1.TTF");
+    menuFont.loadFromFile("font/ka1.ttf");
+    cordiaFont.loadFromFile("font/cordia_0.ttf");
 }
 
 void Game::initWindow(){
@@ -347,6 +360,8 @@ void Game::initWindowVariables(){
 }
 
 void Game::initGlobalVariables(){
+    deltaTime = 0.0f;
+    totalTime = 0.0f;
     backButtonTexture.loadFromFile("img/BackButton.png");
     backButtonTexture.setSmooth(true);
     backButtonSprite.setTexture(backButtonTexture);
@@ -395,6 +410,7 @@ void Game::run(){
 
 void Game::update(){
     //Window
+    deltaTime = clock.restart().asSeconds();
     updateSfmlEvent();
     updateMouseIcon();
     updateMousePos();
@@ -1002,7 +1018,9 @@ void Game::resetCC(){
 #############################################################################################################*/
 
 void Game::initPlayingVariables(){
+    animationSpeed = 0.3f;
     startExp = 100;
+    turn = 0;
     expMax.push_back(startExp);
     while(expMax.size() != 29){
         expMax.push_back(expMax.back() * 1.5);
@@ -1029,6 +1047,12 @@ void Game::initPlayingVariables(){
         miniMenuText[i].setOutlineThickness(3.5);
         miniMenuText[i].setFont(menuFont);
         miniMenuText[i].setCharacterSize(miniMenuFontSize);
+    }
+    UI_starT.loadFromFile("img/Star.png");
+    UI_starT.setSmooth(true);
+    for(int i = 0;i < 3;i++){
+        UI_starS[i].setTexture(UI_starT);
+        UI_starS[i].setScale(0.35,0.35);
     }
     UI_charFaceT[0].loadFromFile("img/Face1.png");
     UI_charFaceT[1].loadFromFile("img/Face2.png");
@@ -1057,7 +1081,7 @@ void Game::initPlayingVariables(){
     UI_maxHpS.setPosition(360,85);
     UI_hpBarT.loadFromFile("img/HpBar.png");
     UI_hpBarS.setTexture(UI_hpBarT);
-    UI_hpBarS.setPosition(360,85);
+    UI_hpBarS.setPosition(362,85);
     UI_hpText.setString("HP");
     UI_hpText.setFillColor(Color::Black);
     UI_hpText.setOutlineColor(Color::White);
@@ -1067,8 +1091,8 @@ void Game::initPlayingVariables(){
     UI_hpValue.setFillColor(Color::Black);
     UI_hpValue.setOutlineColor(Color::White);
     UI_hpValue.setOutlineThickness(2);
-    UI_hpValue.setFont(menuFont);
-    UI_hpValue.setCharacterSize(UIFontSize - 15);
+    UI_hpValue.setFont(cordiaFont);
+    UI_hpValue.setCharacterSize(UIFontSize);
     UI_expBorderT.loadFromFile("img/HpBorder.png");
     UI_expBorderS.setTexture(UI_expBorderT);
     UI_expBorderS.setPosition(UI_hpBorderS.getPosition().x,UI_hpBorderS.getPosition().y + 55);
@@ -1077,7 +1101,7 @@ void Game::initPlayingVariables(){
     UI_maxExpS.setPosition(UI_expBorderS.getPosition().x,UI_expBorderS.getPosition().y);
     UI_expBarT.loadFromFile("img/ExpBar.png");
     UI_expBarS.setTexture(UI_expBarT);
-    UI_expBarS.setPosition(UI_expBorderS.getPosition().x,UI_expBorderS.getPosition().y);
+    UI_expBarS.setPosition(UI_hpBarS.getPosition().x,UI_expBorderS.getPosition().y);
     UI_expText.setString("EXP");
     UI_expText.setFillColor(Color::Black);
     UI_expText.setOutlineColor(Color::White);
@@ -1087,11 +1111,12 @@ void Game::initPlayingVariables(){
     UI_expValue.setFillColor(Color::Black);
     UI_expValue.setOutlineColor(Color::White);
     UI_expValue.setOutlineThickness(2);
-    UI_expValue.setFont(menuFont);
-    UI_expValue.setCharacterSize(UIFontSize - 15);
+    UI_expValue.setFont(cordiaFont);
+    UI_expValue.setCharacterSize(UIFontSize);
 }
 
 void Game::drawPlaying(){
+    updateTurn();
     this->gameWindow->setView(camera);
     this->gameWindow->draw(mapSprite);
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
@@ -1110,8 +1135,18 @@ void Game::drawPlaying(){
     else {
         updateView();
         updateUI();
+        randomDiceAnimation();
     }
     this->gameWindow->draw(mouseIconSprite);
+}
+
+void Game::randomDiceAnimation(){
+    totalTime += deltaTime;
+    if(totalTime >= 0.3f){
+        totalTime -= 0.3f;
+        diceNum = rand() % 6 + 1;
+        cout << diceNum << "\n";
+    }
 }
 
 void Game::updateView(){
@@ -1162,9 +1197,15 @@ void Game::updateMiniMenuClick(){
 }
 
 void Game::updateUI(){
-    player[0].hp = 100;
-    player[0].exp = 50;
+    player[0].hp = 1;
+    player[0].exp = 1;
+    player[0].star = 2;
     UI_level.setString("LV. " + to_string(player[now_player].level));
+    for(int i = 0;i < 3;i++){
+        if(i <= player[now_player].star - 1)UI_starS[i].setColor(Color(255,255,255,255));
+        else UI_starS[i].setColor(Color(128,128,128,128));
+        UI_starS[i].setPosition((UI_level.getPosition().x + 100) + (i+1) * 60,UI_level.getPosition().y);
+    }
     UI_name.setString(playerName[now_player]);
     UI_name.setOrigin(getObjWidth(UI_name) / 2,getObjHeight(UI_name) / 2);
     UI_charFaceS.setTexture(UI_charFaceT[player[now_player].character_number]);
@@ -1172,9 +1213,9 @@ void Game::updateUI(){
     UI_expBarS.setScale((double)player[now_player].exp / expMax[player[now_player].level - 1],1);
     UI_hpBarS.setScale((double)player[now_player].hp / player[now_player].HpMax(),1);
     UI_hpText.setPosition(UI_hpBorderS.getPosition().x - 130,UI_hpBorderS.getPosition().y);
-    UI_hpValue.setPosition(UI_hpBorderS.getPosition().x + ((getObjWidth(UI_hpBorderS) / 2) - getObjWidth(UI_hpValue) / 2),UI_hpBorderS.getPosition().y + ((getObjHeight(UI_hpBorderS) / 2) - getObjHeight(UI_hpValue) / 2) - 3);
+    UI_hpValue.setPosition(UI_hpBorderS.getPosition().x + ((getObjWidth(UI_hpBorderS) / 2) - getObjWidth(UI_hpValue) / 2),UI_hpBorderS.getPosition().y + ((getObjHeight(UI_hpBorderS) / 2) - getObjHeight(UI_hpValue) / 2) - 17);
     UI_expText.setPosition(UI_hpText.getPosition().x,UI_expBorderS.getPosition().y);
-    UI_expValue.setPosition(UI_expBorderS.getPosition().x + ((getObjWidth(UI_expBorderS) / 2) - getObjWidth(UI_expValue) / 2),UI_expBorderS.getPosition().y + ((getObjHeight(UI_expBorderS) / 2) - getObjHeight(UI_expValue) / 2) - 3);
+    UI_expValue.setPosition(UI_expBorderS.getPosition().x + ((getObjWidth(UI_expBorderS) / 2) - getObjWidth(UI_expValue) / 2),UI_expBorderS.getPosition().y + ((getObjHeight(UI_expBorderS) / 2) - getObjHeight(UI_expValue) / 2) - 17);
     UI_hpValue.setString(to_string(player[now_player].hp) + "/" + to_string(player[now_player].HpMax()));
     UI_expValue.setString(to_string(player[now_player].exp) + "/" + to_string(expMax[player[now_player].level - 1]));
     this->gameWindow->draw(UI_maxHpS);
@@ -1194,6 +1235,13 @@ void Game::updateUI(){
     if(UI_maxExpS.getGlobalBounds().contains(mousePos)){
         this->gameWindow->draw(UI_expValue);
     }
+    for(int i = 0;i < 3;i++){
+        this->gameWindow->draw(UI_starS[i]);
+    }
+}
+
+void Game::updateTurn(){
+    now_player = turn % players;
 }
 
 void Game::setItemStat(){
@@ -1221,6 +1269,17 @@ void Game::setItemStat(){
     shield[7].name_object = "shield 8";          shield[7].shield_stat[0] = 2;shield[7].shield_stat[1]= 2;shield[7].shield_stat[2]= 2;
     shield[8].name_object = "shield 9";          shield[8].shield_stat[0] = 2;shield[8].shield_stat[1]= 2;shield[8].shield_stat[2]= 2;
     shield[9].name_object = "shield 10";         shield[9].shield_stat[0] = 2;shield[9].shield_stat[1]= 2;shield[9].shield_stat[2]= 2;
+
+    accessory[0].name = "acc1";                  accessory[0].extra_agi = 0;accessory[0].extra_atk = 0;accessory[0].extra_luck = 0;accessory[0].extra_str = 0;accessory[0].extra_vit = 0;
+    accessory[1].name = "acc2";                  accessory[1].extra_agi = 0;accessory[1].extra_atk = 0;accessory[1].extra_luck = 0;accessory[1].extra_str = 0;accessory[1].extra_vit = 0;
+    accessory[2].name = "acc3";                  accessory[2].extra_agi = 0;accessory[2].extra_atk = 0;accessory[2].extra_luck = 0;accessory[2].extra_str = 0;accessory[2].extra_vit = 0;
+    accessory[3].name = "acc4";                  accessory[3].extra_agi = 0;accessory[3].extra_atk = 0;accessory[3].extra_luck = 0;accessory[3].extra_str = 0;accessory[3].extra_vit = 0;
+    accessory[4].name = "acc5";                  accessory[4].extra_agi = 0;accessory[4].extra_atk = 0;accessory[4].extra_luck = 0;accessory[4].extra_str = 0;accessory[4].extra_vit = 0;
+    accessory[5].name = "acc6";                  accessory[5].extra_agi = 0;accessory[5].extra_atk = 0;accessory[5].extra_luck = 0;accessory[5].extra_str = 0;accessory[5].extra_vit = 0;
+    accessory[6].name = "acc7";                  accessory[6].extra_agi = 0;accessory[6].extra_atk = 0;accessory[6].extra_luck = 0;accessory[6].extra_str = 0;accessory[6].extra_vit = 0;
+    accessory[7].name = "acc8";                  accessory[7].extra_agi = 0;accessory[7].extra_atk = 0;accessory[7].extra_luck = 0;accessory[7].extra_str = 0;accessory[7].extra_vit = 0;
+    accessory[8].name = "acc9";                  accessory[8].extra_agi = 0;accessory[8].extra_atk = 0;accessory[8].extra_luck = 0;accessory[8].extra_str = 0;accessory[8].extra_vit = 0;
+    accessory[9].name = "acc10";                 accessory[9].extra_agi = 0;accessory[9].extra_atk = 0;accessory[9].extra_luck = 0;accessory[9].extra_str = 0;accessory[9].extra_vit = 0;
 }
 
 void Game::get_item_boss(){
