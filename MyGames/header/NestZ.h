@@ -184,6 +184,7 @@ class Game{
         void randomDice();
         void updateLevel();
         void updatePlayingState();
+        void usePotion(int);
         void setItemStat();
         void get_item_boss();
     private:
@@ -270,6 +271,7 @@ class Game{
         float animationSpeed;
         int diceNum;
         bool randomStart;
+        bool isBagOpen;
         Font cordiaFont;
         vector<int> expMax;
         vector<int> diceTemp;
@@ -294,6 +296,22 @@ class Game{
         Text UI_hpValue;
         Text UI_expValue;
         Text UI_diceValue;
+        Text UI_hpSValue;
+        Text UI_hpLValue;
+        Texture UI_accT[10];
+        Sprite UI_accS;
+        Texture UI_shieldT[10];
+        Sprite UI_shieldS;
+        Texture UI_swordT[10];
+        Sprite UI_swordS;
+        Texture UI_HpST;
+        Sprite UI_HpSS;
+        Texture UI_HpLT;
+        Sprite UI_HpLS;
+        Texture UI_bagT;
+        Sprite UI_bagS;
+        Texture UI_invenT;
+        Sprite UI_invenS;
         Texture UI_diceT;
         Sprite UI_diceS;
         Texture UI_starT;
@@ -385,6 +403,9 @@ void Game::initGlobalVariables(){
     mouseIconSprite.setTexture(mouseIconTexture);
     mouseIconSprite.setOrigin(10,10);
     mouseIconSprite.setScale(0.6,0.6);
+    animationSpeed = 0.3f;
+    startExp = 100;
+    turn = 0;
 }
 
 void Game::render(){
@@ -1037,10 +1058,8 @@ void Game::resetCC(){
 #############################################################################################################*/
 
 void Game::initPlayingVariables(){
+    isBagOpen = false;
     randomStart = false;
-    animationSpeed = 0.3f;
-    startExp = 100;
-    turn = 0;
     expMax.push_back(startExp);
     while(expMax.size() != 29){
         expMax.push_back(expMax.back() * 1.2);
@@ -1144,6 +1163,73 @@ void Game::initPlayingVariables(){
     UI_diceValue.setOutlineThickness(3.5);
     UI_diceValue.setFont(menuFont);
     UI_diceValue.setCharacterSize(UIFontSize + 30);
+    UI_invenT.loadFromFile("img/Inventory.png");
+    UI_invenT.setSmooth(true);
+    UI_invenS.setTexture(UI_invenT);
+    UI_invenS.setOrigin(getObjWidth(UI_invenS) / 2,getObjHeight(UI_invenS) / 2);
+    UI_invenS.setPosition(350,1015);
+    UI_invenS.setScale(1.3,1.1);
+    UI_invenS.setColor(Color(255,255,255,200));
+    UI_bagT.loadFromFile("img/Bag.png");
+    UI_bagT.setSmooth(true);
+    UI_bagS.setTexture(UI_bagT);
+    UI_bagS.setOrigin(getObjWidth(UI_bagS) / 2,getObjHeight(UI_bagS) / 2);
+    UI_bagS.setPosition(70,1015);
+    UI_bagS.setScale(0.8,0.8);
+    UI_HpST.loadFromFile("img/HpS.png");
+    UI_HpSS.setTexture(UI_HpST);
+    UI_HpSS.setOrigin(getObjWidth(UI_HpSS) / 2,getObjHeight(UI_HpSS) / 2);
+    UI_HpSS.setPosition(UI_invenS.getPosition().x,UI_invenS.getPosition().y);
+    UI_HpSS.setScale(0.65,0.65);
+    UI_HpLT.loadFromFile("img/HpL.png");
+    UI_HpLT.setSmooth(true);
+    UI_HpLS.setTexture(UI_HpLT);
+    UI_HpLS.setOrigin(getObjWidth(UI_HpLS) / 2,getObjHeight(UI_HpLS) / 2);
+    UI_HpLS.setPosition(UI_invenS.getPosition().x + 68,UI_invenS.getPosition().y);
+    UI_HpLS.setScale(0.65,0.65);
+    UI_hpSValue.setFillColor(Color::Black);
+    UI_hpSValue.setOutlineColor(Color::White);
+    UI_hpSValue.setOutlineThickness(2.5);
+    UI_hpSValue.setFont(cordiaFont);
+    UI_hpSValue.setCharacterSize(UIFontSize - 5);
+    UI_hpLValue.setFillColor(Color::Black);
+    UI_hpLValue.setOutlineColor(Color::White);
+    UI_hpLValue.setOutlineThickness(2.5);
+    UI_hpLValue.setFont(cordiaFont);
+    UI_hpLValue.setCharacterSize(UIFontSize - 5);
+    UI_swordT[0].loadFromFile("img/Fist.png");
+    UI_swordT[1].loadFromFile("img/Sword1.png");
+    UI_swordT[2].loadFromFile("img/Sword2.png");
+    UI_swordT[3].loadFromFile("img/Sword3.png");
+    UI_swordT[4].loadFromFile("img/Sword4.png");
+    UI_swordT[5].loadFromFile("img/Sword5.png");
+    UI_swordT[6].loadFromFile("img/Sword6.png");
+    UI_swordT[7].loadFromFile("img/Sword7.png");
+    UI_swordT[8].loadFromFile("img/Sword8.png");
+    UI_swordT[9].loadFromFile("img/Sword9.png");
+    UI_swordS.setScale(0.65,0.65);
+    UI_shieldT[0].loadFromFile("img/Shield1.png");
+    UI_shieldT[1].loadFromFile("img/Shield2.png");
+    UI_shieldT[2].loadFromFile("img/Shield3.png");
+    UI_shieldT[3].loadFromFile("img/Shield4.png");
+    UI_shieldT[4].loadFromFile("img/Shield5.png");
+    UI_shieldT[5].loadFromFile("img/Shield6.png");
+    UI_shieldT[6].loadFromFile("img/Shield7.png");
+    UI_shieldT[7].loadFromFile("img/Shield8.png");
+    UI_shieldT[8].loadFromFile("img/Shield9.png");
+    UI_shieldT[9].loadFromFile("img/Shield10.png");
+    UI_shieldS.setScale(0.65,0.65);
+    UI_accT[0].loadFromFile("img/Accessory1.png");
+    UI_accT[1].loadFromFile("img/Accessory2.png");
+    UI_accT[2].loadFromFile("img/Accessory3.png");
+    UI_accT[3].loadFromFile("img/Accessory4.png");
+    UI_accT[4].loadFromFile("img/Accessory5.png");
+    UI_accT[5].loadFromFile("img/Accessory6.png");
+    UI_accT[6].loadFromFile("img/Accessory7.png");
+    UI_accT[7].loadFromFile("img/Accessory8.png");
+    UI_accT[8].loadFromFile("img/Accessory9.png");
+    UI_accT[9].loadFromFile("img/Accessory10.png");
+    UI_accS.setScale(0.65,0.65);
 }
 
 void Game::drawPlaying(){
@@ -1276,6 +1362,8 @@ void Game::drawUI(){
     player[0].hp = 1;
     player[0].exp = 150;
     player[0].star = 2;
+    player[0].red_potion = 1;
+    player[0].green_potion = 99;
     UI_level.setString("LV. " + to_string(player[now_player].level));
     for(int i = 0;i < 3;i++){
         if(i <= player[now_player].star - 1)UI_starS[i].setColor(Color(255,255,255,255));
@@ -1296,6 +1384,21 @@ void Game::drawUI(){
     UI_expValue.setPosition(UI_expBorderS.getPosition().x + ((getObjWidth(UI_expBorderS) / 2) - getObjWidth(UI_expValue) / 2),UI_expBorderS.getPosition().y + ((getObjHeight(UI_expBorderS) / 2) - getObjHeight(UI_expValue) / 2) - 17);
     UI_hpValue.setString(to_string(player[now_player].hp) + "/" + to_string(player[now_player].HpMax()));
     UI_expValue.setString(to_string(player[now_player].exp) + "/" + to_string(expMax[player[now_player].level - 1]));
+    UI_hpSValue.setString(to_string(player[now_player].red_potion));
+    UI_hpSValue.setOrigin(getObjWidth(UI_hpSValue) / 2,getObjHeight(UI_hpSValue) / 2);
+    UI_hpSValue.setPosition(UI_HpSS.getPosition().x - 17,UI_HpSS.getPosition().y + 4);
+    UI_hpLValue.setString(to_string(player[now_player].green_potion));
+    UI_hpLValue.setOrigin(getObjWidth(UI_hpLValue) / 2,getObjHeight(UI_hpLValue) / 2);
+    UI_hpLValue.setPosition(UI_HpLS.getPosition().x - 17,UI_HpLS.getPosition().y + 4);
+    UI_swordS.setTexture(UI_swordT[player[now_player].weaponIndex]);
+    UI_swordS.setOrigin(getObjWidth(UI_swordS) / 2,getObjHeight(UI_swordS) / 2);
+    UI_swordS.setPosition(UI_HpSS.getPosition().x - 136,UI_HpSS.getPosition().y);
+    UI_shieldS.setTexture(UI_shieldT[player[now_player].shieldIndex]);
+    UI_shieldS.setOrigin(getObjWidth(UI_shieldS) / 2,getObjHeight(UI_shieldS) / 2);
+    UI_shieldS.setPosition(UI_HpSS.getPosition().x - 68,UI_HpSS.getPosition().y);
+    UI_accS.setTexture(UI_accT[player[now_player].accessoryIndex]);
+    UI_accS.setOrigin(getObjWidth(UI_accS) / 2,getObjHeight(UI_accS) / 2);
+    UI_accS.setPosition(UI_HpSS.getPosition().x + 136,UI_HpSS.getPosition().y);
     this->gameWindow->draw(UI_maxHpS);
     this->gameWindow->draw(UI_hpBarS);
     this->gameWindow->draw(UI_hpBorderS);
@@ -1311,6 +1414,21 @@ void Game::drawUI(){
     for(int i = 0;i < 3;i++){
         this->gameWindow->draw(UI_starS[i]);
     }
+    this->gameWindow->draw(UI_bagS);
+    if(isBagOpen){
+        this->gameWindow->draw(UI_invenS);
+        if(player[now_player].red_potion == 0)UI_HpSS.setColor(Color(160,160,160,255));
+        else UI_HpSS.setColor(Color(255,255,255,255));
+        this->gameWindow->draw(UI_HpSS);
+        if(player[now_player].green_potion == 0)UI_HpLS.setColor(Color(160,160,160,255));
+        else UI_HpLS.setColor(Color(255,255,255,255));
+        this->gameWindow->draw(UI_HpLS);
+        this->gameWindow->draw(UI_hpSValue);
+        this->gameWindow->draw(UI_hpLValue);
+        this->gameWindow->draw(UI_swordS);
+        this->gameWindow->draw(UI_shieldS);
+        this->gameWindow->draw(UI_accS);
+    }
 }
 
 void Game::updateUI(){
@@ -1324,6 +1442,31 @@ void Game::updateUI(){
         UI_charFaceS.setScale(1.05,1.05);
     }
     else UI_charFaceS.setScale(1,1);
+    if(UI_bagS.getGlobalBounds().contains(mousePos)){
+        UI_bagS.setScale(0.85,0.85);
+        if(checkMouseClick()){
+            if(isBagOpen)isBagOpen = false;
+            else isBagOpen = true;
+        }
+    }
+    else UI_bagS.setScale(0.8,0.8);
+    if(UI_HpSS.getGlobalBounds().contains(mousePos)){
+        UI_HpSS.setScale(0.7,0.7);
+    }
+    else UI_HpSS.setScale(0.65,0.65);
+    if(UI_HpLS.getGlobalBounds().contains(mousePos)){
+        UI_HpLS.setScale(0.7,0.7);
+    }
+    else UI_HpLS.setScale(0.65,0.65);
+}
+
+void Game::usePotion(int heal){
+    if(heal + player[now_player].hp >= player[now_player].HpMax()){
+        player[now_player].hp = player[now_player].HpMax();
+    }
+    else if(heal + player[now_player].hp < player[now_player].HpMax()){
+        player[now_player].hp += heal;
+    }
 }
 
 void Game::updateTurn(){
