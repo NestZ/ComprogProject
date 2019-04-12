@@ -58,6 +58,7 @@ class Player{
         double pos_x;
         double pos_y;
         int now_player_path;
+        bool isRandom = false;
         //Function
         Player();
         int getAtk();
@@ -169,15 +170,20 @@ class Game{
         void updateBackButtonIPN();
         void resetIPN();
         bool isValidCharacter(char);
+        bool checkUsedName(string);
         //Playing
         void drawPlaying();
         void initPlayingVariables();
         void updateView();
         void updateMiniMenu();
         void updateMiniMenuClick();
+        void drawUI();
         void updateUI();
         void updateTurn();
-        void randomDiceAnimation();
+        void diceState();
+        void randomDice();
+        void updateLevel();
+        void updatePlayingState();
         void setItemStat();
         void get_item_boss();
     private:
@@ -263,8 +269,10 @@ class Game{
         float totalTime;
         float animationSpeed;
         int diceNum;
+        bool randomStart;
         Font cordiaFont;
         vector<int> expMax;
+        vector<int> diceTemp;
         int startExp;
         int UIFontSize;
         Texture mapTexture;
@@ -285,6 +293,9 @@ class Game{
         Text UI_expText;
         Text UI_hpValue;
         Text UI_expValue;
+        Text UI_diceValue;
+        Texture UI_diceT;
+        Sprite UI_diceS;
         Texture UI_starT;
         Sprite UI_starS[3];
         Texture UI_maxExpT;
@@ -320,10 +331,10 @@ void Game::initVariables(){
     initInsertNameVariables();
     initChoosePlayersVariables();
     initChooseCharactersVariables();
-    initPlayingVariables();
     initWindowVariables();
     initSettingVariables();
     initGlobalVariables();
+    initPlayingVariables();
 }
 
 void Game::initFont(){
@@ -833,7 +844,7 @@ void Game::updateInsertedName(char insertedChar){
         name += character[i];
     }
     InsertedName.setString(name);
-    if(insertedChar == 13 && name.size() > 0){
+    if(insertedChar == 13 && name.size() > 0 && checkUsedName(name)){
         playerName.push_back(name);
         InsertedName.setString("");
         while(!character.empty()){
@@ -849,6 +860,14 @@ void Game::updateInsertedName(char insertedChar){
             state.push(ChooseCharacters);
         }
     }
+    else if(!checkUsedName(name))cout << "kuy" << "\n";
+}
+
+bool Game::checkUsedName(string checkingName){
+    for(unsigned int i = 0;i < playerName.size();i++){
+        if(checkingName == playerName[i])return false;
+    }
+    return true;
 }
 
 void Game::updateBackButtonIPN(){
@@ -1018,13 +1037,15 @@ void Game::resetCC(){
 #############################################################################################################*/
 
 void Game::initPlayingVariables(){
+    randomStart = false;
     animationSpeed = 0.3f;
     startExp = 100;
     turn = 0;
     expMax.push_back(startExp);
     while(expMax.size() != 29){
-        expMax.push_back(expMax.back() * 1.5);
+        expMax.push_back(expMax.back() * 1.2);
     }
+    expMax.push_back(expMax.back());
     isMenuOpen = false;
     setItemStat();
     mapTexture.loadFromFile("img/Map.jpg");
@@ -1113,13 +1134,25 @@ void Game::initPlayingVariables(){
     UI_expValue.setOutlineThickness(2);
     UI_expValue.setFont(cordiaFont);
     UI_expValue.setCharacterSize(UIFontSize);
+    UI_diceT.loadFromFile("img/DiceIcon.png");
+    UI_diceT.setSmooth(true);
+    UI_diceS.setTexture(UI_diceT);
+    UI_diceS.setOrigin(getObjWidth(UI_diceS) / 2,getObjHeight(UI_diceS) / 2);
+    UI_diceS.setPosition(windowMidWidth(),windowMidHeight());
+    UI_diceValue.setFillColor(Color::Black);
+    UI_diceValue.setOutlineColor(Color::White);
+    UI_diceValue.setOutlineThickness(3.5);
+    UI_diceValue.setFont(menuFont);
+    UI_diceValue.setCharacterSize(UIFontSize + 30);
 }
 
 void Game::drawPlaying(){
+    updateLevel();
     updateTurn();
     this->gameWindow->setView(camera);
     this->gameWindow->draw(mapSprite);
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
+    drawUI();
     updateMiniMenu();
     if(isMenuOpen){
         miniMenuS.setPosition(windowWidth / 2,windowHeight / 2);
@@ -1130,22 +1163,65 @@ void Game::drawPlaying(){
             updateMiniMenuClick();
             this->gameWindow->draw(miniMenuText[i]);
         }
-        updateUI();
     }
     else {
+        updatePlayingState();
         updateView();
-        updateUI();
-        randomDiceAnimation();
     }
     this->gameWindow->draw(mouseIconSprite);
 }
 
-void Game::randomDiceAnimation(){
+void Game::updatePlayingState(){
+    if(player[now_player].isRandom == false){
+        if(!randomStart)diceState();
+        else if(randomStart){
+            randomDice();
+            this->gameWindow->draw(UI_diceValue);
+        }
+    }
+    else if(player[now_player].isRandom == true){
+        while(diceTemp.size() != 0)diceTemp.pop_back();
+        randomStart = false;
+        player[now_player].isRandom = false;
+        turn++;
+    }
+}
+
+void Game::diceState(){
+        this->gameWindow->draw(UI_diceS);
+        if(UI_diceS.getGlobalBounds().contains(mousePos)){
+            UI_diceS.setScale(1.05,1.05);
+            if(checkMouseClick()){
+                    randomStart = true;
+            }
+        }
+        else UI_diceS.setScale(1,1);
+}
+
+void Game::randomDice(){
     totalTime += deltaTime;
-    if(totalTime >= 0.3f){
-        totalTime -= 0.3f;
+    if(totalTime >= animationSpeed){
+        totalTime -= animationSpeed;
         diceNum = rand() % 6 + 1;
-        cout << diceNum << "\n";
+        UI_diceValue.setString(to_string(diceNum));
+        this->gameWindow->draw(UI_diceValue);
+        diceTemp.push_back(diceNum);
+        cout << now_player << " " << diceTemp.size() << "\n";
+        }
+    if(diceTemp.size() == 20)player[now_player].isRandom = true;
+}
+
+void Game::updateLevel(){
+    if(player[now_player].exp >= expMax[player[now_player].level - 1] && player[now_player].level < 29){
+        player[now_player].exp -= expMax[player[now_player].level - 1];
+        player[now_player].level++;
+    }
+    else if(player[now_player].level == 29 && player[now_player].exp >= expMax[player[now_player].level - 1]){
+        player[now_player].exp = expMax.back();
+        player[now_player].level++;
+    }
+    else if(player[now_player].level == 30){
+        player[now_player].exp = expMax.back();
     }
 }
 
@@ -1196,9 +1272,9 @@ void Game::updateMiniMenuClick(){
     }
 }
 
-void Game::updateUI(){
+void Game::drawUI(){
     player[0].hp = 1;
-    player[0].exp = 1;
+    player[0].exp = 150;
     player[0].star = 2;
     UI_level.setString("LV. " + to_string(player[now_player].level));
     for(int i = 0;i < 3;i++){
@@ -1206,6 +1282,8 @@ void Game::updateUI(){
         else UI_starS[i].setColor(Color(128,128,128,128));
         UI_starS[i].setPosition((UI_level.getPosition().x + 100) + (i+1) * 60,UI_level.getPosition().y);
     }
+    UI_diceValue.setOrigin(getObjWidth(UI_diceValue) / 2,getObjHeight(UI_diceValue) / 2);
+    UI_diceValue.setPosition(windowMidWidth(),windowMidHeight());
     UI_name.setString(playerName[now_player]);
     UI_name.setOrigin(getObjWidth(UI_name) / 2,getObjHeight(UI_name) / 2);
     UI_charFaceS.setTexture(UI_charFaceT[player[now_player].character_number]);
@@ -1229,15 +1307,23 @@ void Game::updateUI(){
     this->gameWindow->draw(UI_charFaceS);
     this->gameWindow->draw(UI_name);
     this->gameWindow->draw(UI_level);
+    if(!isMenuOpen)updateUI();
+    for(int i = 0;i < 3;i++){
+        this->gameWindow->draw(UI_starS[i]);
+    }
+}
+
+void Game::updateUI(){
     if(UI_maxHpS.getGlobalBounds().contains(mousePos)){
         this->gameWindow->draw(UI_hpValue);
     }
     if(UI_maxExpS.getGlobalBounds().contains(mousePos)){
         this->gameWindow->draw(UI_expValue);
     }
-    for(int i = 0;i < 3;i++){
-        this->gameWindow->draw(UI_starS[i]);
+    if(UI_charFaceS.getGlobalBounds().contains(mousePos)){
+        UI_charFaceS.setScale(1.05,1.05);
     }
+    else UI_charFaceS.setScale(1,1);
 }
 
 void Game::updateTurn(){
