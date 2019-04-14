@@ -61,7 +61,6 @@ class Player{
         double pos_x;
         double pos_y;
         int now_player_path;
-        bool isRandom = false;
         //Function
         Player();
         int getAtk();
@@ -189,6 +188,7 @@ class Game{
         void updateLevel();
         void updatePlayingState();
         void usePotion(int);
+        void waitDiceAni(unsigned int);
         void setItemStat();
         void get_item_boss();
     private:
@@ -257,7 +257,9 @@ class Game{
         //InsertName
         int cinTextFontSize;
         int insertedNameFontSize;
+        bool isNameUsed;
         Text cinText;
+        Text nameUsed;
         Event textInputEvent;
         char textEntered;
         const unsigned int MAX_TEXT = 6;
@@ -277,9 +279,12 @@ class Game{
         bool randomStart;
         bool isBagOpen;
         bool isDesOpen;
+        bool isMenuOpen;
+        bool isAskOpen;
         Font cordiaFont;
         vector<int> expMax;
         vector<int> diceTemp;
+        vector<int> timeTemp;
         int startExp;
         int UIFontSize;
         Texture mapTexture;
@@ -287,12 +292,12 @@ class Game{
         Texture miniMenuT;
         Sprite miniMenuS;
         View camera;
-        bool isMenuOpen;
         Text miniMenuText[3];
         int miniMenuFontSize;
         int arrIndex[3] = {-1,0,1};
         int turn;
         Player *player;
+        int gameStates;
         Text UI_name;
         Text UI_hpText;
         Text UI_level;
@@ -314,6 +319,13 @@ class Game{
         Text UI_playerNameDes;
         Text UI_statDes;
         Text UI_statDesR;
+        Text UI_yes;
+        Text UI_no;
+        Text UI_ask;
+        Sprite UI_askWeapon[10];
+        Sprite UI_askShield[10];
+        Sprite UI_askAcc[10];
+        Sprite UI_askWin;
         Sprite UI_playerDesCharS;
         Texture UI_playerDesBGT;
         Sprite UI_playerDesBGS;
@@ -422,7 +434,7 @@ void Game::initGlobalVariables(){
     mouseIconSprite.setTexture(mouseIconTexture);
     mouseIconSprite.setOrigin(10,10);
     mouseIconSprite.setScale(0.6,0.6);
-    animationSpeed = 0.3f;
+    animationSpeed = 0.2f;
     startExp = 100;
     turn = 0;
 }
@@ -819,6 +831,7 @@ void Game::updateBackButtonHMP(){
 #############################################################################################################*/
 
 void Game::initInsertNameVariables(){
+    isNameUsed = false;
     playerNamingIndex = 0;
     setCinText(cinText,0);
     name = "";
@@ -845,23 +858,33 @@ void Game::setInsertNameText(){
     InsertedName.setCharacterSize(insertedNameFontSize);
     InsertedName.setOrigin(getObjWidth(InsertedName)/2.0,getObjHeight(InsertedName)/2.0);
     InsertedName.setPosition(windowMidWidth(),windowMidHeight() + 100);
+    nameUsed.setString("This name was used");
+    nameUsed.setFont(menuFont);
+    nameUsed.setFillColor(Color::Red);
+    nameUsed.setCharacterSize(cinTextFontSize - 10);
+    nameUsed.setOutlineColor(Color::White);
+    nameUsed.setOutlineThickness(4);
+    nameUsed.setOrigin(getObjWidth(nameUsed)/2.0,getObjHeight(nameUsed)/2.0);
+    nameUsed.setPosition(windowMidWidth(),windowMidHeight() + 350);
+
 }
 
 void Game::drawInsertName(){
-    //resetIPN();
     setInsertNameText();
     this->gameWindow->draw(insertNameBGSprite);
     this->gameWindow->draw(backButtonSprite);
     updateBackButtonIPN();
     this->gameWindow->draw(cinText);
     this->gameWindow->draw(InsertedName);
+    if(isNameUsed)this->gameWindow->draw(nameUsed);
     this->gameWindow->draw(mouseIconSprite);
 }
 
 void Game::updateInsertNameTextBoxEvent(Event InsertNameEvent){
     if(InsertNameEvent.type == Event::TextEntered){
+        isNameUsed = false;
         textEntered = InsertNameEvent.text.unicode;
-            updateInsertedName(textEntered);
+        updateInsertedName(textEntered);
     }
 }
 
@@ -890,7 +913,6 @@ void Game::updateInsertedName(char insertedChar){
         while(!character.empty()){
                 character.pop_back();
         }
-        cout << "player " << playerNamingIndex + 1 << " name's : " << playerName[playerNamingIndex] << "\n";
         if(playerNamingIndex < players - 1){
             playerNamingIndex++;
             setCinText(cinText,playerNamingIndex);
@@ -900,7 +922,9 @@ void Game::updateInsertedName(char insertedChar){
             state.push(ChooseCharacters);
         }
     }
-    else if(!checkUsedName(name))cout << "kuy" << "\n";
+    else if(insertedChar == 13 && name.size() > 0 && !checkUsedName(name)){
+        isNameUsed = true;
+    }
 }
 
 bool Game::checkUsedName(string checkingName){
@@ -928,9 +952,13 @@ void Game::updateBackButtonIPN(){
 void Game::resetIPN(){
     playerNamingIndex = 0;
     name = "";
+    InsertedName.setString("");
     setCinText(cinText,playerNamingIndex);
     while(!playerName.empty()){
         playerName.pop_back();
+    }
+    while(!character.empty()){
+        character.pop_back();
     }
 }
 
@@ -995,7 +1023,6 @@ void Game::randomPick(vector<string> &playerName){
 
         Swap(playerName[randomIndexST],playerName[randomIndexND]);
     }
-    for(unsigned int i = 0;i < playerName.size();i++)cout << playerName[i] << "\n";
 }
 
 void Game::updateCharacterIcon(){
@@ -1081,6 +1108,9 @@ void Game::initPlayingVariables(){
     randomStart = false;
     isMenuOpen = false;
     isDesOpen = false;
+    isAskOpen = false;
+    gameStates = 1;
+    diceTemp.push_back(1);
     expMax.push_back(startExp);
     while(expMax.size() != 29){
         expMax.push_back(expMax.back() * 1.2);
@@ -1328,6 +1358,32 @@ void Game::initPlayingVariables(){
     UI_statDesR.setFont(cordiaFont);
     UI_statDesR.setCharacterSize(UIFontSize - 5);
     UI_statDesR.setLineSpacing(1.2);
+    UI_askWin.setTexture(miniMenuT);
+    UI_askWin.setOrigin(getObjWidth(UI_askWin) / 2,getObjHeight(UI_askWin) / 2);
+    UI_askWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_ask.setString("Do you want to equip this item");
+    UI_ask.setFillColor(Color::Black);
+    UI_ask.setOutlineColor(Color::White);
+    UI_ask.setOutlineThickness(2.5);
+    UI_ask.setFont(menuFont);
+    UI_ask.setCharacterSize(UIFontSize - 5);
+    UI_yes.setString("YES");
+    UI_yes.setFillColor(Color::Black);
+    UI_yes.setOutlineColor(Color::White);
+    UI_yes.setOutlineThickness(2.5);
+    UI_yes.setFont(menuFont);
+    UI_yes.setCharacterSize(UIFontSize - 5);
+    UI_no.setString("NO");
+    UI_no.setFillColor(Color::Black);
+    UI_no.setOutlineColor(Color::White);
+    UI_no.setOutlineThickness(2.5);
+    UI_no.setFont(menuFont);
+    UI_no.setCharacterSize(UIFontSize - 5);
+    for(int i = 0;i < 10;i++){
+        UI_askWeapon[i].setTexture(UI_swordT[i]);
+        UI_askShield[i].setTexture(UI_shieldT[i]);
+        UI_askAcc[i].setTexture(UI_accT[i]);
+    }
 }
 
 void Game::drawPlaying(){
@@ -1363,20 +1419,71 @@ void Game::drawPlaying(){
     this->gameWindow->draw(mouseIconSprite);
 }
 
+void Game::ask(int kind,int index){
+    updateAsk();
+    this->gameWindow->draw{UI_askWin};
+    switch(kind){
+        case 1:
+        case 2:
+        case 3:
+    };
+    this->gameWindow->draw(UI_ask);
+    this->gameWindow->draw(UI_yes);
+    this->gameWindow->draw(UI_no);
+}
+
+void Game::updateAsk(){
+    if(UI_yes.getGlobalBounds().contains(mousePos)){
+        UI_yes.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            isAskOpen = false;
+        }
+    }
+    else UI_yes.setScale(1,1);
+    if(UI_no.getGlobalBounds().contains(mousePos)){
+        UI_no.setScale(1.1,1.1);
+        if(checkMouseClick())isAskOpen = false;
+    }
+    else UI_no.setScale(1,1);
+}
+
 void Game::updatePlayingState(){
-    if(player[now_player].isRandom == false){
+    if(gameStates == 1){ //randomDice
         if(!randomStart)diceState();
         else if(randomStart){
             randomDice();
             this->gameWindow->draw(UI_diceValue);
         }
     }
-    else if(player[now_player].isRandom == true){
+    else if(gameStates == 2){ //ShowDiceNum
+        this->gameWindow->draw(UI_diceValue);
         player[now_player].moveNum = diceTemp.back();
-        while(diceTemp.size() != 0)diceTemp.pop_back();
+        while(diceTemp.size() != 1)diceTemp.pop_back();
         randomStart = false;
-        player[now_player].isRandom = false;
+        waitDiceAni(15);
+    }
+    else if(gameStates == 3){ //Move
+        gameStates = 4;
+    }
+    else if(gameStates == 4){ //checkPath
+        gameStates = 5;
+    }
+    else if(gameStates == 5){ //end turn
+        gameStates = 1;
         turn++;
+    }
+}
+
+void Game::waitDiceAni(unsigned int time){
+    totalTime += deltaTime;
+    if(totalTime >= animationSpeed){
+        totalTime -= animationSpeed;
+        timeTemp.push_back(1);
+    }
+    if(timeTemp.size() == time){
+        while(timeTemp.size() != 0)timeTemp.pop_back();
+        totalTime = 0.0f;
+        gameStates = 3;
     }
 }
 
@@ -1395,13 +1502,17 @@ void Game::randomDice(){
     totalTime += deltaTime;
     if(totalTime >= animationSpeed){
         totalTime -= animationSpeed;
-        diceNum = rand() % 6 + 1;
+        do{
+            diceNum = rand() % 6 + 1;
+        }while(diceNum == diceTemp.back());
         UI_diceValue.setString(to_string(diceNum));
         this->gameWindow->draw(UI_diceValue);
         diceTemp.push_back(diceNum);
-        cout << now_player << " " << diceTemp.size() << "\n";
         }
-    if(diceTemp.size() == 20)player[now_player].isRandom = true;
+    if(diceTemp.size() == 26){
+        gameStates = 2;
+        totalTime = 0.0f;
+    }
 }
 
 void Game::updateLevel(){
@@ -1473,8 +1584,6 @@ void Game::drawUI(){
         else UI_starS[i].setColor(Color(128,128,128,128));
         UI_starS[i].setPosition((UI_level.getPosition().x + 100) + (i+1) * 60,UI_level.getPosition().y);
     }
-    UI_diceValue.setOrigin(getObjWidth(UI_diceValue) / 2,getObjHeight(UI_diceValue) / 2);
-    UI_diceValue.setPosition(windowMidWidth(),windowMidHeight());
     UI_name.setString(playerName[now_player]);
     UI_name.setOrigin(getObjWidth(UI_name) / 2,getObjHeight(UI_name) / 2);
     UI_charFaceS.setTexture(UI_charFaceT[player[now_player].character_number]);
@@ -1530,6 +1639,14 @@ void Game::drawUI(){
         UI_statDes.setPosition(UI_playerDesBGS.getPosition().x - 210,UI_playerDesBGS.getPosition().y - 30);
         UI_statDesR.setPosition(UI_playerDesBGS.getPosition().x + 35,UI_playerDesBGS.getPosition().y + 50);
     }
+    if(gameStates == 1){
+        UI_diceValue.setOrigin(getObjWidth(UI_diceValue) / 2,getObjHeight(UI_diceValue) / 2);
+        UI_diceValue.setPosition(windowMidWidth(),windowMidHeight());
+    }
+    else if(gameStates == 2){
+        UI_diceValue.setScale(1.4,1.4);
+    }
+    else UI_diceValue.setScale(1,1);
     this->gameWindow->draw(UI_maxHpS);
     this->gameWindow->draw(UI_hpBarS);
     this->gameWindow->draw(UI_hpBorderS);
