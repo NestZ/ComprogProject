@@ -80,8 +80,8 @@ Player::Player(){
     green_potion = 10;
     star = 0;
     weaponIndex = 0;
-    shieldIndex = -1;
-    accessoryIndex = -1;
+    shieldIndex = 0;
+    accessoryIndex = 0;
     hp = 10;
     //hp = HpMax();
 }
@@ -189,6 +189,8 @@ class Game{
         void updatePlayingState();
         void usePotion(int);
         void waitDiceAni(unsigned int);
+        void ask(int,int);
+        void updateAsk();
         void setItemStat();
         void get_item_boss();
     private:
@@ -281,6 +283,7 @@ class Game{
         bool isDesOpen;
         bool isMenuOpen;
         bool isAskOpen;
+        bool equip;
         Font cordiaFont;
         vector<int> expMax;
         vector<int> diceTemp;
@@ -1016,11 +1019,9 @@ void Game::setCharacterIcon(Sprite &sprite, int index){
 void Game::randomPick(vector<string> &playerName){
     for(int i = 0;i < rand() % 100 + 1;i++){
         randomIndexST = rand() % players;
-
         do{
             randomIndexND = rand() % players;
         }while(randomIndexND == randomIndexST);
-
         Swap(playerName[randomIndexST],playerName[randomIndexND]);
     }
 }
@@ -1102,13 +1103,14 @@ void Game::resetCC(){
 ##########                                       PLAYING                                            ###########
 ##########                                                                                          ###########
 #############################################################################################################*/
-
+int o = 0;
 void Game::initPlayingVariables(){
     isBagOpen = false;
     randomStart = false;
     isMenuOpen = false;
     isDesOpen = false;
     isAskOpen = false;
+    equip = false;
     gameStates = 1;
     diceTemp.push_back(1);
     expMax.push_back(startExp);
@@ -1124,7 +1126,7 @@ void Game::initPlayingVariables(){
     miniMenuS.setTexture(miniMenuT);
     miniMenuS.setOrigin(getObjWidth(miniMenuS) / 2,getObjHeight(miniMenuS) / 2);
     miniMenuS.setScale(0.9,0.7);
-    miniMenuS.setColor(Color(255,255,255,128));
+    miniMenuS.setColor(Color(255,255,255,140));
     camera.setCenter(Vector2f(300,300));
     camera.setSize(Vector2f(300,300));
     camera.setViewport(FloatRect(0,0,1,1));
@@ -1257,7 +1259,6 @@ void Game::initPlayingVariables(){
     UI_swordT[7].loadFromFile("img/Sword7.png");
     UI_swordT[8].loadFromFile("img/Sword8.png");
     UI_swordT[9].loadFromFile("img/Sword9.png");
-    UI_swordS.setScale(0.65,0.65);
     UI_shieldT[0].loadFromFile("img/Shield1.png");
     UI_shieldT[1].loadFromFile("img/Shield2.png");
     UI_shieldT[2].loadFromFile("img/Shield3.png");
@@ -1268,7 +1269,6 @@ void Game::initPlayingVariables(){
     UI_shieldT[7].loadFromFile("img/Shield8.png");
     UI_shieldT[8].loadFromFile("img/Shield9.png");
     UI_shieldT[9].loadFromFile("img/Shield10.png");
-    UI_shieldS.setScale(0.65,0.65);
     UI_accT[0].loadFromFile("img/Accessory1.png");
     UI_accT[1].loadFromFile("img/Accessory2.png");
     UI_accT[2].loadFromFile("img/Accessory3.png");
@@ -1279,7 +1279,6 @@ void Game::initPlayingVariables(){
     UI_accT[7].loadFromFile("img/Accessory8.png");
     UI_accT[8].loadFromFile("img/Accessory9.png");
     UI_accT[9].loadFromFile("img/Accessory10.png");
-    UI_accS.setScale(0.65,0.65);
     for(int i = 0;i < 10;i++){
         UI_swordName[i].setString(sword[i].name_object);
         UI_shieldName[i].setString(shield[i].name_object);
@@ -1361,6 +1360,8 @@ void Game::initPlayingVariables(){
     UI_askWin.setTexture(miniMenuT);
     UI_askWin.setOrigin(getObjWidth(UI_askWin) / 2,getObjHeight(UI_askWin) / 2);
     UI_askWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_askWin.setScale(1.7,0.6);
+    UI_askWin.setColor(Color(255,255,255,128));
     UI_ask.setString("Do you want to equip this item");
     UI_ask.setFillColor(Color::Black);
     UI_ask.setOutlineColor(Color::White);
@@ -1381,8 +1382,14 @@ void Game::initPlayingVariables(){
     UI_no.setCharacterSize(UIFontSize - 5);
     for(int i = 0;i < 10;i++){
         UI_askWeapon[i].setTexture(UI_swordT[i]);
+        UI_askWeapon[i].setOrigin(getObjWidth(UI_askWeapon[i]) / 2,getObjHeight(UI_askWeapon[i]) / 2);
+        UI_askWeapon[i].setScale(1,1);
         UI_askShield[i].setTexture(UI_shieldT[i]);
+        UI_askShield[i].setOrigin(getObjWidth(UI_askShield[i]) / 2,getObjHeight(UI_askShield[i]) / 2);
+        UI_askShield[i].setScale(1,1);
         UI_askAcc[i].setTexture(UI_accT[i]);
+        UI_askAcc[i].setOrigin(getObjWidth(UI_askAcc[i]) / 2,getObjHeight(UI_askAcc[i]) / 2);
+        UI_askAcc[i].setScale(1,1);
     }
 }
 
@@ -1402,6 +1409,7 @@ void Game::drawPlaying(){
             this->gameWindow->draw(UI_statDes);
             this->gameWindow->draw(UI_statDesR);
     }
+    ask(1,4);
     if(isMenuOpen){
         miniMenuS.setPosition(windowWidth / 2,windowHeight / 2);
         this->gameWindow->draw(miniMenuS);
@@ -1415,17 +1423,32 @@ void Game::drawPlaying(){
     else {
         updateView();
     }
-
     this->gameWindow->draw(mouseIconSprite);
 }
 
 void Game::ask(int kind,int index){
+    isAskOpen = true;
     updateAsk();
-    this->gameWindow->draw{UI_askWin};
+    this->gameWindow->draw(UI_askWin);
     switch(kind){
         case 1:
+            this->gameWindow->draw(UI_askWeapon[index]);
+            if(equip){
+                player[now_player].weaponIndex = index;
+            }
+            break;
         case 2:
+            this->gameWindow->draw(UI_askShield[index]);
+            if(equip){
+                player[now_player].shieldIndex = index;
+            }
+            break;
         case 3:
+            this->gameWindow->draw(UI_askAcc[index]);
+            if(equip){
+                player[now_player].accessoryIndex = index;
+            }
+            break;
     };
     this->gameWindow->draw(UI_ask);
     this->gameWindow->draw(UI_yes);
@@ -1433,16 +1456,31 @@ void Game::ask(int kind,int index){
 }
 
 void Game::updateAsk(){
-    if(UI_yes.getGlobalBounds().contains(mousePos)){
+    for(int i = 0;i < 10;i++){
+        UI_askWeapon[i].setPosition(windowMidWidth(),windowMidHeight());
+        UI_askShield[i].setPosition(windowMidWidth(),windowMidHeight());
+        UI_askAcc[i].setPosition(windowMidWidth(),windowMidHeight());
+    }
+    UI_ask.setOrigin(getObjWidth(UI_ask) / 2,getObjHeight(UI_ask) / 2);
+    UI_ask.setPosition(windowMidWidth(),windowMidHeight() - 75);
+    UI_yes.setOrigin(getObjWidth(UI_yes) / 2,getObjHeight(UI_yes) / 2);
+    UI_yes.setPosition(windowMidWidth() - 200,windowMidHeight() + 75);
+    UI_no.setOrigin(getObjWidth(UI_no) / 2,getObjHeight(UI_no) / 2);
+    UI_no.setPosition(windowMidWidth() + 200,windowMidHeight() + 75);
+    if(UI_yes.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen){
         UI_yes.setScale(1.1,1.1);
         if(checkMouseClick()){
+            equip = true;
             isAskOpen = false;
         }
     }
     else UI_yes.setScale(1,1);
-    if(UI_no.getGlobalBounds().contains(mousePos)){
+    if(UI_no.getGlobalBounds().contains(mousePos) &&!isMenuOpen && !isDesOpen){
         UI_no.setScale(1.1,1.1);
-        if(checkMouseClick())isAskOpen = false;
+        if(checkMouseClick()){
+            equip = false;
+            isAskOpen = false;
+        }
     }
     else UI_no.setScale(1,1);
 }
@@ -1489,7 +1527,7 @@ void Game::waitDiceAni(unsigned int time){
 
 void Game::diceState(){
         this->gameWindow->draw(UI_diceS);
-        if(UI_diceS.getGlobalBounds().contains(mousePos) && !isDesOpen && !isMenuOpen){
+        if(UI_diceS.getGlobalBounds().contains(mousePos) && !isDesOpen && !isMenuOpen && !isAskOpen){
             UI_diceS.setScale(1.05,1.05);
             if(checkMouseClick()){
                     randomStart = true;
@@ -1600,21 +1638,6 @@ void Game::drawUI(){
     UI_hpLValue.setString(to_string(player[now_player].green_potion));
     UI_hpLValue.setOrigin(getObjWidth(UI_hpLValue) / 2,getObjHeight(UI_hpLValue) / 2);
     UI_hpLValue.setPosition(UI_HpLS.getPosition().x - 17,UI_HpLS.getPosition().y + 4);
-    if(player[now_player].weaponIndex != -1){
-        UI_swordS.setTexture(UI_swordT[player[now_player].weaponIndex]);
-        UI_swordS.setOrigin(getObjWidth(UI_swordS) / 2,getObjHeight(UI_swordS) / 2);
-        UI_swordS.setPosition(UI_HpSS.getPosition().x - 136,UI_HpSS.getPosition().y);
-    }
-    if(player[now_player].shieldIndex != -1){
-        UI_shieldS.setTexture(UI_shieldT[player[now_player].shieldIndex]);
-        UI_shieldS.setOrigin(getObjWidth(UI_shieldS) / 2,getObjHeight(UI_shieldS) / 2);
-        UI_shieldS.setPosition(UI_HpSS.getPosition().x - 68,UI_HpSS.getPosition().y);
-    }
-    if(player[now_player].accessoryIndex != -1){
-        UI_accS.setTexture(UI_accT[player[now_player].accessoryIndex]);
-        UI_accS.setOrigin(getObjWidth(UI_accS) / 2,getObjHeight(UI_accS) / 2);
-        UI_accS.setPosition(UI_HpSS.getPosition().x + 136,UI_HpSS.getPosition().y);
-    }
     if(isDesOpen){
         UI_playerDesCharS.setTexture(charTexture[player[now_player].character_number]);
         UI_playerDesCharS.setOrigin(getObjWidth(UI_playerDesCharS) / 2,getObjHeight(UI_playerDesCharS) / 2);
@@ -1663,6 +1686,22 @@ void Game::drawUI(){
     }
     this->gameWindow->draw(UI_bagS);
     if(isBagOpen){
+        UI_swordS.setTexture(UI_swordT[player[now_player].weaponIndex]);
+        UI_swordS.setOrigin(getObjWidth(UI_swordS) / 2,getObjHeight(UI_swordS) / 2);
+        UI_swordS.setScale(0.65,0.65);
+        UI_swordS.setPosition(UI_HpSS.getPosition().x - 136,UI_HpSS.getPosition().y);
+        if(player[now_player].shieldIndex != -1){
+            UI_shieldS.setTexture(UI_shieldT[player[now_player].shieldIndex]);
+            UI_shieldS.setOrigin(getObjWidth(UI_shieldS) / 2,getObjHeight(UI_shieldS) / 2);
+            UI_shieldS.setScale(0.65,0.65);
+            UI_shieldS.setPosition(UI_HpSS.getPosition().x - 68,UI_HpSS.getPosition().y);
+        }
+        if(player[now_player].accessoryIndex != -1){
+            UI_accS.setTexture(UI_accT[player[now_player].accessoryIndex]);
+            UI_accS.setOrigin(getObjWidth(UI_accS) / 2,getObjHeight(UI_accS) / 2);
+            UI_accS.setScale(0.65,0.65);
+            UI_accS.setPosition(UI_HpSS.getPosition().x + 136,UI_HpSS.getPosition().y);
+        }
         this->gameWindow->draw(UI_invenS);
         if(player[now_player].red_potion == 0)UI_HpSS.setColor(Color(160,160,160,255));
         else UI_HpSS.setColor(Color(255,255,255,255));
@@ -1743,7 +1782,7 @@ void Game::updateUI(){
     }
     else UI_HpLS.setScale(0.65,0.65);
     if(isBagOpen){
-        if(UI_swordS.getGlobalBounds().contains(mousePos) && player[now_player].weaponIndex != -1){
+        if(UI_swordS.getGlobalBounds().contains(mousePos)){
             this->gameWindow->draw(UI_swordName[player[now_player].weaponIndex]);
             this->gameWindow->draw(UI_swordDes[player[now_player].weaponIndex]);
         }
@@ -1808,15 +1847,15 @@ void Game::setItemStat(){
 
 
     accessory[0].name = "The balance";     accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 2"; accessory[0].extra_agi = 2;accessory[0].extra_atk = 0;accessory[0].extra_luck = 2;accessory[0].extra_str = 2;accessory[0].extra_vit = 2;
-    accessory[1].name = "Golden x";        accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[1].extra_agi = 0;accessory[1].extra_atk = 5;accessory[1].extra_luck = 3;accessory[1].extra_str = 2;accessory[1].extra_vit = 1;
-    accessory[2].name = "Warrior necklace";accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 5"; accessory[2].extra_agi = 0;accessory[2].extra_atk = 10;accessory[2].extra_luck = 0;accessory[2].extra_str = 5;accessory[2].extra_vit = 5;
-    accessory[3].name = "Ninja necklace";  accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 2"; accessory[3].extra_agi = 7;accessory[3].extra_atk = 10;accessory[3].extra_luck = 3;accessory[3].extra_str = -2;accessory[3].extra_vit = -2;
-    accessory[4].name = "LUCKY";           accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[4].extra_agi = 1;accessory[4].extra_atk = 0;accessory[4].extra_luck = 10;accessory[4].extra_str = 0;accessory[4].extra_vit = 1;
-    accessory[5].name = "Power stone";     accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 7"; accessory[5].extra_agi = -5;accessory[5].extra_atk = 14;accessory[5].extra_luck = -2;accessory[5].extra_str = 5;accessory[5].extra_vit = 7;
-    accessory[6].name = "Mystery";         accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 6"; accessory[6].extra_agi = 6;accessory[6].extra_atk =6;accessory[6].extra_luck = 6;accessory[6].extra_str = 6;accessory[6].extra_vit = 6;
-    accessory[7].name = "Blood crystal";   accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 15"; accessory[7].extra_agi = 10;accessory[7].extra_atk = 0;accessory[7].extra_luck = 5;accessory[7].extra_str = -2;accessory[7].extra_vit = -15;
-    accessory[8].name = "Darkness totem";  accessory[0].Des = "AGI + 7\nATK + 15\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[8].extra_agi = 7;accessory[8].extra_atk = 15;accessory[8].extra_luck = 7;accessory[8].extra_str = 7;accessory[8].extra_vit = 1;
-    accessory[9].name = "WHOSYOURDADDY";accessory[0].Des = "AGI + 17\nATK + 20\nLUK + 15\nSTR + 10\nVIT + 10";accessory[9].extra_agi = 17;accessory[9].extra_atk = 20;accessory[9].extra_luck = 15;accessory[9].extra_str = 10;accessory[9].extra_vit = 10;
+    accessory[1].name = "Golden x";        accessory[1].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[1].extra_agi = 0;accessory[1].extra_atk = 5;accessory[1].extra_luck = 3;accessory[1].extra_str = 2;accessory[1].extra_vit = 1;
+    accessory[2].name = "Warrior necklace";accessory[2].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 5"; accessory[2].extra_agi = 0;accessory[2].extra_atk = 10;accessory[2].extra_luck = 0;accessory[2].extra_str = 5;accessory[2].extra_vit = 5;
+    accessory[3].name = "Ninja necklace";  accessory[3].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 2"; accessory[3].extra_agi = 7;accessory[3].extra_atk = 10;accessory[3].extra_luck = 3;accessory[3].extra_str = -2;accessory[3].extra_vit = -2;
+    accessory[4].name = "LUCKY";           accessory[4].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[4].extra_agi = 1;accessory[4].extra_atk = 0;accessory[4].extra_luck = 10;accessory[4].extra_str = 0;accessory[4].extra_vit = 1;
+    accessory[5].name = "Power stone";     accessory[5].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 7"; accessory[5].extra_agi = -5;accessory[5].extra_atk = 14;accessory[5].extra_luck = -2;accessory[5].extra_str = 5;accessory[5].extra_vit = 7;
+    accessory[6].name = "Mystery";         accessory[6].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 6"; accessory[6].extra_agi = 6;accessory[6].extra_atk =6;accessory[6].extra_luck = 6;accessory[6].extra_str = 6;accessory[6].extra_vit = 6;
+    accessory[7].name = "Blood crystal";   accessory[7].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 15"; accessory[7].extra_agi = 10;accessory[7].extra_atk = 0;accessory[7].extra_luck = 5;accessory[7].extra_str = -2;accessory[7].extra_vit = -15;
+    accessory[8].name = "Darkness totem";  accessory[8].Des = "AGI + 7\nATK + 15\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[8].extra_agi = 7;accessory[8].extra_atk = 15;accessory[8].extra_luck = 7;accessory[8].extra_str = 7;accessory[8].extra_vit = 1;
+    accessory[9].name = "WHOSYOURDADDY";accessory[9].Des = "AGI + 17\nATK + 20\nLUK + 15\nSTR + 10\nVIT + 10";accessory[9].extra_agi = 17;accessory[9].extra_atk = 20;accessory[9].extra_luck = 15;accessory[9].extra_str = 10;accessory[9].extra_vit = 10;
 }
 
 void Game::get_item_boss(){
