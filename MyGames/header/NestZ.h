@@ -80,8 +80,8 @@ Player::Player(){
     green_potion = 10;
     star = 0;
     weaponIndex = 0;
-    shieldIndex = 0;
-    accessoryIndex = 0;
+    shieldIndex = -1;
+    accessoryIndex = -1;
     hp = 10;
     //hp = HpMax();
 }
@@ -190,7 +190,11 @@ class Game{
         void usePotion(int);
         void waitDiceAni(unsigned int);
         void ask(int,int);
-        void updateAsk();
+        void updateAsk(int,int);
+        void dunAsk(int);
+        void updateDunAsk(int);
+        void shopAsk();
+        void updateShopAsk();
         void setItemStat();
         void get_item_boss();
     private:
@@ -283,6 +287,8 @@ class Game{
         bool isDesOpen;
         bool isMenuOpen;
         bool isAskOpen;
+        bool isDunAskOpen;
+        bool isShopAskOpen;
         bool equip;
         Font cordiaFont;
         vector<int> expMax;
@@ -301,6 +307,8 @@ class Game{
         int turn;
         Player *player;
         int gameStates;
+        int askKind;
+        int askIndex;
         Text UI_name;
         Text UI_hpText;
         Text UI_level;
@@ -325,9 +333,21 @@ class Game{
         Text UI_yes;
         Text UI_no;
         Text UI_ask;
-        Sprite UI_askWeapon[10];
-        Sprite UI_askShield[10];
-        Sprite UI_askAcc[10];
+        Text UI_dunYes;
+        Text UI_dunNo;
+        Text UI_dunAsk;
+        Text UI_shopAsk;
+        Text UI_shopYes;
+        Text UI_shopNo;
+        Sprite UI_shopAskWin;
+        Texture UI_shopIconT;
+        Sprite UI_shopIconS;
+        Texture UI_dunAskMonT[4];
+        Sprite UI_dunAskMonS;
+        Sprite UI_dunAskWin;
+        Sprite UI_askWeaponS;
+        Sprite UI_askShieldS;
+        Sprite UI_askAccS;
         Sprite UI_askWin;
         Sprite UI_playerDesCharS;
         Texture UI_playerDesBGT;
@@ -1103,13 +1123,14 @@ void Game::resetCC(){
 ##########                                       PLAYING                                            ###########
 ##########                                                                                          ###########
 #############################################################################################################*/
-int o = 0;
 void Game::initPlayingVariables(){
     isBagOpen = false;
     randomStart = false;
     isMenuOpen = false;
     isDesOpen = false;
     isAskOpen = false;
+    isDunAskOpen = false;
+    isShopAskOpen = false;
     equip = false;
     gameStates = 1;
     diceTemp.push_back(1);
@@ -1380,17 +1401,60 @@ void Game::initPlayingVariables(){
     UI_no.setOutlineThickness(2.5);
     UI_no.setFont(menuFont);
     UI_no.setCharacterSize(UIFontSize - 5);
-    for(int i = 0;i < 10;i++){
-        UI_askWeapon[i].setTexture(UI_swordT[i]);
-        UI_askWeapon[i].setOrigin(getObjWidth(UI_askWeapon[i]) / 2,getObjHeight(UI_askWeapon[i]) / 2);
-        UI_askWeapon[i].setScale(1,1);
-        UI_askShield[i].setTexture(UI_shieldT[i]);
-        UI_askShield[i].setOrigin(getObjWidth(UI_askShield[i]) / 2,getObjHeight(UI_askShield[i]) / 2);
-        UI_askShield[i].setScale(1,1);
-        UI_askAcc[i].setTexture(UI_accT[i]);
-        UI_askAcc[i].setOrigin(getObjWidth(UI_askAcc[i]) / 2,getObjHeight(UI_askAcc[i]) / 2);
-        UI_askAcc[i].setScale(1,1);
-    }
+    UI_dunAskWin.setTexture(miniMenuT);
+    UI_dunAskWin.setOrigin(getObjWidth(UI_dunAskWin) / 2,getObjHeight(UI_dunAskWin) / 2);
+    UI_dunAskWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_dunAskWin.setScale(1.9,0.6);
+    UI_dunAskWin.setColor(Color(255,255,255,128));
+    UI_dunAsk.setString("Do you want to enter this dungeon");
+    UI_dunAsk.setFillColor(Color::Black);
+    UI_dunAsk.setOutlineColor(Color::White);
+    UI_dunAsk.setOutlineThickness(2.5);
+    UI_dunAsk.setFont(menuFont);
+    UI_dunAsk.setCharacterSize(UIFontSize - 5);
+    UI_dunYes.setString("YES");
+    UI_dunYes.setFillColor(Color::Black);
+    UI_dunYes.setOutlineColor(Color::White);
+    UI_dunYes.setOutlineThickness(2.5);
+    UI_dunYes.setFont(menuFont);
+    UI_dunYes.setCharacterSize(UIFontSize - 5);
+    UI_dunNo.setString("NO");
+    UI_dunNo.setFillColor(Color::Black);
+    UI_dunNo.setOutlineColor(Color::White);
+    UI_dunNo.setOutlineThickness(2.5);
+    UI_dunNo.setFont(menuFont);
+    UI_dunNo.setCharacterSize(UIFontSize - 5);
+    UI_dunAskMonT[0].loadFromFile("img/Green Circle.png");
+    UI_dunAskMonT[1].loadFromFile("img/Yellow Circle.png");
+    UI_dunAskMonT[2].loadFromFile("img/Red Circle.png");
+    UI_dunAskMonT[3].loadFromFile("img/Boss Circle.png");
+    UI_shopIconT.loadFromFile("img/Shop Icon.png");
+    UI_shopIconS.setTexture(UI_shopIconT);
+    UI_shopIconS.setOrigin(getObjWidth(UI_shopIconS) / 2,getObjHeight(UI_shopIconS) / 2);
+    UI_shopIconS.setPosition(windowMidWidth(),windowMidHeight());
+    UI_shopAsk.setString("Do you want to enter market");
+    UI_shopAsk.setFillColor(Color::Black);
+    UI_shopAsk.setOutlineColor(Color::White);
+    UI_shopAsk.setOutlineThickness(2.5);
+    UI_shopAsk.setFont(menuFont);
+    UI_shopAsk.setCharacterSize(UIFontSize - 5);
+    UI_shopYes.setString("YES");
+    UI_shopYes.setFillColor(Color::Black);
+    UI_shopYes.setOutlineColor(Color::White);
+    UI_shopYes.setOutlineThickness(2.5);
+    UI_shopYes.setFont(menuFont);
+    UI_shopYes.setCharacterSize(UIFontSize - 5);
+    UI_shopNo.setString("NO");
+    UI_shopNo.setFillColor(Color::Black);
+    UI_shopNo.setOutlineColor(Color::White);
+    UI_shopNo.setOutlineThickness(2.5);
+    UI_shopNo.setFont(menuFont);
+    UI_shopNo.setCharacterSize(UIFontSize - 5);
+    UI_shopAskWin.setTexture(miniMenuT);
+    UI_shopAskWin.setOrigin(getObjWidth(UI_shopAskWin) / 2,getObjHeight(UI_shopAskWin) / 2);
+    UI_shopAskWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_shopAskWin.setScale(1.9,0.6);
+    UI_shopAskWin.setColor(Color(255,255,255,128));
 }
 
 void Game::drawPlaying(){
@@ -1409,7 +1473,37 @@ void Game::drawPlaying(){
             this->gameWindow->draw(UI_statDes);
             this->gameWindow->draw(UI_statDesR);
     }
-    ask(1,4);
+    if(isAskOpen){
+        this->gameWindow->draw(UI_askWin);
+        switch(askKind){
+            case 0:
+                this->gameWindow->draw(UI_askWeaponS);
+                break;
+            case 1:
+                this->gameWindow->draw(UI_askShieldS);
+                break;
+            case 2:
+                this->gameWindow->draw(UI_askAccS);
+                break;
+        };
+        this->gameWindow->draw(UI_ask);
+        this->gameWindow->draw(UI_yes);
+        this->gameWindow->draw(UI_no);
+    }
+    if(isDunAskOpen){
+        this->gameWindow->draw(UI_dunAskWin);
+        this->gameWindow->draw(UI_dunAsk);
+        this->gameWindow->draw(UI_dunYes);
+        this->gameWindow->draw(UI_dunNo);
+        this->gameWindow->draw(UI_dunAskMonS);
+    }
+    if(isShopAskOpen){
+        this->gameWindow->draw(UI_shopAskWin);
+        this->gameWindow->draw(UI_shopAsk);
+        this->gameWindow->draw(UI_shopYes);
+        this->gameWindow->draw(UI_shopNo);
+        this->gameWindow->draw(UI_shopIconS);
+    }
     if(isMenuOpen){
         miniMenuS.setPosition(windowWidth / 2,windowHeight / 2);
         this->gameWindow->draw(miniMenuS);
@@ -1426,60 +1520,135 @@ void Game::drawPlaying(){
     this->gameWindow->draw(mouseIconSprite);
 }
 
+void Game::shopAsk(){
+    isShopAskOpen = true;
+    updateShopAsk();
+}
+
+void Game::updateShopAsk(){
+    UI_shopAsk.setOrigin(getObjWidth(UI_shopAsk) / 2,getObjHeight(UI_shopAsk) / 2);
+    UI_shopAsk.setPosition(windowMidWidth(),windowMidHeight() - 75);
+    UI_shopYes.setOrigin(getObjWidth(UI_shopYes) / 2,getObjHeight(UI_shopYes) / 2);
+    UI_shopYes.setPosition(windowMidWidth() - 200,windowMidHeight() + 75);
+    UI_shopNo.setOrigin(getObjWidth(UI_shopNo) / 2,getObjHeight(UI_shopNo) / 2);
+    UI_shopNo.setPosition(windowMidWidth() + 200,windowMidHeight() + 75);
+    if(UI_shopYes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
+        UI_shopYes.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            isShopAskOpen = false;
+            gameStates = 6;
+        }
+    }
+    else UI_shopYes.setScale(1,1);
+    if(UI_shopNo.getGlobalBounds().contains(mousePos) &&!isMenuOpen){
+        UI_shopNo.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            isShopAskOpen = false;
+            gameStates = 6;
+        }
+    }
+    else UI_shopNo.setScale(1,1);
+}
+
+void Game::dunAsk(int kind){
+    isDunAskOpen = true;
+    updateDunAsk(kind);
+}
+
+void Game::updateDunAsk(int kind){
+    UI_dunAskMonS.setTexture(UI_dunAskMonT[kind]);
+    UI_dunAskMonS.setOrigin(getObjWidth(UI_dunAskMonS) / 2,getObjHeight(UI_dunAskMonS) / 2);
+    UI_dunAskMonS.setPosition(windowMidWidth(),windowMidHeight() + 10);
+    UI_dunAsk.setOrigin(getObjWidth(UI_dunAsk) / 2,getObjHeight(UI_dunAsk) / 2);
+    UI_dunAsk.setPosition(windowMidWidth(),windowMidHeight() - 75);
+    UI_dunYes.setOrigin(getObjWidth(UI_dunYes) / 2,getObjHeight(UI_dunYes) / 2);
+    UI_dunYes.setPosition(windowMidWidth() - 200,windowMidHeight() + 75);
+    UI_dunNo.setOrigin(getObjWidth(UI_dunNo) / 2,getObjHeight(UI_dunNo) / 2);
+    UI_dunNo.setPosition(windowMidWidth() + 200,windowMidHeight() + 75);
+    if(UI_dunYes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
+        UI_dunYes.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            isDunAskOpen = false;
+            gameStates = 5;
+        }
+    }
+    else UI_dunYes.setScale(1,1);
+    if(UI_dunNo.getGlobalBounds().contains(mousePos) &&!isMenuOpen){
+        UI_dunNo.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            isDunAskOpen = false;
+            gameStates = 6;
+        }
+    }
+    else UI_dunNo.setScale(1,1);
+}
+
 void Game::ask(int kind,int index){
     isAskOpen = true;
-    updateAsk();
-    this->gameWindow->draw(UI_askWin);
+    askKind = kind;
+    askIndex = index;
+    updateAsk(kind,index);
     switch(kind){
-        case 1:
-            this->gameWindow->draw(UI_askWeapon[index]);
+        case 0:
             if(equip){
                 player[now_player].weaponIndex = index;
             }
+            equip = false;
             break;
-        case 2:
-            this->gameWindow->draw(UI_askShield[index]);
+        case 1:
             if(equip){
                 player[now_player].shieldIndex = index;
             }
+            equip = false;
             break;
-        case 3:
-            this->gameWindow->draw(UI_askAcc[index]);
+        case 2:
             if(equip){
                 player[now_player].accessoryIndex = index;
             }
+            equip = false;
             break;
     };
-    this->gameWindow->draw(UI_ask);
-    this->gameWindow->draw(UI_yes);
-    this->gameWindow->draw(UI_no);
 }
 
-void Game::updateAsk(){
-    for(int i = 0;i < 10;i++){
-        UI_askWeapon[i].setPosition(windowMidWidth(),windowMidHeight());
-        UI_askShield[i].setPosition(windowMidWidth(),windowMidHeight());
-        UI_askAcc[i].setPosition(windowMidWidth(),windowMidHeight());
-    }
+void Game::updateAsk(int kind,int index){
+    switch(kind){
+        case 0:
+            UI_askWeaponS.setTexture(UI_swordT[index]);
+            UI_askWeaponS.setOrigin(getObjWidth(UI_askWeaponS) / 2,getObjHeight(UI_askWeaponS) / 2);
+            UI_askWeaponS.setPosition(windowMidWidth(),windowMidHeight() + 10);
+            break;
+        case 1:
+            UI_askShieldS.setTexture(UI_shieldT[index]);
+            UI_askShieldS.setOrigin(getObjWidth(UI_askShieldS) / 2,getObjHeight(UI_askShieldS) / 2);
+            UI_askShieldS.setPosition(windowMidWidth(),windowMidHeight() + 10);
+            break;
+        case 2:
+            UI_askAccS.setTexture(UI_accT[index]);
+            UI_askAccS.setOrigin(getObjWidth(UI_askAccS) / 2,getObjHeight(UI_askAccS) / 2);
+            UI_askAccS.setPosition(windowMidWidth(),windowMidHeight() + 10);
+            break;
+    };
     UI_ask.setOrigin(getObjWidth(UI_ask) / 2,getObjHeight(UI_ask) / 2);
     UI_ask.setPosition(windowMidWidth(),windowMidHeight() - 75);
     UI_yes.setOrigin(getObjWidth(UI_yes) / 2,getObjHeight(UI_yes) / 2);
     UI_yes.setPosition(windowMidWidth() - 200,windowMidHeight() + 75);
     UI_no.setOrigin(getObjWidth(UI_no) / 2,getObjHeight(UI_no) / 2);
     UI_no.setPosition(windowMidWidth() + 200,windowMidHeight() + 75);
-    if(UI_yes.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen){
+    if(UI_yes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
         UI_yes.setScale(1.1,1.1);
         if(checkMouseClick()){
             equip = true;
             isAskOpen = false;
+            gameStates = 6;
         }
     }
     else UI_yes.setScale(1,1);
-    if(UI_no.getGlobalBounds().contains(mousePos) &&!isMenuOpen && !isDesOpen){
+    if(UI_no.getGlobalBounds().contains(mousePos) &&!isMenuOpen){
         UI_no.setScale(1.1,1.1);
         if(checkMouseClick()){
             equip = false;
             isAskOpen = false;
+            gameStates = 6;
         }
     }
     else UI_no.setScale(1,1);
@@ -1504,9 +1673,14 @@ void Game::updatePlayingState(){
         gameStates = 4;
     }
     else if(gameStates == 4){ //checkPath
-        gameStates = 5;
+        //if(1)ask(0,4);
+        //if(1)dunAsk(3);
+        //if(1)shopAsk();
     }
-    else if(gameStates == 5){ //end turn
+    else if(gameStates == 5){ //dungeon
+        gameStates = 6;
+    }
+    else if(gameStates == 6){ //end turn
         gameStates = 1;
         turn++;
     }
