@@ -19,6 +19,7 @@ struct itemStat{
     int sword_stat[3];
     int potion_effect;
     int shield_stat[3];
+    int price;
     string name_object;
     string Des;
 };
@@ -29,6 +30,7 @@ itemStat potion[2];
 struct accessory{
     string name;
     string Des;
+    int price;
     int extra_vit = 0;
     int extra_atk = 0;
     int extra_luck = 0;
@@ -75,7 +77,7 @@ class Player{
 Player::Player(){
     level = 1;
     exp = 0;
-    money = 0;
+    money = 1000;
     red_potion = 10;
     green_potion = 10;
     star = 0;
@@ -190,11 +192,14 @@ class Game{
         void usePotion(int);
         void waitDiceAni(unsigned int);
         void ask(int,int);
-        void updateAsk(int,int);
+        void updateAsk();
         void dunAsk(int);
         void updateDunAsk(int);
         void shopAsk();
         void updateShopAsk();
+        void updateShop();
+        void updateAskBuy(int);
+        void askBuy(int);
         void setItemStat();
         void get_item_boss();
     private:
@@ -282,6 +287,8 @@ class Game{
         float totalTime;
         float animationSpeed;
         int diceNum;
+        int shopPriceValue[24];
+        int itemBuyIndex;
         bool randomStart;
         bool isBagOpen;
         bool isDesOpen;
@@ -289,6 +296,8 @@ class Game{
         bool isAskOpen;
         bool isDunAskOpen;
         bool isShopAskOpen;
+        bool isShopOpen;
+        bool isAskBuyOpen;
         bool equip;
         Font cordiaFont;
         vector<int> expMax;
@@ -309,6 +318,7 @@ class Game{
         int gameStates;
         int askKind;
         int askIndex;
+        int buyNum;
         Text UI_name;
         Text UI_hpText;
         Text UI_level;
@@ -339,6 +349,25 @@ class Game{
         Text UI_shopAsk;
         Text UI_shopYes;
         Text UI_shopNo;
+        Text UI_quitShop;
+        Text UI_playerMoney;
+        Text UI_money;
+        Text UI_shopPrice[24];
+        Text  UI_shopDes[24];
+        Text UI_shopName[24];
+        Text UI_askBuyOk;
+        Text UI_askBuyCancle;
+        Text UI_askBuy;
+        Text UI_buyNum;
+        Texture UI_DArrowT;
+        Sprite UI_DArrowS;
+        Texture UI_UArrowT;
+        Sprite UI_UArrowS;
+        Sprite UI_askBuyS[24];
+        Sprite UI_askBuyWin;
+        Sprite UI_shopItem[24];
+        Texture UI_shopWinT;
+        Sprite UI_shopWinS;
         Sprite UI_shopAskWin;
         Texture UI_shopIconT;
         Sprite UI_shopIconS;
@@ -1131,8 +1160,11 @@ void Game::initPlayingVariables(){
     isAskOpen = false;
     isDunAskOpen = false;
     isShopAskOpen = false;
+    isShopOpen = false;
+    isAskBuyOpen = false;
     equip = false;
     gameStates = 1;
+    buyNum = 1;
     diceTemp.push_back(1);
     expMax.push_back(startExp);
     while(expMax.size() != 29){
@@ -1455,6 +1487,112 @@ void Game::initPlayingVariables(){
     UI_shopAskWin.setPosition(windowMidWidth(),windowMidHeight());
     UI_shopAskWin.setScale(1.9,0.6);
     UI_shopAskWin.setColor(Color(255,255,255,128));
+    UI_shopWinT.loadFromFile("img/Shop.png");
+    UI_shopWinS.setTexture(UI_shopWinT);
+    UI_shopWinS.setOrigin(getObjWidth(UI_shopWinS) / 2,getObjHeight(UI_shopWinS) / 2);
+    UI_shopWinS.setPosition(windowMidWidth(),windowMidHeight());
+    UI_quitShop.setString("QUIT");
+    UI_quitShop.setFillColor(Color::Black);
+    UI_quitShop.setOutlineColor(Color::White);
+    UI_quitShop.setOutlineThickness(2.5);
+    UI_quitShop.setFont(menuFont);
+    UI_quitShop.setCharacterSize(UIFontSize);
+    UI_playerMoney.setFillColor(Color::Black);
+    UI_playerMoney.setOutlineColor(Color::White);
+    UI_playerMoney.setOutlineThickness(2.5);
+    UI_playerMoney.setFont(menuFont);
+    UI_playerMoney.setCharacterSize(UIFontSize - 5);
+    UI_money.setString("MONEY");
+    UI_money.setFillColor(Color::Black);
+    UI_money.setOutlineColor(Color::White);
+    UI_money.setOutlineThickness(2.5);
+    UI_money.setFont(menuFont);
+    UI_money.setCharacterSize(UIFontSize - 5);
+    UI_shopItem[0].setTexture(UI_HpST);       UI_shopItem[1].setTexture(UI_HpLT);       UI_shopItem[2].setTexture(UI_swordT[1]);   UI_shopItem[3].setTexture(UI_swordT[2]);   UI_shopItem[4].setTexture(UI_swordT[3]);   UI_shopItem[5].setTexture(UI_swordT[4]);
+    UI_shopItem[6].setTexture(UI_swordT[5]);  UI_shopItem[7].setTexture(UI_swordT[6]);  UI_shopItem[8].setTexture(UI_shieldT[0]);  UI_shopItem[9].setTexture(UI_shieldT[1]);  UI_shopItem[10].setTexture(UI_shieldT[2]); UI_shopItem[11].setTexture(UI_shieldT[3]);
+    UI_shopItem[12].setTexture(UI_shieldT[4]);UI_shopItem[13].setTexture(UI_shieldT[5]);UI_shopItem[14].setTexture(UI_shieldT[6]); UI_shopItem[15].setTexture(UI_shieldT[7]); UI_shopItem[16].setTexture(UI_accT[0]);    UI_shopItem[17].setTexture(UI_accT[1]);
+    UI_shopItem[18].setTexture(UI_accT[2]);   UI_shopItem[19].setTexture(UI_accT[3]);   UI_shopItem[20].setTexture(UI_accT[4]);    UI_shopItem[21].setTexture(UI_accT[5]);    UI_shopItem[22].setTexture(UI_accT[6]);    UI_shopItem[23].setTexture(UI_accT[7]);
+    UI_askBuyS[0].setTexture(UI_HpST);       UI_askBuyS[1].setTexture(UI_HpLT);       UI_askBuyS[2].setTexture(UI_swordT[1]);   UI_askBuyS[3].setTexture(UI_swordT[2]);   UI_askBuyS[4].setTexture(UI_swordT[3]);   UI_askBuyS[5].setTexture(UI_swordT[4]);
+    UI_askBuyS[6].setTexture(UI_swordT[5]);  UI_askBuyS[7].setTexture(UI_swordT[6]);  UI_askBuyS[8].setTexture(UI_shieldT[0]);  UI_askBuyS[9].setTexture(UI_shieldT[1]);  UI_askBuyS[10].setTexture(UI_shieldT[2]); UI_askBuyS[11].setTexture(UI_shieldT[3]);
+    UI_askBuyS[12].setTexture(UI_shieldT[4]);UI_askBuyS[13].setTexture(UI_shieldT[5]);UI_askBuyS[14].setTexture(UI_shieldT[6]); UI_askBuyS[15].setTexture(UI_shieldT[7]); UI_askBuyS[16].setTexture(UI_accT[0]);    UI_askBuyS[17].setTexture(UI_accT[1]);
+    UI_askBuyS[18].setTexture(UI_accT[2]);   UI_askBuyS[19].setTexture(UI_accT[3]);   UI_askBuyS[20].setTexture(UI_accT[4]);    UI_askBuyS[21].setTexture(UI_accT[5]);    UI_askBuyS[22].setTexture(UI_accT[6]);    UI_askBuyS[23].setTexture(UI_accT[7]);
+    for(int i = 0;i < 24;i++){
+        UI_shopItem[i].setOrigin(getObjWidth(UI_shopItem[i]) / 2,getObjHeight(UI_shopItem[i]) / 2);
+        UI_shopItem[i].setPosition(710 + 100*(i%6),340 + 100*(i/6));
+        UI_askBuyS[i].setOrigin(getObjWidth(UI_askBuyS[i]) / 2,getObjHeight(UI_askBuyS[i]) / 2);
+        if(i > 1)UI_askBuyS[i].setPosition(windowMidWidth(),windowMidHeight() + 10);
+        else UI_askBuyS[i].setPosition(windowMidWidth() - 50,windowMidHeight() + 10);
+    }
+    UI_shopPrice[0].setString("Price : " + to_string(potion[0].price) + " Coins");       UI_shopPrice[1].setString("Price : " + to_string(potion[1].price) + " Coins");  UI_shopPrice[2].setString("Price : " + to_string(sword[1].price) + " Coins");  UI_shopPrice[3].setString("Price : " + to_string(sword[2].price) + " Coins");  UI_shopPrice[4].setString("Price : " + to_string(sword[3].price) + " Coins");  UI_shopPrice[5].setString("Price : " + to_string(sword[4].price) + " Coins");
+    UI_shopPrice[6].setString("Price : " + to_string(sword[5].price) + " Coins");        UI_shopPrice[7].setString("Price : " + to_string(sword[6].price) + " Coins");  UI_shopPrice[8].setString("Price : " + to_string(shield[0].price) + " Coins");  UI_shopPrice[9].setString("Price : " + to_string(shield[1].price) + " Coins");  UI_shopPrice[10].setString("Price : " + to_string(shield[2].price) + " Coins");  UI_shopPrice[11].setString("Price : " + to_string(shield[3].price) + " Coins");
+    UI_shopPrice[12].setString("Price : " + to_string(shield[4].price) + " Coins");      UI_shopPrice[13].setString("Price : " + to_string(shield[5].price) + " Coins");  UI_shopPrice[14].setString("Price : " + to_string(shield[6].price) + " Coins");  UI_shopPrice[15].setString("Price : " + to_string(shield[7].price) + " Coins");  UI_shopPrice[16].setString("Price : " + to_string(accessory[0].price) + " Coins");  UI_shopPrice[17].setString("Price : " + to_string(accessory[1].price) + " Coins");
+    UI_shopPrice[18].setString("Price : " + to_string(accessory[2].price) + " Coins");   UI_shopPrice[19].setString("Price : " + to_string(accessory[3].price) + " Coins");  UI_shopPrice[20].setString("Price : " + to_string(accessory[4].price) + " Coins");  UI_shopPrice[21].setString("Price : " + to_string(accessory[5].price) + " Coins");  UI_shopPrice[22].setString("Price : " + to_string(accessory[6].price) + " Coins");  UI_shopPrice[23].setString("Price : " + to_string(accessory[7].price) + " Coins");
+    UI_shopName[0].setString(potion[0].name_object);       UI_shopName[1].setString(potion[1].name_object);     UI_shopName[2].setString(sword[1].name_object);     UI_shopName[3].setString(sword[2].name_object);     UI_shopName[4].setString(sword[3].name_object);     UI_shopName[5].setString(sword[4].name_object);
+    UI_shopName[6].setString(sword[5].name_object);        UI_shopName[7].setString(sword[6].name_object);      UI_shopName[8].setString(shield[0].name_object);    UI_shopName[9].setString(shield[1].name_object);    UI_shopName[10].setString(shield[2].name_object);   UI_shopName[11].setString(shield[3].name_object);
+    UI_shopName[12].setString(shield[4].name_object);      UI_shopName[13].setString(shield[5].name_object);    UI_shopName[14].setString(shield[6].name_object);   UI_shopName[15].setString(shield[7].name_object);   UI_shopName[16].setString(accessory[0].name);UI_shopName[17].setString(accessory[1].name);
+    UI_shopName[18].setString(accessory[2].name);   UI_shopName[19].setString(accessory[3].name); UI_shopName[20].setString(accessory[4].name);UI_shopName[21].setString(accessory[5].name);UI_shopName[22].setString(accessory[6].name);UI_shopName[23].setString(accessory[7].name);
+    UI_shopDes[0].setString(potion[0].Des);       UI_shopDes[1].setString(potion[1].Des);     UI_shopDes[2].setString(sword[1].Des);     UI_shopDes[3].setString(sword[2].Des);     UI_shopDes[4].setString(sword[3].Des);     UI_shopDes[5].setString(sword[4].Des);
+    UI_shopDes[6].setString(sword[5].Des);        UI_shopDes[7].setString(sword[6].Des);      UI_shopDes[8].setString(shield[0].Des);    UI_shopDes[9].setString(shield[1].Des);    UI_shopDes[10].setString(shield[2].Des);   UI_shopDes[11].setString(shield[3].Des);
+    UI_shopDes[12].setString(shield[4].Des);      UI_shopDes[13].setString(shield[5].Des);    UI_shopDes[14].setString(shield[6].Des);   UI_shopDes[15].setString(shield[7].Des);   UI_shopDes[16].setString(accessory[0].Des);UI_shopDes[17].setString(accessory[1].Des);
+    UI_shopDes[18].setString(accessory[2].Des);   UI_shopDes[19].setString(accessory[3].Des); UI_shopDes[20].setString(accessory[4].Des);UI_shopDes[21].setString(accessory[5].Des);UI_shopDes[22].setString(accessory[6].Des);UI_shopDes[23].setString(accessory[7].Des);
+    for(int i = 0;i < 24;i++){
+        UI_shopName[i].setFillColor(Color::Black);
+        UI_shopName[i].setOutlineColor(Color::White);
+        UI_shopName[i].setOutlineThickness(2.5);
+        UI_shopName[i].setFont(cordiaFont);
+        UI_shopName[i].setCharacterSize(UIFontSize - 5);
+        UI_shopPrice[i].setFillColor(Color::Black);
+        UI_shopPrice[i].setOutlineColor(Color::White);
+        UI_shopPrice[i].setOutlineThickness(2.5);
+        UI_shopPrice[i].setFont(cordiaFont);
+        UI_shopPrice[i].setCharacterSize(UIFontSize - 15);
+        UI_shopDes[i].setFillColor(Color::Black);
+        UI_shopDes[i].setOutlineColor(Color::White);
+        UI_shopDes[i].setOutlineThickness(2.5);
+        UI_shopDes[i].setFont(cordiaFont);
+        UI_shopDes[i].setCharacterSize(UIFontSize - 15);
+        UI_shopDes[i].setLineSpacing(0.7);
+    }
+    UI_askBuyWin.setTexture(miniMenuT);
+    UI_askBuyWin.setOrigin(getObjWidth(UI_askBuyWin) / 2,getObjHeight(UI_askBuyWin) / 2);
+    UI_askBuyWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_askBuyWin.setScale(1.7,0.6);
+    UI_askBuyWin.setColor(Color(255,255,255,210));
+    UI_askBuy.setString("Do you want to buy this item");
+    UI_askBuy.setFillColor(Color::Black);
+    UI_askBuy.setOutlineColor(Color::White);
+    UI_askBuy.setOutlineThickness(2.5);
+    UI_askBuy.setFont(menuFont);
+    UI_askBuy.setCharacterSize(UIFontSize - 5);
+    UI_askBuyOk.setString("Ok");
+    UI_askBuyOk.setFillColor(Color::Black);
+    UI_askBuyOk.setOutlineColor(Color::White);
+    UI_askBuyOk.setOutlineThickness(2.5);
+    UI_askBuyOk.setFont(menuFont);
+    UI_askBuyOk.setCharacterSize(UIFontSize - 5);
+    UI_askBuyCancle.setString("Cancle");
+    UI_askBuyCancle.setFillColor(Color::Black);
+    UI_askBuyCancle.setOutlineColor(Color::White);
+    UI_askBuyCancle.setOutlineThickness(2.5);
+    UI_askBuyCancle.setFont(menuFont);
+    UI_askBuyCancle.setCharacterSize(UIFontSize - 5);
+    shopPriceValue[0] = 10; shopPriceValue[1] = 10; shopPriceValue[2] = 10; shopPriceValue[3] = 10; shopPriceValue[4] = 10; shopPriceValue[5] = 10;
+    shopPriceValue[6] = 10; shopPriceValue[7] = 10; shopPriceValue[8] = 10; shopPriceValue[9] = 10; shopPriceValue[10] = 10;shopPriceValue[11] = 10;
+    shopPriceValue[12] = 10;shopPriceValue[13] = 10;shopPriceValue[14] = 10;shopPriceValue[15] = 10;shopPriceValue[16] = 10;shopPriceValue[17] = 10;
+    shopPriceValue[18] = 10;shopPriceValue[19] = 10;shopPriceValue[20] = 10;shopPriceValue[21] = 10;shopPriceValue[22] = 10;shopPriceValue[23] = 10;
+    UI_UArrowT.loadFromFile("img/UArrow.png");
+    UI_UArrowS.setTexture(UI_UArrowT);
+    UI_UArrowS.setOrigin(getObjWidth(UI_UArrowS) / 2,getObjHeight(UI_UArrowS) / 2);
+    UI_UArrowS.setPosition(windowMidWidth() + 27,windowMidHeight() - 23);
+    UI_DArrowT.loadFromFile("img/DArrow.png");
+    UI_DArrowS.setTexture(UI_DArrowT);
+    UI_DArrowS.setOrigin(getObjWidth(UI_DArrowS) / 2,getObjHeight(UI_DArrowS) / 2);
+    UI_DArrowS.setPosition(windowMidWidth() + 27,windowMidHeight() + 55);
+    UI_buyNum.setFillColor(Color::Black);
+    UI_buyNum.setOutlineColor(Color::White);
+    UI_buyNum.setOutlineThickness(2.5);
+    UI_buyNum.setFont(menuFont);
+    UI_buyNum.setCharacterSize(UIFontSize + 5);
 }
 
 void Game::drawPlaying(){
@@ -1466,6 +1604,29 @@ void Game::drawPlaying(){
     drawUI();
     updateEscape();
     updatePlayingState();
+    if(isShopOpen){
+        this->gameWindow->draw(UI_shopWinS);
+        this->gameWindow->draw(UI_quitShop);
+        this->gameWindow->draw(UI_playerMoney);
+        this->gameWindow->draw(UI_money);
+        for(int i = 0;i < 24;i++){
+            this->gameWindow->draw(UI_shopItem[i]);
+        }
+        updateShop();
+    }
+    if(isAskBuyOpen){
+        updateAskBuy(itemBuyIndex);
+        this->gameWindow->draw(UI_askBuyWin);
+        this->gameWindow->draw(UI_askBuyS[itemBuyIndex]);
+        this->gameWindow->draw(UI_askBuy);
+        this->gameWindow->draw(UI_askBuyOk);
+        this->gameWindow->draw(UI_askBuyCancle);
+        if(askIndex < 2){
+            this->gameWindow->draw(UI_UArrowS);
+            this->gameWindow->draw(UI_DArrowS);
+            this->gameWindow->draw(UI_buyNum);
+        }
+    }
     if(isDesOpen){
             this->gameWindow->draw(UI_playerDesBGS);
             this->gameWindow->draw(UI_playerDesCharS);
@@ -1474,6 +1635,7 @@ void Game::drawPlaying(){
             this->gameWindow->draw(UI_statDesR);
     }
     if(isAskOpen){
+        updateAsk();
         this->gameWindow->draw(UI_askWin);
         switch(askKind){
             case 0:
@@ -1520,6 +1682,130 @@ void Game::drawPlaying(){
     this->gameWindow->draw(mouseIconSprite);
 }
 
+void Game::askBuy(int index){
+    isAskBuyOpen = true;
+    itemBuyIndex = index;
+}
+
+void Game::updateAskBuy(int index){
+    UI_askBuy.setOrigin(getObjWidth(UI_askBuy) / 2,getObjHeight(UI_askBuy) / 2);
+    UI_askBuy.setPosition(windowMidWidth(),windowMidHeight() - 75);
+    UI_askBuyOk.setOrigin(getObjWidth(UI_askBuyOk) / 2,getObjHeight(UI_askBuyOk) / 2);
+    UI_askBuyOk.setPosition(windowMidWidth() - 200,windowMidHeight() + 75);
+    UI_askBuyCancle.setOrigin(getObjWidth(UI_askBuyCancle) / 2,getObjHeight(UI_askBuyCancle) / 2);
+    UI_askBuyCancle.setPosition(windowMidWidth() + 200,windowMidHeight() + 75);
+    if(index < 2){
+        UI_buyNum.setString(to_string(buyNum));
+        UI_buyNum.setOrigin(getObjWidth(UI_buyNum) / 2,getObjHeight(UI_buyNum) / 2);
+        UI_buyNum.setPosition(windowMidWidth() + 30,windowMidHeight() + 10);
+    }
+    int kind;
+    int innerIndex;
+    if(index < 8 && index > 1){
+        kind = 0;
+        innerIndex = index - 1;
+    }
+    else if(index < 16){
+        kind = 1;
+        innerIndex = index - 8;
+    }
+    else if(index < 24){
+        kind = 2;
+        innerIndex = index - 16;
+    }
+    if(UI_askBuyOk.getGlobalBounds().contains(mousePos)){
+        UI_askBuyOk.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            if(player[now_player].money >= shopPriceValue[index]){
+               isAskBuyOpen = false;
+               gameStates = 6;
+               if(index > 1){
+                   player[now_player].money -= shopPriceValue[index];
+                   ask(kind,innerIndex);
+               }
+               else{
+                   player[now_player].money -= shopPriceValue[index]*buyNum;
+                   if(index == 0)player[now_player].red_potion += buyNum;
+                   else player[now_player].green_potion += buyNum;
+               }
+               buyNum = 1;
+            }
+        }
+    }
+    else UI_askBuyOk.setScale(1,1);
+    if(UI_askBuyCancle.getGlobalBounds().contains(mousePos)){
+        UI_askBuyCancle.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isAskBuyOpen = false;
+            gameStates = 6;
+            buyNum = 1;
+        }
+    }
+    else UI_askBuyCancle.setScale(1,1);
+    if(index < 2){
+        if(UI_UArrowS.getGlobalBounds().contains(mousePos)){
+            UI_UArrowS.setScale(1.1,1.1);
+            if(checkMouseClick())buyNum++;
+        }
+        else UI_UArrowS.setScale(1,1);
+        if(UI_DArrowS.getGlobalBounds().contains(mousePos)){
+            UI_DArrowS.setScale(1.1,1.1);
+            if(checkMouseClick() && buyNum > 0)buyNum--;
+        }
+        else UI_DArrowS.setScale(1,1);
+    }
+}
+
+void Game::updateShop(){
+    UI_playerMoney.setString(to_string(player[now_player].money));
+    UI_quitShop.setOrigin(getObjWidth(UI_quitShop) / 2,getObjHeight(UI_quitShop) / 2);
+    UI_quitShop.setPosition(windowMidWidth() - 220,windowMidHeight() + 202);
+    UI_playerMoney.setOrigin(getObjWidth(UI_playerMoney),getObjHeight(UI_playerMoney) / 2);
+    UI_playerMoney.setPosition(windowMidWidth() + 230,windowMidHeight() + 202);
+    UI_money.setOrigin(getObjWidth(UI_money),getObjHeight(UI_money) / 2);
+    UI_money.setPosition(windowMidWidth() + 70,windowMidHeight() + 202);
+    if(UI_quitShop.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isAskBuyOpen && !isAskOpen){
+        UI_quitShop.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isShopOpen = false;
+            gameStates = 7;
+        }
+    }
+    else UI_quitShop.setScale(1,1);
+    for(int i = 0;i < 24;i++){
+        if(UI_shopItem[i].getGlobalBounds().contains(mousePos) && !isMenuOpen && !isAskBuyOpen && !isAskOpen){
+            UI_shopItem[i].setScale(1.05,1.05);
+            if(i < 2){
+                UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 80);
+                UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 50);
+                UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
+            }
+            else if(i < 8){
+                UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 110);
+                UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 80);
+                UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
+            }
+            else if(i < 16){
+                UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 110);
+                UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 80);
+                UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
+            }
+            else if(i < 24){
+                UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 142);
+                UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 112);
+                UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 32);
+            }
+            if(checkMouseClick()){
+                    askBuy(i);
+            }
+            this->gameWindow->draw(UI_shopName[i]);
+            this->gameWindow->draw(UI_shopDes[i]);
+            this->gameWindow->draw(UI_shopPrice[i]);
+        }
+        else UI_shopItem[i].setScale(1,1);
+    }
+}
+
 void Game::shopAsk(){
     isShopAskOpen = true;
     updateShopAsk();
@@ -1544,7 +1830,7 @@ void Game::updateShopAsk(){
         UI_shopNo.setScale(1.1,1.1);
         if(checkMouseClick()){
             isShopAskOpen = false;
-            gameStates = 6;
+            gameStates = 7;
         }
     }
     else UI_shopNo.setScale(1,1);
@@ -1577,53 +1863,32 @@ void Game::updateDunAsk(int kind){
         UI_dunNo.setScale(1.1,1.1);
         if(checkMouseClick()){
             isDunAskOpen = false;
-            gameStates = 6;
+            gameStates = 7;
         }
     }
     else UI_dunNo.setScale(1,1);
 }
 
 void Game::ask(int kind,int index){
-    isAskOpen = true;
     askKind = kind;
     askIndex = index;
-    updateAsk(kind,index);
-    switch(kind){
-        case 0:
-            if(equip){
-                player[now_player].weaponIndex = index;
-            }
-            equip = false;
-            break;
-        case 1:
-            if(equip){
-                player[now_player].shieldIndex = index;
-            }
-            equip = false;
-            break;
-        case 2:
-            if(equip){
-                player[now_player].accessoryIndex = index;
-            }
-            equip = false;
-            break;
-    };
+    isAskOpen = true;
 }
 
-void Game::updateAsk(int kind,int index){
-    switch(kind){
+void Game::updateAsk(){
+    switch(askKind){
         case 0:
-            UI_askWeaponS.setTexture(UI_swordT[index]);
+            UI_askWeaponS.setTexture(UI_swordT[askIndex]);
             UI_askWeaponS.setOrigin(getObjWidth(UI_askWeaponS) / 2,getObjHeight(UI_askWeaponS) / 2);
             UI_askWeaponS.setPosition(windowMidWidth(),windowMidHeight() + 10);
             break;
         case 1:
-            UI_askShieldS.setTexture(UI_shieldT[index]);
+            UI_askShieldS.setTexture(UI_shieldT[askIndex]);
             UI_askShieldS.setOrigin(getObjWidth(UI_askShieldS) / 2,getObjHeight(UI_askShieldS) / 2);
             UI_askShieldS.setPosition(windowMidWidth(),windowMidHeight() + 10);
             break;
         case 2:
-            UI_askAccS.setTexture(UI_accT[index]);
+            UI_askAccS.setTexture(UI_accT[askIndex]);
             UI_askAccS.setOrigin(getObjWidth(UI_askAccS) / 2,getObjHeight(UI_askAccS) / 2);
             UI_askAccS.setPosition(windowMidWidth(),windowMidHeight() + 10);
             break;
@@ -1639,7 +1904,7 @@ void Game::updateAsk(int kind,int index){
         if(checkMouseClick()){
             equip = true;
             isAskOpen = false;
-            gameStates = 6;
+            gameStates = 7;
         }
     }
     else UI_yes.setScale(1,1);
@@ -1648,10 +1913,30 @@ void Game::updateAsk(int kind,int index){
         if(checkMouseClick()){
             equip = false;
             isAskOpen = false;
-            gameStates = 6;
+            gameStates = 7;
         }
     }
     else UI_no.setScale(1,1);
+    switch(askKind){
+        case 0:
+            if(equip){
+                player[now_player].weaponIndex = askIndex;
+            }
+            equip = false;
+            break;
+        case 1:
+            if(equip){
+                player[now_player].shieldIndex = askIndex;
+            }
+            equip = false;
+            break;
+        case 2:
+            if(equip){
+                player[now_player].accessoryIndex = askIndex;
+            }
+            equip = false;
+            break;
+    };
 }
 
 void Game::updatePlayingState(){
@@ -1675,12 +1960,15 @@ void Game::updatePlayingState(){
     else if(gameStates == 4){ //checkPath
         //if(1)ask(0,4);
         //if(1)dunAsk(3);
-        //if(1)shopAsk();
+        if(1)shopAsk();
     }
     else if(gameStates == 5){ //dungeon
         gameStates = 6;
     }
-    else if(gameStates == 6){ //end turn
+    else if(gameStates == 6){ //shop
+        isShopOpen = true;
+    }
+    else if(gameStates == 7){ //end turn
         gameStates = 1;
         turn++;
     }
@@ -1993,43 +2281,41 @@ void Game::updateTurn(){
 }
 
 void Game::setItemStat(){
-    sword[0].name_object = "Fist";               sword[0].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[0].sword_stat[0] = 0;sword[0].sword_stat[1] = 0;sword[0].sword_stat[2] = 0;
-    sword[1].name_object = "Durandal";           sword[1].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[1].sword_stat[0] = 2;sword[1].sword_stat[1] = 0;sword[1].sword_stat[2] = 1;
-    sword[2].name_object = "Muramasas";          sword[2].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[2].sword_stat[0] = 3;sword[2].sword_stat[1] = 2;sword[2].sword_stat[2] = 2;
-    sword[3].name_object = "Murasame";           sword[3].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[3].sword_stat[0] = 4;sword[3].sword_stat[1] = 2;sword[3].sword_stat[2] = 1;
-    sword[4].name_object = "Masamune";           sword[4].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[4].sword_stat[0] = 3;sword[4].sword_stat[1] = 2;sword[4].sword_stat[2] = 4;
-    sword[5].name_object = "Shusui";             sword[5].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[5].sword_stat[0] = 6;sword[5].sword_stat[1] = 3;sword[5].sword_stat[2] = 3;
-    sword[6].name_object = "Yubashiri";          sword[6].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[6].sword_stat[0] = 5;sword[6].sword_stat[1] = 4;sword[6].sword_stat[2] = 4;
-    sword[7].name_object = "Kitetsu Sandai";     sword[7].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[7].sword_stat[0] = 9;sword[7].sword_stat[1] = 2;sword[7].sword_stat[2] = 4;
-    sword[8].name_object = "Wado Ichimonji";     sword[8].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[8].sword_stat[0] = 10;sword[8].sword_stat[1] = 3;sword[8].sword_stat[2] = 5;
-    sword[9].name_object = "Excalibur";          sword[9].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[9].sword_stat[0] = 20;sword[9].sword_stat[1] = -5;sword[9].sword_stat[2] = 3;
+    sword[0].name_object = "Fist";                                   sword[0].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[0].sword_stat[0] = 0;sword[0].sword_stat[1] = 0;sword[0].sword_stat[2] = 0;
+    sword[1].name_object = "Durandal";     sword[1].price = 10;      sword[1].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[1].sword_stat[0] = 2;sword[1].sword_stat[1] = 0;sword[1].sword_stat[2] = 1;
+    sword[2].name_object = "Muramasas";    sword[2].price = 10;     sword[2].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[2].sword_stat[0] = 3;sword[2].sword_stat[1] = 2;sword[2].sword_stat[2] = 2;
+    sword[3].name_object = "Murasame";     sword[3].price = 10;      sword[3].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[3].sword_stat[0] = 4;sword[3].sword_stat[1] = 2;sword[3].sword_stat[2] = 1;
+    sword[4].name_object = "Masamune";     sword[4].price = 10;      sword[4].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[4].sword_stat[0] = 3;sword[4].sword_stat[1] = 2;sword[4].sword_stat[2] = 4;
+    sword[5].name_object = "Shusui";       sword[5].price = 10;     sword[5].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[5].sword_stat[0] = 6;sword[5].sword_stat[1] = 3;sword[5].sword_stat[2] = 3;
+    sword[6].name_object = "Yubashiri";    sword[6].price = 10;      sword[6].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[6].sword_stat[0] = 5;sword[6].sword_stat[1] = 4;sword[6].sword_stat[2] = 4;
+    sword[7].name_object = "Kitetsu Sandai";                         sword[7].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[7].sword_stat[0] = 9;sword[7].sword_stat[1] = 2;sword[7].sword_stat[2] = 4;
+    sword[8].name_object = "Wado Ichimonji";                         sword[8].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[8].sword_stat[0] = 10;sword[8].sword_stat[1] = 3;sword[8].sword_stat[2] = 5;
+    sword[9].name_object = "Excalibur";                              sword[9].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[9].sword_stat[0] = 20;sword[9].sword_stat[1] = -5;sword[9].sword_stat[2] = 3;
 
-    potion[0].name_object ="Potion S" ;          potion[0].Des = "HP + 10";                        potion[0].potion_effect = 10;
-    potion[1].name_object ="Potion L";           potion[1].Des = "HP + 30";                        potion[1].potion_effect = 30;
+    potion[0].name_object ="Potion S" ;    potion[0].price = 10;      potion[0].Des = "HP + 10";                        potion[0].potion_effect = 10;
+    potion[1].name_object ="Potion L";     potion[1].price = 10;      potion[1].Des = "HP + 30";                        potion[1].potion_effect = 30;
 
-
-    shield[0].name_object = "Hand";               shield[0].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[0].shield_stat[0] = 0;shield[0].shield_stat[1]= 0;shield[0].shield_stat[2]= 0;
-    shield[1].name_object = "Aegis Shield ";      shield[1].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[1].shield_stat[0] = 2;shield[1].shield_stat[1]= 3;shield[1].shield_stat[2]= 30;
-    shield[2].name_object = "Saka Shield";        shield[2].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[2].shield_stat[0] = 3;shield[2].shield_stat[1]= 0;shield[2].shield_stat[2]= 50;
-    shield[3].name_object = "Arachiki Shield";    shield[3].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[3].shield_stat[0] = 4;shield[3].shield_stat[1]= 4;shield[3].shield_stat[2]= 40;
-    shield[4].name_object = "Demose Shield";      shield[4].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[4].shield_stat[0] = 5;shield[4].shield_stat[1]= 2;shield[4].shield_stat[2]= 2;
-    shield[5].name_object = "G.O.T Shield ";      shield[5].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[5].shield_stat[0] = 2;shield[5].shield_stat[1]= 7;shield[5].shield_stat[2]= 20;
-    shield[6].name_object = "Power Shield ";      shield[6].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[6].shield_stat[0] = 7;shield[6].shield_stat[1]= 8;shield[6].shield_stat[2]= 50;
-    shield[7].name_object = "DK Shield ";         shield[7].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[7].shield_stat[0] = 5;shield[7].shield_stat[1]= 10;shield[7].shield_stat[2]= 60;
-    shield[8].name_object = "Invincible Shield "; shield[8].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[8].shield_stat[0] = 3;shield[8].shield_stat[1]= 15;shield[8].shield_stat[2]= 100;
+    shield[0].name_object = "Hand";        shield[0].price = 10;       shield[0].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[0].shield_stat[0] = 0;shield[0].shield_stat[1]= 0;shield[0].shield_stat[2]= 0;
+    shield[1].name_object = "Aegis Shield ";  shield[1].price = 10;    shield[1].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[1].shield_stat[0] = 2;shield[1].shield_stat[1]= 3;shield[1].shield_stat[2]= 30;
+    shield[2].name_object = "Saka Shield";    shield[2].price = 10;    shield[2].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[2].shield_stat[0] = 3;shield[2].shield_stat[1]= 0;shield[2].shield_stat[2]= 50;
+    shield[3].name_object = "Arachiki Shield"; shield[3].price = 10; shield[3].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[3].shield_stat[0] = 4;shield[3].shield_stat[1]= 4;shield[3].shield_stat[2]= 40;
+    shield[4].name_object = "Demose Shield";  shield[4].price = 10;   shield[4].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[4].shield_stat[0] = 5;shield[4].shield_stat[1]= 2;shield[4].shield_stat[2]= 2;
+    shield[5].name_object = "G.O.T Shield ";  shield[5].price = 10;    shield[5].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[5].shield_stat[0] = 2;shield[5].shield_stat[1]= 7;shield[5].shield_stat[2]= 20;
+    shield[6].name_object = "Power Shield ";  shield[6].price = 10;   shield[6].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[6].shield_stat[0] = 7;shield[6].shield_stat[1]= 8;shield[6].shield_stat[2]= 50;
+    shield[7].name_object = "DK Shield ";     shield[7].price = 10;    shield[7].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[7].shield_stat[0] = 5;shield[7].shield_stat[1]= 10;shield[7].shield_stat[2]= 60;
+    shield[8].name_object = "Invincible Shield ";                      shield[8].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[8].shield_stat[0] = 3;shield[8].shield_stat[1]= 15;shield[8].shield_stat[2]= 100;
     shield[9].name_object = "Ultimate Ultra Extreme Super Power Invincible Shield";     shield[9].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";    shield[9].shield_stat[0] = 20;shield[9].shield_stat[1]= 25;shield[9].shield_stat[2]= 200;
 
-
-    accessory[0].name = "The balance";     accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 2"; accessory[0].extra_agi = 2;accessory[0].extra_atk = 0;accessory[0].extra_luck = 2;accessory[0].extra_str = 2;accessory[0].extra_vit = 2;
-    accessory[1].name = "Golden x";        accessory[1].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[1].extra_agi = 0;accessory[1].extra_atk = 5;accessory[1].extra_luck = 3;accessory[1].extra_str = 2;accessory[1].extra_vit = 1;
-    accessory[2].name = "Warrior necklace";accessory[2].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 5"; accessory[2].extra_agi = 0;accessory[2].extra_atk = 10;accessory[2].extra_luck = 0;accessory[2].extra_str = 5;accessory[2].extra_vit = 5;
-    accessory[3].name = "Ninja necklace";  accessory[3].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 2"; accessory[3].extra_agi = 7;accessory[3].extra_atk = 10;accessory[3].extra_luck = 3;accessory[3].extra_str = -2;accessory[3].extra_vit = -2;
-    accessory[4].name = "LUCKY";           accessory[4].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[4].extra_agi = 1;accessory[4].extra_atk = 0;accessory[4].extra_luck = 10;accessory[4].extra_str = 0;accessory[4].extra_vit = 1;
-    accessory[5].name = "Power stone";     accessory[5].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 7"; accessory[5].extra_agi = -5;accessory[5].extra_atk = 14;accessory[5].extra_luck = -2;accessory[5].extra_str = 5;accessory[5].extra_vit = 7;
-    accessory[6].name = "Mystery";         accessory[6].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 6"; accessory[6].extra_agi = 6;accessory[6].extra_atk =6;accessory[6].extra_luck = 6;accessory[6].extra_str = 6;accessory[6].extra_vit = 6;
-    accessory[7].name = "Blood crystal";   accessory[7].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 15"; accessory[7].extra_agi = 10;accessory[7].extra_atk = 0;accessory[7].extra_luck = 5;accessory[7].extra_str = -2;accessory[7].extra_vit = -15;
-    accessory[8].name = "Darkness totem";  accessory[8].Des = "AGI + 7\nATK + 15\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[8].extra_agi = 7;accessory[8].extra_atk = 15;accessory[8].extra_luck = 7;accessory[8].extra_str = 7;accessory[8].extra_vit = 1;
-    accessory[9].name = "WHOSYOURDADDY";accessory[9].Des = "AGI + 17\nATK + 20\nLUK + 15\nSTR + 10\nVIT + 10";accessory[9].extra_agi = 17;accessory[9].extra_atk = 20;accessory[9].extra_luck = 15;accessory[9].extra_str = 10;accessory[9].extra_vit = 10;
+    accessory[0].name = "The balance";   accessory[0].price = 10;    accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 2"; accessory[0].extra_agi = 2;accessory[0].extra_atk = 0;accessory[0].extra_luck = 2;accessory[0].extra_str = 2;accessory[0].extra_vit = 2;
+    accessory[1].name = "Golden x";       accessory[1].price = 10;   accessory[1].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[1].extra_agi = 0;accessory[1].extra_atk = 5;accessory[1].extra_luck = 3;accessory[1].extra_str = 2;accessory[1].extra_vit = 1;
+    accessory[2].name = "Warrior necklace"; accessory[2].price = 10; accessory[2].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 5"; accessory[2].extra_agi = 0;accessory[2].extra_atk = 10;accessory[2].extra_luck = 0;accessory[2].extra_str = 5;accessory[2].extra_vit = 5;
+    accessory[3].name = "Ninja necklace";  accessory[3].price = 10; accessory[3].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 2"; accessory[3].extra_agi = 7;accessory[3].extra_atk = 10;accessory[3].extra_luck = 3;accessory[3].extra_str = -2;accessory[3].extra_vit = -2;
+    accessory[4].name = "LUCKY";          accessory[4].price = 10;  accessory[4].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[4].extra_agi = 1;accessory[4].extra_atk = 0;accessory[4].extra_luck = 10;accessory[4].extra_str = 0;accessory[4].extra_vit = 1;
+    accessory[5].name = "Power stone";     accessory[5].price = 10;  accessory[5].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 7"; accessory[5].extra_agi = -5;accessory[5].extra_atk = 14;accessory[5].extra_luck = -2;accessory[5].extra_str = 5;accessory[5].extra_vit = 7;
+    accessory[6].name = "Mystery";        accessory[6].price = 10;   accessory[6].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 6"; accessory[6].extra_agi = 6;accessory[6].extra_atk =6;accessory[6].extra_luck = 6;accessory[6].extra_str = 6;accessory[6].extra_vit = 6;
+    accessory[7].name = "Blood crystal";  accessory[7].price = 10;   accessory[7].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 15"; accessory[7].extra_agi = 10;accessory[7].extra_atk = 0;accessory[7].extra_luck = 5;accessory[7].extra_str = -2;accessory[7].extra_vit = -15;
+    accessory[8].name = "Darkness totem";                            accessory[8].Des = "AGI + 7\nATK + 15\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[8].extra_agi = 7;accessory[8].extra_atk = 15;accessory[8].extra_luck = 7;accessory[8].extra_str = 7;accessory[8].extra_vit = 1;
+    accessory[9].name = "WHOSYOURDADDY";                             accessory[9].Des = "AGI + 17\nATK + 20\nLUK + 15\nSTR + 10\nVIT + 10";accessory[9].extra_agi = 17;accessory[9].extra_atk = 20;accessory[9].extra_luck = 15;accessory[9].extra_str = 10;accessory[9].extra_vit = 10;
 }
 
 void Game::get_item_boss(){
