@@ -84,7 +84,7 @@ Player::Player(){
     weaponIndex = 0;
     shieldIndex = -1;
     accessoryIndex = -1;
-    hp = 10;
+    hp = 0;
     //hp = HpMax();
 }
 
@@ -177,6 +177,8 @@ class Game{
         bool isValidCharacter(char);
         bool checkUsedName(string);
         //Playing
+        int loseExp();
+        int loseMoney();
         void drawPlaying();
         void initPlayingVariables();
         void updateView();
@@ -200,6 +202,16 @@ class Game{
         void updateShop();
         void updateAskBuy(int);
         void askBuy(int);
+        void dungeon(int);
+        void updateDungeon();
+        void waitRPSAni(unsigned int);
+        void randomRPS();
+        void checkDeath();
+        void resetMonster();
+        void upgradeBoss();
+        void death();
+        void updateDeath();
+        void updateMonDes();
         void setItemStat();
         void get_item_boss();
     private:
@@ -289,6 +301,12 @@ class Game{
         int diceNum;
         int shopPriceValue[24];
         int itemBuyIndex;
+        int dunStates;
+        int playerRPS;
+        int monsterRPS;
+        int fightTurn;
+        int playerDes;
+        int enemyDes;
         bool randomStart;
         bool isBagOpen;
         bool isDesOpen;
@@ -298,11 +316,16 @@ class Game{
         bool isShopAskOpen;
         bool isShopOpen;
         bool isAskBuyOpen;
+        bool isDeathOpen;
+        bool isDun;
+        bool isMonDes;
         bool equip;
         Font cordiaFont;
         vector<int> expMax;
         vector<int> diceTemp;
         vector<int> timeTemp;
+        vector<int> RPStemp;
+        vector<int> RPStempMon;
         int startExp;
         int UIFontSize;
         Texture mapTexture;
@@ -413,6 +436,43 @@ class Game{
         Sprite UI_hpBarS;
         Texture UI_charFaceT[6];
         Sprite UI_charFaceS;
+        int monsterIndex;
+        Text D_Turn;
+        Text D_monHpValue;
+        Text D_monHpText;
+        Text D_monName;
+        Text D_monLevel;
+        Text D_deathText;
+        Text D_deathOk;
+        Text D_deathExp;
+        Text D_deathExpValue;
+        Text D_deathMoney;
+        Text D_deathMoneyValue;
+        Text D_monNameDes;
+        Text D_monStatDes;
+        Text D_monStatDesR;
+        Sprite D_playerChar;
+        Texture D_bgT;
+        Sprite D_bgS;
+        Texture D_startT;
+        Sprite D_startS;
+        Texture D_rockT;
+        Texture D_paperT;
+        Texture D_scissorsT;
+        Sprite D_playerRPS;
+        Sprite D_monsterRPS;
+        Texture D_monsterFace[4];
+        Sprite D_monsterFaceS;
+        Sprite D_monHpBar;
+        Sprite D_monHpBorder;
+        Sprite D_monMaxHp;
+        Texture D_monChar[4];
+        Sprite D_monCharS;
+        Sprite D_deathWin;
+        Texture D_coin;
+        Sprite D_coinS;
+        Sprite D_monDesCharS;
+        Sprite D_monDesBGS;
 };
 
 Game::Game(){
@@ -1162,10 +1222,13 @@ void Game::initPlayingVariables(){
     isShopAskOpen = false;
     isShopOpen = false;
     isAskBuyOpen = false;
+    isDeathOpen = false;
     equip = false;
     gameStates = 1;
     buyNum = 1;
-    diceTemp.push_back(1);
+    diceTemp.push_back(-1);
+    RPStemp.push_back(-1);
+    RPStempMon.push_back(-1);
     expMax.push_back(startExp);
     while(expMax.size() != 29){
         expMax.push_back(expMax.back() * 1.2);
@@ -1263,6 +1326,7 @@ void Game::initPlayingVariables(){
     UI_diceS.setTexture(UI_diceT);
     UI_diceS.setOrigin(getObjWidth(UI_diceS) / 2,getObjHeight(UI_diceS) / 2);
     UI_diceS.setPosition(windowMidWidth(),windowMidHeight());
+    UI_diceValue.setString("1");
     UI_diceValue.setFillColor(Color::Black);
     UI_diceValue.setOutlineColor(Color::White);
     UI_diceValue.setOutlineThickness(3.5);
@@ -1508,6 +1572,7 @@ void Game::initPlayingVariables(){
     UI_money.setOutlineThickness(2.5);
     UI_money.setFont(menuFont);
     UI_money.setCharacterSize(UIFontSize - 5);
+    UI_money.setPosition(windowMidWidth() + 70,windowMidHeight() + 202);
     UI_shopItem[0].setTexture(UI_HpST);       UI_shopItem[1].setTexture(UI_HpLT);       UI_shopItem[2].setTexture(UI_swordT[1]);   UI_shopItem[3].setTexture(UI_swordT[2]);   UI_shopItem[4].setTexture(UI_swordT[3]);   UI_shopItem[5].setTexture(UI_swordT[4]);
     UI_shopItem[6].setTexture(UI_swordT[5]);  UI_shopItem[7].setTexture(UI_swordT[6]);  UI_shopItem[8].setTexture(UI_shieldT[0]);  UI_shopItem[9].setTexture(UI_shieldT[1]);  UI_shopItem[10].setTexture(UI_shieldT[2]); UI_shopItem[11].setTexture(UI_shieldT[3]);
     UI_shopItem[12].setTexture(UI_shieldT[4]);UI_shopItem[13].setTexture(UI_shieldT[5]);UI_shopItem[14].setTexture(UI_shieldT[6]); UI_shopItem[15].setTexture(UI_shieldT[7]); UI_shopItem[16].setTexture(UI_accT[0]);    UI_shopItem[17].setTexture(UI_accT[1]);
@@ -1593,17 +1658,157 @@ void Game::initPlayingVariables(){
     UI_buyNum.setOutlineThickness(2.5);
     UI_buyNum.setFont(menuFont);
     UI_buyNum.setCharacterSize(UIFontSize + 5);
+    D_startT.loadFromFile("img/Start.png");
+    D_startS.setTexture(D_startT);
+    D_startS.setOrigin(getObjWidth(D_startS) / 2,getObjHeight(D_startS) / 2);
+    D_startS.setPosition(windowMidWidth(),windowMidHeight());
+    D_rockT.loadFromFile("img/Rock.png");
+    D_paperT.loadFromFile("img/Paper.png");
+    D_scissorsT.loadFromFile("img/Scissors.png");
+    D_Turn.setFillColor(Color::Black);
+    D_Turn.setOutlineColor(Color::White);
+    D_Turn.setOutlineThickness(3.5);
+    D_Turn.setFont(menuFont);
+    D_Turn.setCharacterSize(UIFontSize + 20);
+    D_monHpBorder.setTexture(UI_hpBorderT);
+    D_monHpBorder.setPosition(360,85);
+    D_monMaxHp.setTexture(UI_maxHpT);
+    D_monMaxHp.setPosition(360,85);
+    D_monHpBar.setTexture(UI_hpBarT);
+    D_monHpBar.setPosition(362,85);
+    D_monHpText.setString("HP");
+    D_monHpText.setFillColor(Color::Black);
+    D_monHpText.setOutlineColor(Color::White);
+    D_monHpText.setOutlineThickness(3.5);
+    D_monHpText.setFont(menuFont);
+    D_monHpText.setCharacterSize(UIFontSize);
+    D_monHpValue.setFillColor(Color::Black);
+    D_monHpValue.setOutlineColor(Color::White);
+    D_monHpValue.setOutlineThickness(2);
+    D_monHpValue.setFont(cordiaFont);
+    D_monHpValue.setCharacterSize(UIFontSize);
+    D_monsterFace[0].loadFromFile("img/MonFace1.png");
+    D_monsterFace[1].loadFromFile("img/MonFace2.png");
+    D_monsterFace[2].loadFromFile("img/MonFace3.png");
+    D_monsterFace[3].loadFromFile("img/MonFace4.png");
+    D_monChar[0].loadFromFile("img/Mon1.png");
+    D_monChar[1].loadFromFile("img/Mon2.png");
+    D_monChar[2].loadFromFile("img/Mon3.png");
+    D_monChar[3].loadFromFile("img/Mon4.png");
+    D_monName.setFillColor(Color::Black);
+    D_monName.setOutlineColor(Color::White);
+    D_monName.setOutlineThickness(3.5);
+    D_monName.setFont(menuFont);
+    D_monName.setCharacterSize(UIFontSize);
+    D_bgT.loadFromFile("img/DungeonBG.jpg");
+    D_bgS.setTexture(D_bgT);
+    D_playerRPS.setTexture(D_rockT);
+    D_monsterRPS.setTexture(D_rockT);
+    D_monLevel.setFillColor(Color::Black);
+    D_monLevel.setOutlineColor(Color::White);
+    D_monLevel.setOutlineThickness(3.5);
+    D_monLevel.setFont(menuFont);
+    D_monLevel.setCharacterSize(UIFontSize);
+    D_deathText.setString("You are death");
+    D_deathText.setFillColor(Color::Black);
+    D_deathText.setOutlineColor(Color::White);
+    D_deathText.setOutlineThickness(2.5);
+    D_deathText.setFont(menuFont);
+    D_deathText.setCharacterSize(UIFontSize + 5);
+    D_deathOk.setString("OK");
+    D_deathOk.setFillColor(Color::Black);
+    D_deathOk.setOutlineColor(Color::White);
+    D_deathOk.setOutlineThickness(2.5);
+    D_deathOk.setFont(menuFont);
+    D_deathOk.setCharacterSize(UIFontSize - 5);
+    D_deathWin.setTexture(miniMenuT);
+    D_deathWin.setOrigin(getObjWidth(D_deathWin) / 2,getObjHeight(D_deathWin) / 2);
+    D_deathWin.setPosition(windowMidWidth(),windowMidHeight());
+    D_deathWin.setScale(1.6,0.7);
+    D_deathWin.setColor(Color(255,255,255,200));
+    D_deathExp.setString("EXP");
+    D_deathExp.setFillColor(Color::Black);
+    D_deathExp.setOutlineColor(Color::White);
+    D_deathExp.setOutlineThickness(2.5);
+    D_deathExp.setFont(menuFont);
+    D_deathExp.setCharacterSize(UIFontSize - 5);
+    D_deathMoney.setString("MONEY");
+    D_deathMoney.setFillColor(Color::Black);
+    D_deathMoney.setOutlineColor(Color::White);
+    D_deathMoney.setOutlineThickness(2.5);
+    D_deathMoney.setFont(menuFont);
+    D_deathMoney.setCharacterSize(UIFontSize - 5);
+    D_deathMoneyValue.setFillColor(Color::Red);
+    D_deathMoneyValue.setOutlineColor(Color::White);
+    D_deathMoneyValue.setOutlineThickness(2.5);
+    D_deathMoneyValue.setFont(menuFont);
+    D_deathMoneyValue.setCharacterSize(UIFontSize - 5);
+    D_deathExpValue.setFillColor(Color::Red);
+    D_deathExpValue.setOutlineColor(Color::White);
+    D_deathExpValue.setOutlineThickness(2.5);
+    D_deathExpValue.setFont(menuFont);
+    D_deathExpValue.setCharacterSize(UIFontSize - 5);
+    D_coin.loadFromFile("img/Coin.png");
+    D_coin.setSmooth(true);
+    D_coinS.setTexture(D_coin);
+    D_coinS.setOrigin(getObjWidth(D_coinS) / 2,getObjHeight(D_coinS) / 2);
+    D_coinS.setScale(0.55,0.55);
+    D_monDesBGS.setTexture(UI_playerDesBGT);
+    D_monDesBGS.setOrigin(getObjWidth(D_monDesBGS) / 2,getObjHeight(D_monDesBGS) / 2);
+    D_monDesBGS.setPosition(windowMidWidth(),windowMidHeight());
+    D_monDesBGS.setScale(1.1,1);
+    D_monNameDes.setFillColor(Color::Black);
+    D_monNameDes.setOutlineColor(Color::White);
+    D_monNameDes.setOutlineThickness(3.5);
+    D_monNameDes.setFont(cordiaFont);
+    D_monNameDes.setCharacterSize(UIFontSize + 10);
+    D_monStatDes.setFillColor(Color::Black);
+    D_monStatDes.setOutlineColor(Color::White);
+    D_monStatDes.setOutlineThickness(2.5);
+    D_monStatDes.setFont(cordiaFont);
+    D_monStatDes.setCharacterSize(UIFontSize - 5);
+    D_monStatDes.setLineSpacing(1.2);
+    D_monStatDesR.setFillColor(Color::Black);
+    D_monStatDesR.setOutlineColor(Color::White);
+    D_monStatDesR.setOutlineThickness(2.5);
+    D_monStatDesR.setFont(cordiaFont);
+    D_monStatDesR.setCharacterSize(UIFontSize - 5);
+    D_monStatDesR.setLineSpacing(1.2);
 }
 
 void Game::drawPlaying(){
     updateLevel();
     updateTurn();
     this->gameWindow->setView(camera);
-    this->gameWindow->draw(mapSprite);
+    if(!isDun)this->gameWindow->draw(mapSprite);
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
-    drawUI();
     updateEscape();
     updatePlayingState();
+    if(isDun){
+        this->gameWindow->draw(D_bgS);
+        this->gameWindow->draw(D_monsterFaceS);
+        this->gameWindow->draw(D_monCharS);
+        this->gameWindow->draw(D_monMaxHp);
+        this->gameWindow->draw(D_monHpBar);
+        this->gameWindow->draw(D_monHpBorder);
+        this->gameWindow->draw(D_monHpText);
+        this->gameWindow->draw(D_monName);
+        this->gameWindow->draw(D_monLevel);
+        this->gameWindow->draw(D_playerChar);
+        updateDungeon();
+    }
+    drawUI();
+    if(isDeathOpen){
+        updateDeath();
+        this->gameWindow->draw(D_deathWin);
+        this->gameWindow->draw(D_deathOk);
+        this->gameWindow->draw(D_deathText);
+        this->gameWindow->draw(D_deathExp);
+        this->gameWindow->draw(D_deathExpValue);
+        this->gameWindow->draw(D_deathMoney);
+        this->gameWindow->draw(D_deathMoneyValue);
+        this->gameWindow->draw(D_coinS);
+    }
     if(isShopOpen){
         this->gameWindow->draw(UI_shopWinS);
         this->gameWindow->draw(UI_quitShop);
@@ -1633,6 +1838,14 @@ void Game::drawPlaying(){
             this->gameWindow->draw(UI_playerNameDes);
             this->gameWindow->draw(UI_statDes);
             this->gameWindow->draw(UI_statDesR);
+    }
+    if(isMonDes){
+        updateMonDes();
+        this->gameWindow->draw(D_monDesBGS);
+        this->gameWindow->draw(D_monDesCharS);
+        this->gameWindow->draw(D_monNameDes);
+        this->gameWindow->draw(D_monStatDes);
+        this->gameWindow->draw(D_monStatDesR);
     }
     if(isAskOpen){
         updateAsk();
@@ -1677,9 +1890,242 @@ void Game::drawPlaying(){
         }
     }
     else {
-        updateView();
+        if(!isDun)updateView();
     }
     this->gameWindow->draw(mouseIconSprite);
+}
+
+void Game::updateMonDes(){
+        D_monDesCharS.setTexture(D_monChar[monsterIndex]);
+        D_monDesCharS.setOrigin(getObjWidth(D_monDesCharS) / 2,getObjHeight(D_monDesCharS) / 2);
+        D_monDesCharS.setPosition(D_monDesBGS.getPosition().x,D_monDesBGS.getPosition().y - 140);
+        D_monNameDes.setString("Prayuth");
+        D_monNameDes.setOrigin(getObjWidth(D_monNameDes) / 2,getObjHeight(D_monNameDes) / 2);
+        D_monNameDes.setPosition(D_monDesBGS.getPosition().x + 5,D_monDesBGS.getPosition().y - 50);
+        D_monStatDes.setString("Level  :     " + to_string(player[now_player].level) + '\n' +
+                             "ATK  :     " + to_string(player[now_player].getAtk()) + '\n' +
+                             "Max HP  :     " + to_string(player[now_player].HpMax()) + '\n' +
+                             "STR  :     " + to_string(player[now_player].std_str) + '\n' +
+                             "VIT  :     " + to_string(player[now_player].std_vit)
+                             );
+        D_monStatDesR.setString("DEF  :     " + to_string(player[now_player].getDef()) + "\n\n" +
+                              "AGI  :     " + to_string(player[now_player].std_agi) + '\n' +
+                              "LUK  :     " + to_string(player[now_player].std_luk)
+                              );
+        D_monStatDes.setPosition(D_monDesBGS.getPosition().x - 210,D_monDesBGS.getPosition().y);
+        D_monStatDesR.setPosition(D_monDesBGS.getPosition().x + 35,D_monDesBGS.getPosition().y + 37);
+}
+
+void Game::dungeon(int monster){
+    monsterIndex = monster;
+    if(player[now_player].getAgi() > 0)fightTurn = 0;
+    else fightTurn = 1;
+}
+
+void Game::updateDungeon(){
+    D_monName.setString("Prayuth");
+    D_monName.setOrigin(getObjWidth(D_monName) / 2,getObjHeight(D_monName) / 2);
+    D_monName.setPosition(D_monsterFaceS.getPosition().x,UI_name.getPosition().y);
+    D_monLevel.setString("LV. 10");
+    D_monLevel.setOrigin(getObjWidth(D_monLevel),0);
+    D_monLevel.setPosition(windowWidth - UI_level.getPosition().x,UI_level.getPosition().y);
+    D_playerChar.setTexture(charTexture[player[now_player].character_number]);
+    D_playerChar.setOrigin(getObjWidth(D_playerChar) / 2,getObjHeight(D_playerChar) / 2);
+    D_playerChar.setPosition(windowMidWidth() - 700,windowMidHeight());
+    D_monCharS.setTexture(D_monChar[monsterIndex]);
+    D_monCharS.setOrigin(getObjWidth(D_monCharS) / 2,getObjHeight(D_monCharS) / 2);
+    D_monCharS.setPosition(windowMidWidth() + 700,windowMidHeight());
+    D_monsterFaceS.setTexture(D_monsterFace[monsterIndex]);
+    D_monsterFaceS.setOrigin(getObjWidth(D_monsterFaceS) / 2,getObjHeight(D_monsterFaceS) / 2);
+    D_monsterFaceS.setPosition(windowWidth - 110,110);
+    D_monHpBar.setScale(1,1);
+    D_monHpBar.setPosition(windowWidth - UI_hpBarS.getPosition().x - getObjWidth(D_monHpBar) + 130,UI_hpBarS.getPosition().y);
+    D_monHpBorder.setOrigin(getObjWidth(D_monHpBorder),0);
+    D_monHpBorder.setPosition(windowWidth - UI_hpBorderS.getPosition().x + 130,UI_hpBorderS.getPosition().y);
+    D_monMaxHp.setOrigin(getObjWidth(D_monMaxHp),0);
+    D_monMaxHp.setPosition(windowWidth - UI_maxHpS.getPosition().x + 130,UI_maxHpS.getPosition().y);
+    D_monHpValue.setString("100/100");
+    D_monHpValue.setOrigin(getObjWidth(D_monHpValue),0);
+    D_monHpValue.setPosition(D_monMaxHp.getPosition().x - 55,UI_hpValue.getPosition().y);
+    D_monHpText.setOrigin(getObjWidth(D_monHpText),0);
+    D_monHpText.setPosition(windowWidth - UI_hpText.getPosition().x - 230,UI_hpText.getPosition().y);
+    D_playerRPS.setOrigin(getObjWidth(D_playerRPS) / 2,getObjHeight(D_playerRPS) / 2);
+    D_playerRPS.setPosition(windowMidWidth() - 500,windowMidHeight());
+    D_monsterRPS.setOrigin(getObjWidth(D_monsterRPS) / 2,getObjHeight(D_monsterRPS) / 2);
+    D_monsterRPS.setPosition(windowMidWidth() + 500,windowMidHeight());
+    if(fightTurn % 2 == 0)D_Turn.setString("Your Turn");
+    else D_Turn.setString("Enemy Turn");
+    D_Turn.setOrigin(getObjWidth(D_Turn) / 2,getObjHeight(D_Turn) / 2);
+    D_Turn.setPosition(windowMidWidth(),windowMidHeight() - 400);
+    this->gameWindow->draw(D_Turn);
+    if(D_monMaxHp.getGlobalBounds().contains(mousePos)){
+        this->gameWindow->draw(D_monHpValue);
+    }
+    switch(dunStates){
+        case 0:
+            this->gameWindow->draw(D_startS);
+            if(D_startS.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+                D_startS.setScale(1.05,1.05);
+                if(checkMouseClick()){
+                    dunStates = 1;
+                }
+            }
+            else D_startS.setScale(1,1);
+            break;
+        case 1:
+            randomRPS();
+            this->gameWindow->draw(D_playerRPS);
+            this->gameWindow->draw(D_monsterRPS);
+            break;
+        case 2:
+            this->gameWindow->draw(D_playerRPS);
+            this->gameWindow->draw(D_monsterRPS);
+            waitRPSAni(15);
+            break;
+        case 3:
+            if(playerDes == enemyDes){}
+            else if(playerDes == 0 && enemyDes == 1){}//enemy win
+            else if(playerDes == 1 && enemyDes == 2){}//enemy win
+            else if(playerDes == 2 && enemyDes == 0){}//enemy win
+            else{}//player win
+            dunStates = 4;
+            break;
+        case 4:
+            checkDeath();
+            break;
+        case 5:
+            dunStates = 0;
+            fightTurn++;
+            break;
+    };
+    if(D_monsterFaceS.getGlobalBounds().contains(mousePos)){
+        D_monsterFaceS.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            if(!isMonDes){
+                isMonDes = true;
+                isDesOpen = false;
+            }
+            else isMonDes = false;
+        }
+    }
+    else D_monsterFaceS.setScale(1,1);
+}
+
+void Game::checkDeath(){
+    if(player[now_player].hp == 0){
+        isDun = false;
+        resetMonster();
+        death();
+    }
+    else if(0){
+        resetMonster();
+        if(monsterIndex == 3)upgradeBoss();
+    }
+    else{
+        dunStates = 5;
+    }
+}
+
+void Game::resetMonster(){
+
+}
+
+void Game::upgradeBoss(){
+
+}
+
+int Game::loseMoney(){
+    return 100;
+}
+
+int Game::loseExp(){
+    return 50;
+}
+
+void Game::death(){
+    isDeathOpen = true;
+}
+
+void Game::updateDeath(){
+    D_deathText.setOrigin(getObjWidth(D_deathText) / 2,getObjHeight(D_deathText) / 2);
+    D_deathText.setPosition(windowMidWidth(),windowMidHeight() - 110);
+    D_deathOk.setOrigin(getObjWidth(D_deathOk) / 2,getObjHeight(D_deathOk) / 2);
+    D_deathOk.setPosition(windowMidWidth(),windowMidHeight() + 110);
+    D_deathExp.setOrigin(getObjWidth(D_deathExp) / 2,getObjHeight(D_deathExp) / 2);
+    D_deathExp.setPosition(windowMidWidth() - 150,windowMidHeight() - 20);
+    D_deathExpValue.setString("-" + to_string(loseExp()));
+    D_deathExpValue.setOrigin(getObjWidth(D_deathExpValue) / 2,getObjHeight(D_deathExpValue) / 2);
+    D_deathExpValue.setPosition(windowMidWidth() + 150,D_deathExp.getPosition().y);
+    D_deathMoney.setOrigin(getObjWidth(D_deathMoney) / 2,getObjHeight(D_deathMoney) / 2);
+    D_deathMoney.setPosition(windowMidWidth() - 150,windowMidHeight() + 30);
+    D_deathMoneyValue.setString("-" + to_string(loseMoney()));
+    D_deathMoneyValue.setOrigin(getObjWidth(D_deathMoneyValue) / 2,getObjHeight(D_deathMoneyValue) / 2);
+    D_deathMoneyValue.setPosition(windowMidWidth() + 150,D_deathMoney.getPosition().y);
+    D_coinS.setPosition(D_deathMoneyValue.getPosition().x + 110,D_deathMoneyValue.getPosition().y + 3);
+    if(D_deathOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+        D_deathOk.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isDeathOpen = false;
+            gameStates = 7;
+        }
+    }
+    else D_deathOk.setScale(1,1);
+}
+
+void Game::waitRPSAni(unsigned int time){
+    totalTime += deltaTime;
+    if(totalTime >= animationSpeed){
+        totalTime -= animationSpeed;
+        timeTemp.push_back(1);
+    }
+    if(timeTemp.size() == time){
+        while(timeTemp.size() != 0)timeTemp.pop_back();
+        totalTime = 0.0f;
+        dunStates = 3;
+    }
+}
+
+void Game::randomRPS(){
+    totalTime += deltaTime;
+    if(totalTime >= animationSpeed){
+        totalTime -= animationSpeed;
+        do{
+            playerRPS = rand() % 3;
+        }while(playerRPS == RPStemp.back());
+        do{
+            monsterRPS = rand() % 3;
+        }while(monsterRPS == RPStempMon.back());
+        RPStemp.push_back(playerRPS);
+        RPStempMon.push_back(monsterRPS);
+        switch(RPStemp.back()){
+            case 0:
+                D_playerRPS.setTexture(D_rockT);
+                break;
+            case 1:
+                D_playerRPS.setTexture(D_paperT);
+                break;
+            case 2:
+                D_playerRPS.setTexture(D_scissorsT);
+                break;
+        };
+        switch(RPStempMon.back()){
+            case 0:
+                D_monsterRPS.setTexture(D_rockT);
+                break;
+            case 1:
+                D_monsterRPS.setTexture(D_paperT);
+                break;
+            case 2:
+                D_monsterRPS.setTexture(D_scissorsT);
+                break;
+        };
+    }
+    if(RPStemp.size() == 21 && RPStempMon.size() == 21){
+        dunStates = 2;
+        totalTime = 0.0f;
+        while(RPStemp.size() != 1)RPStemp.pop_back();
+        while(RPStempMon.size() != 1)RPStempMon.pop_back();
+    }
 }
 
 void Game::askBuy(int index){
@@ -1854,6 +2300,8 @@ void Game::updateDunAsk(int kind){
     if(UI_dunYes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
         UI_dunYes.setScale(1.1,1.1);
         if(checkMouseClick()){
+            askKind = kind;
+            dunStates = 0;
             isDunAskOpen = false;
             gameStates = 5;
         }
@@ -1959,11 +2407,13 @@ void Game::updatePlayingState(){
     }
     else if(gameStates == 4){ //checkPath
         //if(1)ask(0,4);
-        //if(1)dunAsk(3);
-        if(1)shopAsk();
+        if(1)dunAsk(3);
+        //if(1)shopAsk();
     }
     else if(gameStates == 5){ //dungeon
-        gameStates = 6;
+        isDun = true;
+        dungeon(askKind);
+        //gameStates = 7;
     }
     else if(gameStates == 6){ //shop
         isShopOpen = true;
@@ -2008,7 +2458,7 @@ void Game::randomDice(){
         UI_diceValue.setString(to_string(diceNum));
         this->gameWindow->draw(UI_diceValue);
         diceTemp.push_back(diceNum);
-        }
+    }
     if(diceTemp.size() == 26){
         gameStates = 2;
         totalTime = 0.0f;
@@ -2047,8 +2497,9 @@ void Game::updateView(){
 void Game::updateEscape(){
     if(checkEscape()){
         if(isMenuOpen)isMenuOpen = false;
-        else if(!isMenuOpen && !isDesOpen)isMenuOpen = true;
+        else if(!isMenuOpen && !isDesOpen && !isMonDes)isMenuOpen = true;
         else if(!isMenuOpen && isDesOpen)isDesOpen = false;
+        if(!isMenuOpen && isMonDes)isMonDes = false;
     }
 }
 
@@ -2211,7 +2662,10 @@ void Game::updateUI(){
         UI_charFaceS.setScale(1.05,1.05);
         if(checkMouseClick()){
             if(isDesOpen)isDesOpen = false;
-            else isDesOpen = true;
+            else{
+                isDesOpen = true;
+                isMonDes = false;
+            }
         }
     }
     else UI_charFaceS.setScale(1,1);
