@@ -84,7 +84,7 @@ Player::Player(){
     weaponIndex = 0;
     shieldIndex = -1;
     accessoryIndex = -1;
-    hp = 0;
+    hp = 50;
     //hp = HpMax();
 }
 
@@ -212,6 +212,10 @@ class Game{
         void death();
         void updateDeath();
         void updateMonDes();
+        void getItem();
+        void updateGetItem();
+        int getMoney();
+        int getExp();
         void setItemStat();
         void get_item_boss();
     private:
@@ -319,6 +323,9 @@ class Game{
         bool isDeathOpen;
         bool isDun;
         bool isMonDes;
+        bool isPlayerWin;
+        bool isGetItem;
+        bool canUsePotion;
         bool equip;
         Font cordiaFont;
         vector<int> expMax;
@@ -451,6 +458,12 @@ class Game{
         Text D_monNameDes;
         Text D_monStatDes;
         Text D_monStatDesR;
+        Text D_getText;
+        Text D_getOk;
+        Text D_getExp;
+        Text D_getExpValue;
+        Text D_getMoney;
+        Text D_getMoneyValue;
         Sprite D_playerChar;
         Texture D_bgT;
         Sprite D_bgS;
@@ -459,6 +472,9 @@ class Game{
         Texture D_rockT;
         Texture D_paperT;
         Texture D_scissorsT;
+        Texture D_monRockT;
+        Texture D_monPaperT;
+        Texture D_monScissorsT;
         Sprite D_playerRPS;
         Sprite D_monsterRPS;
         Texture D_monsterFace[4];
@@ -473,6 +489,8 @@ class Game{
         Sprite D_coinS;
         Sprite D_monDesCharS;
         Sprite D_monDesBGS;
+        Sprite D_getWin;
+        Sprite D_getCoin;
 };
 
 Game::Game(){
@@ -807,7 +825,7 @@ void Game::updatePlusMinus(int index){
         if(plusS[index].getGlobalBounds().contains(mousePos)){
             plusS[index].setScale(0.9,0.9);
             if(checkMouseClick()){
-                if(index != 2 && setting[index] < 25){
+                if(index != 2 && setting[index] < 40){
                     setting[index]++;
                 }
                 else if(index == 2 && setting[index] < 100){
@@ -1223,17 +1241,19 @@ void Game::initPlayingVariables(){
     isShopOpen = false;
     isAskBuyOpen = false;
     isDeathOpen = false;
+    isGetItem = false;
+    canUsePotion = true;
     equip = false;
     gameStates = 1;
     buyNum = 1;
     diceTemp.push_back(-1);
     RPStemp.push_back(-1);
     RPStempMon.push_back(-1);
+    expMax.push_back(0);
     expMax.push_back(startExp);
-    while(expMax.size() != 29){
+    while(expMax.size() != 30){
         expMax.push_back(expMax.back() * 1.2);
     }
-    expMax.push_back(expMax.back());
     setItemStat();
     mapTexture.loadFromFile("img/Map.jpg");
     mapSprite.setTexture(mapTexture);
@@ -1243,8 +1263,8 @@ void Game::initPlayingVariables(){
     miniMenuS.setOrigin(getObjWidth(miniMenuS) / 2,getObjHeight(miniMenuS) / 2);
     miniMenuS.setScale(0.9,0.7);
     miniMenuS.setColor(Color(255,255,255,140));
-    camera.setCenter(Vector2f(300,300));
-    camera.setSize(Vector2f(300,300));
+    camera.setCenter(Vector2f(windowMidWidth(),windowMidHeight()));
+    camera.setSize(Vector2f(1920,1080));
     camera.setViewport(FloatRect(0,0,1,1));
     miniMenuText[0].setString("Reseum");
     miniMenuText[1].setString("Setting");
@@ -1665,6 +1685,9 @@ void Game::initPlayingVariables(){
     D_rockT.loadFromFile("img/Rock.png");
     D_paperT.loadFromFile("img/Paper.png");
     D_scissorsT.loadFromFile("img/Scissors.png");
+    D_monRockT.loadFromFile("img/MonRock.png");
+    D_monPaperT.loadFromFile("img/MonPaper.png");
+    D_monScissorsT.loadFromFile("img/MonScissors.png");
     D_Turn.setFillColor(Color::Black);
     D_Turn.setOutlineColor(Color::White);
     D_Turn.setOutlineThickness(3.5);
@@ -1774,6 +1797,48 @@ void Game::initPlayingVariables(){
     D_monStatDesR.setFont(cordiaFont);
     D_monStatDesR.setCharacterSize(UIFontSize - 5);
     D_monStatDesR.setLineSpacing(1.2);
+    D_getText.setString("You Win");
+    D_getText.setFillColor(Color::Black);
+    D_getText.setOutlineColor(Color::White);
+    D_getText.setOutlineThickness(2.5);
+    D_getText.setFont(menuFont);
+    D_getText.setCharacterSize(UIFontSize + 5);
+    D_getOk.setString("OK");
+    D_getOk.setFillColor(Color::Black);
+    D_getOk.setOutlineColor(Color::White);
+    D_getOk.setOutlineThickness(2.5);
+    D_getOk.setFont(menuFont);
+    D_getOk.setCharacterSize(UIFontSize - 5);
+    D_getWin.setTexture(miniMenuT);
+    D_getWin.setOrigin(getObjWidth(D_getWin) / 2,getObjHeight(D_getWin) / 2);
+    D_getWin.setPosition(windowMidWidth(),windowMidHeight());
+    D_getWin.setScale(1.6,0.7);
+    D_getWin.setColor(Color(255,255,255,200));
+    D_getExp.setString("EXP");
+    D_getExp.setFillColor(Color::Black);
+    D_getExp.setOutlineColor(Color::White);
+    D_getExp.setOutlineThickness(2.5);
+    D_getExp.setFont(menuFont);
+    D_getExp.setCharacterSize(UIFontSize - 5);
+    D_getMoney.setString("MONEY");
+    D_getMoney.setFillColor(Color::Black);
+    D_getMoney.setOutlineColor(Color::White);
+    D_getMoney.setOutlineThickness(2.5);
+    D_getMoney.setFont(menuFont);
+    D_getMoney.setCharacterSize(UIFontSize - 5);
+    D_getMoneyValue.setFillColor(Color(0,160,0,255));
+    D_getMoneyValue.setOutlineColor(Color::White);
+    D_getMoneyValue.setOutlineThickness(2.5);
+    D_getMoneyValue.setFont(menuFont);
+    D_getMoneyValue.setCharacterSize(UIFontSize - 5);
+    D_getExpValue.setFillColor(Color(0,160,0,255));
+    D_getExpValue.setOutlineColor(Color::White);
+    D_getExpValue.setOutlineThickness(2.5);
+    D_getExpValue.setFont(menuFont);
+    D_getExpValue.setCharacterSize(UIFontSize - 5);
+    D_getCoin.setTexture(D_coin);
+    D_getCoin.setOrigin(getObjWidth(D_getCoin) / 2,getObjHeight(D_getCoin) / 2);
+    D_getCoin.setScale(0.55,0.55);
 }
 
 void Game::drawPlaying(){
@@ -1808,6 +1873,17 @@ void Game::drawPlaying(){
         this->gameWindow->draw(D_deathMoney);
         this->gameWindow->draw(D_deathMoneyValue);
         this->gameWindow->draw(D_coinS);
+    }
+    if(isGetItem){
+        updateGetItem();
+        this->gameWindow->draw(D_getWin);
+        this->gameWindow->draw(D_getOk);
+        this->gameWindow->draw(D_getText);
+        this->gameWindow->draw(D_getExp);
+        this->gameWindow->draw(D_getExpValue);
+        this->gameWindow->draw(D_getMoney);
+        this->gameWindow->draw(D_getMoneyValue);
+        this->gameWindow->draw(D_getCoin);
     }
     if(isShopOpen){
         this->gameWindow->draw(UI_shopWinS);
@@ -1918,8 +1994,6 @@ void Game::updateMonDes(){
 
 void Game::dungeon(int monster){
     monsterIndex = monster;
-    if(player[now_player].getAgi() > 0)fightTurn = 0;
-    else fightTurn = 1;
 }
 
 void Game::updateDungeon(){
@@ -1984,16 +2058,35 @@ void Game::updateDungeon(){
             break;
         case 3:
             if(playerDes == enemyDes){}
-            else if(playerDes == 0 && enemyDes == 1){}//enemy win
-            else if(playerDes == 1 && enemyDes == 2){}//enemy win
-            else if(playerDes == 2 && enemyDes == 0){}//enemy win
-            else{}//player win
+            else if(playerDes == 0 && enemyDes == 1)isPlayerWin = false;//enemy win
+            else if(playerDes == 1 && enemyDes == 2)isPlayerWin = false;//enemy win
+            else if(playerDes == 2 && enemyDes == 0)isPlayerWin = false;//enemy win
+            else isPlayerWin = true;//player win
             dunStates = 4;
             break;
         case 4:
-            checkDeath();
+            if(isPlayerWin){
+                if(fightTurn % 2 == 0){
+
+                }
+                else{
+                    player[now_player].hp -= 10;
+                }
+            }
+            else{
+                if(fightTurn % 2 == 0){
+
+                }
+                else{
+                    player[now_player].hp -= 20;
+                }
+            }
+            dunStates = 5;
             break;
         case 5:
+            checkDeath();
+            break;
+        case 6:
             dunStates = 0;
             fightTurn++;
             break;
@@ -2013,17 +2106,49 @@ void Game::updateDungeon(){
 
 void Game::checkDeath(){
     if(player[now_player].hp == 0){
-        isDun = false;
+        canUsePotion = false;
         resetMonster();
         death();
     }
-    else if(0){
+    else if(1){
         resetMonster();
+        getItem();
         if(monsterIndex == 3)upgradeBoss();
     }
     else{
-        dunStates = 5;
+        dunStates = 6;
     }
+}
+
+void Game::getItem(){
+    isGetItem = true;
+}
+
+void Game::updateGetItem(){
+    D_getText.setOrigin(getObjWidth(D_getText) / 2,getObjHeight(D_getText) / 2);
+    D_getText.setPosition(windowMidWidth(),windowMidHeight() - 110);
+    D_getOk.setOrigin(getObjWidth(D_getOk) / 2,getObjHeight(D_getOk) / 2);
+    D_getOk.setPosition(windowMidWidth(),windowMidHeight() + 110);
+    D_getExp.setOrigin(getObjWidth(D_getExp) / 2,getObjHeight(D_getExp) / 2);
+    D_getExp.setPosition(windowMidWidth() - 150,windowMidHeight() - 20);
+    D_getExpValue.setString(to_string(getExp()));
+    D_getExpValue.setOrigin(getObjWidth(D_getExpValue) / 2,getObjHeight(D_getExpValue) / 2);
+    D_getExpValue.setPosition(windowMidWidth() + 150,D_getExp.getPosition().y);
+    D_getMoney.setOrigin(getObjWidth(D_getMoney) / 2,getObjHeight(D_getMoney) / 2);
+    D_getMoney.setPosition(windowMidWidth() - 150,windowMidHeight() + 30);
+    D_getMoneyValue.setString(to_string(getMoney()));
+    D_getMoneyValue.setOrigin(getObjWidth(D_getMoneyValue) / 2,getObjHeight(D_getMoneyValue) / 2);
+    D_getMoneyValue.setPosition(windowMidWidth() + 150,D_getMoney.getPosition().y);
+    D_getCoin.setPosition(D_getMoneyValue.getPosition().x + 110,D_getMoneyValue.getPosition().y + 3);
+    if(D_getOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+        D_getOk.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isDun = false;
+            isGetItem = false;
+            gameStates = 7;
+        }
+    }
+    else D_getOk.setScale(1,1);
 }
 
 void Game::resetMonster(){
@@ -2035,10 +2160,22 @@ void Game::upgradeBoss(){
 }
 
 int Game::loseMoney(){
+    player[now_player].money -= 100;
+    return 100;
+}
+
+int Game::getMoney(){
+    player[now_player].money += 100;
     return 100;
 }
 
 int Game::loseExp(){
+    player[now_player].exp -= 50;
+    return 50;
+}
+
+int Game::getExp(){
+    player[now_player].exp += 50;
     return 50;
 }
 
@@ -2065,7 +2202,9 @@ void Game::updateDeath(){
     if(D_deathOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
         D_deathOk.setScale(1.05,1.05);
         if(checkMouseClick()){
+            isDun = false;
             isDeathOpen = false;
+            canUsePotion = true;
             gameStates = 7;
         }
     }
@@ -2110,13 +2249,13 @@ void Game::randomRPS(){
         };
         switch(RPStempMon.back()){
             case 0:
-                D_monsterRPS.setTexture(D_rockT);
+                D_monsterRPS.setTexture(D_monRockT);
                 break;
             case 1:
-                D_monsterRPS.setTexture(D_paperT);
+                D_monsterRPS.setTexture(D_monPaperT);
                 break;
             case 2:
-                D_monsterRPS.setTexture(D_scissorsT);
+                D_monsterRPS.setTexture(D_monScissorsT);
                 break;
         };
     }
@@ -2302,6 +2441,8 @@ void Game::updateDunAsk(int kind){
         if(checkMouseClick()){
             askKind = kind;
             dunStates = 0;
+            if(player[now_player].getAgi() > 0)fightTurn = 0;
+            else fightTurn = 1;
             isDunAskOpen = false;
             gameStates = 5;
         }
@@ -2466,30 +2607,29 @@ void Game::randomDice(){
 }
 
 void Game::updateLevel(){
-    if(player[now_player].exp >= expMax[player[now_player].level - 1] && player[now_player].level < 29){
-        player[now_player].exp -= expMax[player[now_player].level - 1];
-        player[now_player].level++;
+    if(player[now_player].level < 30){
+        for(int i = 0;i < 29;i++){
+            if(player[now_player].exp >= expMax[i]){
+                player[now_player].exp -= expMax[i];
+                player[now_player].level = i + 1;
+            }
+        }
     }
-    else if(player[now_player].level == 29 && player[now_player].exp >= expMax[player[now_player].level - 1]){
-        player[now_player].exp = expMax.back();
-        player[now_player].level++;
-    }
-    else if(player[now_player].level == 30){
-        player[now_player].exp = expMax.back();
-    }
+    else player[now_player].exp = expMax.back();
 }
 
 void Game::updateView(){
-    if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3){
+    cout << camera.getCenter().x << " " << windowMidWidth() << "\n";
+    if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3 && camera.getCenter().x < 2040){
         camera.move(horizontalScrollSpeed,0);
     }
-    else if(Mouse::getPosition(*this->gameWindow).x < 3){
+    else if(Mouse::getPosition(*this->gameWindow).x < 3 && camera.getCenter().x > windowMidWidth()){
         camera.move(-horizontalScrollSpeed,0);
     }
-    if(Mouse::getPosition(*this->gameWindow).y > windowHeight - 3){
+    if(Mouse::getPosition(*this->gameWindow).y > windowHeight - 3 && camera.getCenter().y < 1460){
         camera.move(0,verticalScrollSpeed);
     }
-    else if(Mouse::getPosition(*this->gameWindow).y < 3){
+    else if(Mouse::getPosition(*this->gameWindow).y < 3 && camera.getCenter().y > windowMidHeight()){
         camera.move(0,-verticalScrollSpeed);
     }
 }
@@ -2633,7 +2773,7 @@ void Game::drawUI(){
 
 void Game::updateUI(){
     UI_hpValue.setString(to_string(player[now_player].hp) + "/" + to_string(player[now_player].HpMax()));
-    UI_expValue.setString(to_string(player[now_player].exp) + "/" + to_string(expMax[player[now_player].level - 1]));
+    UI_expValue.setString(to_string(player[now_player].exp) + "/" + to_string(expMax[player[now_player].level]));
     for(int i = 0;i < 10;i++){
         if(player[now_player].weaponIndex != -1){
             UI_swordName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 90);
@@ -2680,7 +2820,7 @@ void Game::updateUI(){
     if(UI_HpSS.getGlobalBounds().contains(mousePos)){
         if(player[now_player].red_potion > 0)UI_HpSS.setScale(0.7,0.7);
         if(checkMouseClick() && player[now_player].hp < player[now_player].HpMax()){
-            if(player[now_player].red_potion > 0){
+            if(player[now_player].red_potion > 0 && canUsePotion){
                 player[now_player].red_potion--;
                 usePotion(potion[0].potion_effect);
             }
@@ -2690,7 +2830,7 @@ void Game::updateUI(){
     if(UI_HpLS.getGlobalBounds().contains(mousePos)){
         if(player[now_player].green_potion > 0)UI_HpLS.setScale(0.7,0.7);
         if(checkMouseClick() && player[now_player].hp < player[now_player].HpMax()){
-            if(player[now_player].green_potion > 0){
+            if(player[now_player].green_potion > 0 && canUsePotion){
                 player[now_player].green_potion--;
                 usePotion(potion[1].potion_effect);
             }
