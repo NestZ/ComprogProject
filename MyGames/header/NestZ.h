@@ -12,49 +12,21 @@
 using namespace std;
 using namespace sf;
 
-
 class Game;
 class Player;
 struct itemStat;
 struct accessory;
 struct chara;
 struct monster;
-struct path_st;
-const int num_allpath = 3;
+struct NestZpath;
 
-class path_st
-{
-    public :
-        int number = 0 ;
-        float pos_x = 0;
-        float pos_y = 0;
-        int this_path_is = 0;
-        std::vector<int> nextpath;//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 : dum3 6 : boos 7;
-};
-
-path_st allpath[num_allpath];
-set<path_st> ablePath;
-
-void path_set(){
-    allpath[0].number = 0;
-    allpath[0].pos_x = 100;
-    allpath[0].pos_y = 100;
-    allpath[0].nextpath.push_back(1);
-    allpath[0].this_path_is = 1;
-
-    allpath[1].number = 1;
-    allpath[1].pos_x = 200;
-    allpath[1].pos_y = 200;
-    allpath[1].nextpath.push_back(2);
-    allpath[1].this_path_is = 0;
-
-    allpath[2].number = 2;
-    allpath[2].pos_x = 300;
-    allpath[2].pos_y = 300;
-    allpath[2].nextpath.push_back(0);
-    allpath[2].nextpath.push_back(1);
-    allpath[2].this_path_is = 4;
-}
+typedef struct NestZpath{
+    int pathEf;
+    double X;
+    double Y;
+    vector<int> nextPathNum;
+}P;
+P Path[11];
 
 struct chara{
 	int stat[6],lv[3];//str agi luk  vit atk def
@@ -62,7 +34,7 @@ struct chara{
 }character[6];
 
 struct monster{
-	int stat[5];//
+	int stat[5];
 	string name;
 }monster[4];
 
@@ -96,6 +68,7 @@ class Player{
         int level;
         int exp;
         int now_path = 0;
+        int NestZ_nowPath;
         int hp;
         int weaponIndex;
         int shieldIndex;
@@ -111,7 +84,6 @@ class Player{
         int red_potion;
         int green_potion;
         int moveNum;
-        int now_player_path_is = -1;
         //Function
         Player();
         int getAtk();
@@ -134,6 +106,7 @@ Player::Player(){
     shieldIndex = -1;
     accessoryIndex = -1;
     hp = 50;
+    NestZ_nowPath = 0;
     //hp = HpMax();
 }
 
@@ -272,10 +245,10 @@ class Game{
         void useThisItem(bool);
         void Get_Heal(Player &);
         void updateAskGo();
-        void Player_choose_path();
-        void askGo();
-        void cal_path(path_st,int);
-        void find_path(int,int);
+        void NestZwalk(int &);
+        void setPath();
+        void moveDelay(int &);
+        void moveDelayJunction(int &);
     private:
         //Menu
         Vector2i mousePosView;
@@ -369,7 +342,6 @@ class Game{
         int fightTurn;
         int playerDes;
         int enemyDes;
-        int moveNum;
         bool randomStart;
         bool isBagOpen;
         bool isDesOpen;
@@ -384,15 +356,15 @@ class Game{
         bool isMonDes;
         bool isPlayerWin;
         bool isGetItem;
-        bool isAskGO;
+        bool isAskGo;
         bool canUsePotion;
         bool equip;
+        bool askTemp;
         Font cordiaFont;
         vector<int> expMax;
         vector<int> diceTemp;
         vector<int> timeTemp;
         vector<int> RPStempMon;
-        vector<Text> TextGo;
         int startExp;
         int UIFontSize;
         Texture mapTexture;
@@ -409,6 +381,8 @@ class Game{
         int askKind;
         int askIndex;
         int buyNum;
+        int playerChoosedPath;
+        int moveTemp;
         Text UI_name;
         Text UI_hpText;
         Text UI_level;
@@ -552,9 +526,10 @@ class Game{
         Sprite D_monDesBGS;
         Sprite D_getWin;
         Sprite D_getCoin;
-        Text UI_t1;
-        int willGOPath = 0;
         Sprite charOnMap[6];
+        Sprite UI_askGoWin;
+        Text UI_askGoPath[2];
+        Text UI_askGoText;
 };
 
 Game::Game(){
@@ -1306,9 +1281,10 @@ void Game::initPlayingVariables(){
     isAskBuyOpen = false;
     isDeathOpen = false;
     isGetItem = false;
-    isAskGO = false;
+    isAskGo = false;
     canUsePotion = true;
     equip = false;
+    askTemp = true;
     gameStates = 1;
     buyNum = 1;
     diceTemp.push_back(-1);
@@ -1318,7 +1294,7 @@ void Game::initPlayingVariables(){
     while(expMax.size() != 30){
         expMax.push_back(expMax.back() * 1.2);
     }
-    path_set();
+    setPath();
     setItemStat();
     mapTexture.loadFromFile("img/Map.jpg");
     mapSprite.setTexture(mapTexture);
@@ -1921,6 +1897,27 @@ void Game::initPlayingVariables(){
     charOnMap[4].setOrigin(getObjWidth(charOnMap[4]) / 2,getObjHeight(charOnMap[4]));
     charOnMap[5].setTexture(charTexture[5]);
     charOnMap[5].setOrigin(getObjWidth(charOnMap[5]) / 2,getObjHeight(charOnMap[5]));
+    UI_askGoWin.setTexture(miniMenuT);
+    UI_askGoWin.setOrigin(getObjWidth(UI_askGoWin) / 2,getObjHeight(UI_askGoWin) / 2);
+    UI_askGoWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_askGoWin.setScale(1.7,0.6);
+    UI_askGoWin.setColor(Color(255,255,255,210));
+    UI_askGoText.setString("Which Path do you want to go");
+    UI_askGoText.setFillColor(Color::Black);
+    UI_askGoText.setOutlineColor(Color::White);
+    UI_askGoText.setOutlineThickness(2.5);
+    UI_askGoText.setFont(menuFont);
+    UI_askGoText.setCharacterSize(UIFontSize - 5);
+    UI_askGoPath[0].setFillColor(Color::Black);
+    UI_askGoPath[0].setOutlineColor(Color::White);
+    UI_askGoPath[0].setOutlineThickness(2.5);
+    UI_askGoPath[0].setFont(menuFont);
+    UI_askGoPath[0].setCharacterSize(UIFontSize - 5);
+    UI_askGoPath[1].setFillColor(Color::Black);
+    UI_askGoPath[1].setOutlineColor(Color::White);
+    UI_askGoPath[1].setOutlineThickness(2.5);
+    UI_askGoPath[1].setFont(menuFont);
+    UI_askGoPath[1].setCharacterSize(UIFontSize - 5);
 }
 
 void initStat(){
@@ -1946,14 +1943,17 @@ void Game::drawPlaying(){
     updateLevel();
     updateTurn();
     this->gameWindow->setView(camera);
-    if(!isDun)this->gameWindow->draw(mapSprite);
+    if(!isDun){
+        this->gameWindow->draw(mapSprite);
+        for(int i = 0;i < players;i++){
+            charOnMap[player[i].character_number].setPosition(Path[player[i].NestZ_nowPath].X,Path[player[i].NestZ_nowPath].Y);
+            this->gameWindow->draw(charOnMap[player[i].character_number]);
+        }
+    }
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
     updateEscape();
     updatePlayingState();
-    for(int i = 0;i < players;i++){
-        charOnMap[player[i].character_number].setPosition(allpath[player[i].now_path].pos_x,allpath[player[i].now_path].pos_y);
-        this->gameWindow->draw(charOnMap[player[i].character_number]);
-    }
+
     if(isDun){
         this->gameWindow->draw(D_bgS);
         this->gameWindow->draw(D_monsterFaceS);
@@ -1979,9 +1979,12 @@ void Game::drawPlaying(){
         this->gameWindow->draw(D_deathMoneyValue);
         this->gameWindow->draw(D_coinS);
     }
-    if(isAskGO){
+    if(isAskGo){
         updateAskGo();
-
+        this->gameWindow->draw(UI_askGoWin);
+        this->gameWindow->draw(UI_askGoPath[0]);
+        this->gameWindow->draw(UI_askGoPath[1]);
+        this->gameWindow->draw(UI_askGoText);
     }
     if(isGetItem){
         updateGetItem();
@@ -2005,7 +2008,6 @@ void Game::drawPlaying(){
         updateShop();
     }
     if(isAskBuyOpen){
-            cout << askIndex << "\n";
         updateAskBuy(itemBuyIndex);
         this->gameWindow->draw(UI_askBuyWin);
         this->gameWindow->draw(UI_askBuyS[itemBuyIndex]);
@@ -2646,6 +2648,7 @@ void Game::RandomMoney(){
 }
 
 void Game::updatePlayingState(){
+    cout << mousePos.x << " " << mousePos.y << "\n";
     if(gameStates == 1){ //randomDice
         if(!randomStart)diceState();
         else if(randomStart){
@@ -2658,44 +2661,43 @@ void Game::updatePlayingState(){
         player[now_player].moveNum = diceTemp.back();
         while(diceTemp.size() != 1)diceTemp.pop_back();
         randomStart = false;
+        moveTemp = diceNum;
         waitDiceAni(15);
     }
     else if(gameStates == 3){ //Move
-            find_path(diceNum,player[now_player].now_path);
-            Player_choose_path();
-            ablePath.clear();
-            TextGo.clear();
-            gameStates = 4;
+        if(diceNum > 0){
+            NestZwalk(diceNum);
+        }
     }
     else if(gameStates == 4){ //checkPath
-        //if(1)ask(0,4);
-        //if(1)dunAsk(3);
-        int check_path_is = player[now_player].now_player_path_is;//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 : dum3 6 : boos 7;
-        if(check_path_is == 0){
-            shopAsk();
-        }
-        if(check_path_is == 1){
-            RandomMoney();
-        }
-        if(check_path_is == 2){
-            useThisItem(false);
-        }
-        if(check_path_is == 3){
-            Get_Heal(player[now_player]);
-        }
-        if(check_path_is == 4){
-            dunAsk(0);
-        }
-        if(check_path_is == 5){
-            dunAsk(1);
-        }
-        if(check_path_is == 6){
-            dunAsk(2);
-        }
-        if(check_path_is == 7){
-            dunAsk(3);
-        }
-        //if(1)shopAsk();
+        switch(Path[player[now_player].NestZ_nowPath].pathEf){
+            case 0:
+                shopAsk();
+                break;
+            case 1:
+                RandomMoney();
+                gameStates = 7;
+                break;
+            case 2:
+                useThisItem(false);
+                gameStates = 7;
+                break;
+            case 3:
+                //heal
+                gameStates = 7;
+                break;
+            case 4:
+                dunAsk(0);
+                break;
+            case 5:
+                dunAsk(1);
+                break;
+            case 6:
+                dunAsk(2);
+                break;
+            case 7:
+                dunAsk(3);
+        };
     }
     else if(gameStates == 5){ //dungeon
         isDun = true;
@@ -2711,37 +2713,114 @@ void Game::updatePlayingState(){
     }
 }
 
-void Game::Player_choose_path(){
-    if(ablePath.size() == 1){
-        willGOPath = ablePath.begin();
-    }else if(ablePath.size() > 1){
-        askGo();
+void Game::NestZwalk(int &diceMove){
+    if(Path[player[now_player].NestZ_nowPath].nextPathNum.size() == 1){
+        moveDelay(diceMove);
     }
-    path_st path_a;
-    for(int i = 0 ; i < num_allpath ; i++){
-        if(allpath[i].number == willGOPath){
-            path_a = allpath[i];
-        }
+    else{
+        moveDelayJunction(diceMove);
     }
-    player[now_player].now_path = path_a.number;
-    player[now_player].now_player_path_is = path_a.this_path_is;
-
 }
 
-void Game::askGo(){
-    isAskGO = true;
+void Game::moveDelay(int &diceMove){
+    totalTime += deltaTime;
+    if(totalTime >= 0.8f){
+        totalTime -= 0.8f;
+        timeTemp.push_back(1);
+        player[now_player].NestZ_nowPath = Path[player[now_player].NestZ_nowPath].nextPathNum.back();
+        diceMove--;
+    }
+    if(timeTemp.size() == moveTemp){
+        while(timeTemp.size() != 0)timeTemp.pop_back();
+        totalTime = 0.0f;
+        gameStates = 4;
+    }
+}
+
+void Game::moveDelayJunction(int &diceMove){
+    if(askTemp){
+        isAskGo = true;
+        askTemp = false;
+    }
+    if(!isAskGo){
+        totalTime += deltaTime;
+        if(totalTime >= 0.8f){
+            totalTime -= 0.8f;
+            timeTemp.push_back(1);
+            player[now_player].NestZ_nowPath = playerChoosedPath;
+            diceMove--;
+            askTemp = true;
+        }
+        if(timeTemp.size() == moveTemp){
+            cout << "kuy";
+            while(timeTemp.size() != 0)timeTemp.pop_back();
+            totalTime = 0.0f;
+            gameStates = 4;
+        }
+    }
 }
 
 void Game::updateAskGo(){
-    for(int i = 0;i < ablePath.size();i++){
-        this->gameWindow->draw(charSprite[0]);
-        if(TextGo[i].getGlobalBounds().contains(mousePos)){
-            if(checkMouseClick()){
-                willGOPath = ablePath[0].number;
-                isAskGO = false;
-            }
+    UI_askGoText.setOrigin(getObjWidth(UI_askGoText) / 2,getObjHeight(UI_askGoText) / 2);
+    UI_askGoText.setPosition(windowMidWidth(),windowMidHeight() - 50);
+    UI_askGoPath[0].setString("Path " + to_string(Path[player[now_player].NestZ_nowPath].nextPathNum.front()));
+    UI_askGoPath[0].setOrigin(getObjWidth(UI_askGoPath[0]) / 2,getObjHeight(UI_askGoPath[0]) / 2);
+    UI_askGoPath[0].setPosition(windowMidWidth() + 250,windowMidHeight() + 50);
+    UI_askGoPath[1].setString("Path " + to_string(Path[player[now_player].NestZ_nowPath].nextPathNum.back()));
+    UI_askGoPath[1].setOrigin(getObjWidth(UI_askGoPath[1]) / 2,getObjHeight(UI_askGoPath[1]) / 2);
+    UI_askGoPath[1].setPosition(windowMidWidth() - 250,windowMidHeight() + 50);
+    if(UI_askGoPath[0].getGlobalBounds().contains(mousePos)){
+        UI_askGoPath[0].setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isAskGo = false;
+            playerChoosedPath = Path[player[now_player].NestZ_nowPath].nextPathNum.front();
         }
     }
+    else UI_askGoPath[0].setScale(1,1);
+    if(UI_askGoPath[1].getGlobalBounds().contains(mousePos)){
+        UI_askGoPath[1].setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isAskGo = false;
+            playerChoosedPath = Path[player[now_player].NestZ_nowPath].nextPathNum.back();
+        }
+    }
+    else UI_askGoPath[1].setScale(1,1);
+}
+
+void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 : dum3 6 : boos 7;
+    Path[0] = {-1,1143,1806};
+    Path[0].nextPathNum.push_back(1);
+
+    Path[1] = {1,988,1806};
+    Path[1].nextPathNum.push_back(2);
+
+    Path[2] = {4,822,1806};
+    Path[2].nextPathNum.push_back(3);
+
+    Path[3] = {4,659,1806};
+    Path[3].nextPathNum.push_back(4);
+
+    Path[4] = {1,502,1806};
+    Path[4].nextPathNum.push_back(5);
+
+    Path[5] = {4,392,1697};
+    Path[5].nextPathNum.push_back(6);
+
+    Path[6] = {5,381,1556};
+    Path[6].nextPathNum.push_back(7);
+
+    Path[7] = {0,387,1410};
+    Path[7].nextPathNum.push_back(8);
+    Path[7].nextPathNum.push_back(9);
+
+    Path[8] = {0,388,1265};
+    Path[8].nextPathNum.push_back(9);
+
+    Path[9] = {3,552,1410};
+    Path[9].nextPathNum.push_back(10);
+
+    Path[10] = {4,684,1333};
+    Path[10].nextPathNum.push_back(1);
 }
 
 void Game::waitDiceAni(unsigned int time){
@@ -3050,49 +3129,6 @@ void Game::usePotion(int heal){
 
 void Game::updateTurn(){
     now_player = turn % players;
-}
-
-void Game::cal_path(path_st now_path, int can_walk){
-    path_st next_path;
-    if(can_walk == 0){
-        int temp = ablePath.size();
-        cout << now_path.number << " ";
-        ablePath.insert(now_path);
-        if(temp < ablePath.size()){
-            UI_t1.setString(to_string(now_path.number) + "kuyuyuyuyuyu");
-            UI_t1.setFillColor(Color::Black);
-            UI_t1.setOutlineColor(Color::White);
-            UI_t1.setOutlineThickness(2.5);
-            UI_t1.setFont(menuFont);
-            UI_t1.setCharacterSize(UIFontSize - 5);
-            UI_t1.setPosition(500,500);
-            TextGo.push_back(UI_t1);
-            cout << TextGo.size() << "\n";
-        }
-
-    }else{
-        for(int i = 0 ; i < now_path.nextpath.size() ; i++){
-            for(int j = 0 ; j < num_allpath ;j++){
-                if(now_path.nextpath[i] == allpath[j].number){
-                    next_path = allpath[j];
-                    cal_path(next_path,can_walk-1);
-                }
-            }
-
-        }
-    }
-}
-
-void Game::find_path(int can_walk,int nowpath_of_player){
-    path_st now_path;
-    for(int i = 0 ; i < num_allpath ; i++){
-        if(allpath[i].number == nowpath_of_player){
-            now_path = allpath[i];
-            break;
-        }
-    }
-    //cout << now_path.number << endl;
-    cal_path(now_path,can_walk);
 }
 
 void Game::setItemStat(){
