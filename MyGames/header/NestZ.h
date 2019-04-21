@@ -6,12 +6,110 @@
 #include <stack>
 #include <vector>
 #include <fstream>
+#include <cmath>
 
 using namespace std;
 using namespace sf;
 
-int now_player;
+class Game;
+class Player;
+struct itemStat;
 
+struct itemStat{
+    int sword_stat[3];
+    int potion_effect;
+    int shield_stat[3];
+    int price;
+    string name_object;
+    string Des;
+};
+itemStat sword[10];
+itemStat shield[10];
+itemStat potion[2];
+
+struct accessory{
+    string name;
+    string Des;
+    int price;
+    int extra_vit = 0;
+    int extra_atk = 0;
+    int extra_luck = 0;
+    int extra_str = 0;
+    int extra_agi = 0;
+}accessory[10];
+
+class Player{
+    public:
+        //Variables
+        int character_number;
+        int level;
+        int exp;
+        int now_path;
+        int hp;
+        int weaponIndex;
+        int shieldIndex;
+        int accessoryIndex;
+        int star;
+        int money;
+        int std_str = 20;
+        int std_vit = 20;
+        int std_agi = 20;
+        int std_luk = 20;
+        int std_atk = 20;
+        int std_def = 20;
+        int red_potion;
+        int green_potion;
+        int moveNum;
+        double pos_x;
+        double pos_y;
+        int now_player_path;
+        //Function
+        Player();
+        int getAtk();
+        int getDef();
+        int getStr();
+        int getVit();
+        int getAgi();
+        int getLuk();
+        int HpMax();
+};
+
+Player::Player(){
+    level = 1;
+    exp = 0;
+    money = 1000;
+    red_potion = 10;
+    green_potion = 10;
+    star = 0;
+    weaponIndex = 0;
+    shieldIndex = -1;
+    accessoryIndex = -1;
+    hp = 50;
+    //hp = HpMax();
+}
+
+int Player::getAtk(){
+    return std_atk + getStr()/2 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_atk:0);
+}
+int Player::getDef(){
+    return std_def + getVit() + (shieldIndex > -1 ? shield[shieldIndex].shield_stat[1]:0);
+}
+int Player::getAgi(){
+    return std_agi + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_agi:0) + sword[weaponIndex].sword_stat[1];
+}
+int Player::getStr(){
+    return  std_str + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_str:0) + sword[weaponIndex].sword_stat[0];
+}
+int Player::getLuk(){
+    return std_luk + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_luck:0) + sword[weaponIndex].sword_stat[2];
+}
+int Player::getVit(){
+    return std_vit + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_vit:0) + (shieldIndex > -1 ? shield[shieldIndex].shield_stat[0]:0);
+}
+int Player::HpMax(){
+    return getVit()*5;
+}
+int now_player = 0;
 class Game{
     public:
         //Window
@@ -25,7 +123,6 @@ class Game{
         void update();
         Event updateSfmlEvent();
         void render();
-        enum States {Menu, ChoosePlayers, ChooseCharacters, Setting, InsertName, Playing};
         bool checkMouseClick();
         double windowMidWidth();
         double windowMidHeight();
@@ -78,10 +175,49 @@ class Game{
         void updateBackButtonIPN();
         void resetIPN();
         bool isValidCharacter(char);
+        bool checkUsedName(string);
         //Playing
+        int loseExp();
+        int loseMoney();
         void drawPlaying();
         void initPlayingVariables();
         void updateView();
+        void updateEscape();
+        void updateMiniMenuClick();
+        void drawUI();
+        void updateUI();
+        void updateTurn();
+        void diceState();
+        void randomDice();
+        void updateLevel();
+        void updatePlayingState();
+        void usePotion(int);
+        void waitDiceAni(unsigned int);
+        void ask(int,int);
+        void updateAsk();
+        void dunAsk(int);
+        void updateDunAsk(int);
+        void shopAsk();
+        void updateShopAsk();
+        void updateShop();
+        void updateAskBuy(int);
+        void askBuy(int);
+        void dungeon(int);
+        void updateDungeon();
+        void waitRPSAni(unsigned int);
+        void randomRPS();
+        void checkDeath();
+        void resetMonster();
+        void upgradeBoss();
+        void death();
+        void updateDeath();
+        void updateMonDes();
+        void getItem();
+        void updateGetItem();
+        int getMoney();
+        int getExp();
+        void setItemStat();
+        void get_item_boss();
     private:
         //Menu
         Vector2i mousePosView;
@@ -109,6 +245,7 @@ class Game{
         Texture minusT;
         Sprite minusS[3];
         //Window
+        enum States {Menu, ChoosePlayers, ChooseCharacters, Setting, InsertName, Playing};
         Texture backButtonTexture;
         Sprite backButtonSprite;
         Texture mouseIconTexture;
@@ -147,7 +284,9 @@ class Game{
         //InsertName
         int cinTextFontSize;
         int insertedNameFontSize;
+        bool isNameUsed;
         Text cinText;
+        Text nameUsed;
         Event textInputEvent;
         char textEntered;
         const unsigned int MAX_TEXT = 6;
@@ -159,9 +298,199 @@ class Game{
         Texture insertNameBGTexture;
         Sprite insertNameBGSprite;
         //Playing
+        Clock clock;
+        float deltaTime;
+        float totalTime;
+        float animationSpeed;
+        int diceNum;
+        int shopPriceValue[24];
+        int itemBuyIndex;
+        int dunStates;
+        int playerRPS;
+        int monsterRPS;
+        int fightTurn;
+        int playerDes;
+        int enemyDes;
+        bool randomStart;
+        bool isBagOpen;
+        bool isDesOpen;
+        bool isMenuOpen;
+        bool isAskOpen;
+        bool isDunAskOpen;
+        bool isShopAskOpen;
+        bool isShopOpen;
+        bool isAskBuyOpen;
+        bool isDeathOpen;
+        bool isDun;
+        bool isMonDes;
+        bool isPlayerWin;
+        bool isGetItem;
+        bool canUsePotion;
+        bool equip;
+        Font cordiaFont;
+        vector<int> expMax;
+        vector<int> diceTemp;
+        vector<int> timeTemp;
+        vector<int> RPStemp;
+        vector<int> RPStempMon;
+        int startExp;
+        int UIFontSize;
         Texture mapTexture;
         Sprite mapSprite;
+        Texture miniMenuT;
+        Sprite miniMenuS;
         View camera;
+        Text miniMenuText[3];
+        int miniMenuFontSize;
+        int arrIndex[3] = {-1,0,1};
+        int turn;
+        Player *player;
+        int gameStates;
+        int askKind;
+        int askIndex;
+        int buyNum;
+        Text UI_name;
+        Text UI_hpText;
+        Text UI_level;
+        Text UI_class;
+        Text UI_expText;
+        Text UI_hpValue;
+        Text UI_expValue;
+        Text UI_diceValue;
+        Text UI_hpSValue;
+        Text UI_hpLValue;
+        Text UI_swordName[10];
+        Text UI_shieldName[10];
+        Text UI_accName[10];
+        Text UI_potionName[2];
+        Text UI_swordDes[10];
+        Text UI_shieldDes[10];
+        Text UI_accDes[10];
+        Text UI_potionDes[10];
+        Text UI_playerNameDes;
+        Text UI_statDes;
+        Text UI_statDesR;
+        Text UI_yes;
+        Text UI_no;
+        Text UI_ask;
+        Text UI_dunYes;
+        Text UI_dunNo;
+        Text UI_dunAsk;
+        Text UI_shopAsk;
+        Text UI_shopYes;
+        Text UI_shopNo;
+        Text UI_quitShop;
+        Text UI_playerMoney;
+        Text UI_money;
+        Text UI_shopPrice[24];
+        Text  UI_shopDes[24];
+        Text UI_shopName[24];
+        Text UI_askBuyOk;
+        Text UI_askBuyCancle;
+        Text UI_askBuy;
+        Text UI_buyNum;
+        Texture UI_DArrowT;
+        Sprite UI_DArrowS;
+        Texture UI_UArrowT;
+        Sprite UI_UArrowS;
+        Sprite UI_askBuyS[24];
+        Sprite UI_askBuyWin;
+        Sprite UI_shopItem[24];
+        Texture UI_shopWinT;
+        Sprite UI_shopWinS;
+        Sprite UI_shopAskWin;
+        Texture UI_shopIconT;
+        Sprite UI_shopIconS;
+        Texture UI_dunAskMonT[4];
+        Sprite UI_dunAskMonS;
+        Sprite UI_dunAskWin;
+        Sprite UI_askWeaponS;
+        Sprite UI_askShieldS;
+        Sprite UI_askAccS;
+        Sprite UI_askWin;
+        Sprite UI_playerDesCharS;
+        Texture UI_playerDesBGT;
+        Sprite UI_playerDesBGS;
+        Texture UI_accT[10];
+        Sprite UI_accS;
+        Texture UI_shieldT[10];
+        Sprite UI_shieldS;
+        Texture UI_swordT[10];
+        Sprite UI_swordS;
+        Texture UI_HpST;
+        Sprite UI_HpSS;
+        Texture UI_HpLT;
+        Sprite UI_HpLS;
+        Texture UI_bagT;
+        Sprite UI_bagS;
+        Texture UI_invenT;
+        Sprite UI_invenS;
+        Texture UI_diceT;
+        Sprite UI_diceS;
+        Texture UI_starT;
+        Sprite UI_starS[3];
+        Texture UI_maxExpT;
+        Sprite UI_maxExpS;
+        Texture UI_expBarT;
+        Sprite UI_expBarS;
+        Texture UI_expBorderT;
+        Sprite UI_expBorderS;
+        Texture UI_hpBorderT;
+        Sprite UI_hpBorderS;
+        Texture UI_maxHpT;
+        Sprite UI_maxHpS;
+        Texture UI_hpBarT;
+        Sprite UI_hpBarS;
+        Texture UI_charFaceT[6];
+        Sprite UI_charFaceS;
+        int monsterIndex;
+        Text D_Turn;
+        Text D_monHpValue;
+        Text D_monHpText;
+        Text D_monName;
+        Text D_monLevel;
+        Text D_deathText;
+        Text D_deathOk;
+        Text D_deathExp;
+        Text D_deathExpValue;
+        Text D_deathMoney;
+        Text D_deathMoneyValue;
+        Text D_monNameDes;
+        Text D_monStatDes;
+        Text D_monStatDesR;
+        Text D_getText;
+        Text D_getOk;
+        Text D_getExp;
+        Text D_getExpValue;
+        Text D_getMoney;
+        Text D_getMoneyValue;
+        Sprite D_playerChar;
+        Texture D_bgT;
+        Sprite D_bgS;
+        Texture D_startT;
+        Sprite D_startS;
+        Texture D_rockT;
+        Texture D_paperT;
+        Texture D_scissorsT;
+        Texture D_monRockT;
+        Texture D_monPaperT;
+        Texture D_monScissorsT;
+        Sprite D_playerRPS;
+        Sprite D_monsterRPS;
+        Texture D_monsterFace[4];
+        Sprite D_monsterFaceS;
+        Sprite D_monHpBar;
+        Sprite D_monHpBorder;
+        Sprite D_monMaxHp;
+        Texture D_monChar[4];
+        Sprite D_monCharS;
+        Sprite D_deathWin;
+        Texture D_coin;
+        Sprite D_coinS;
+        Sprite D_monDesCharS;
+        Sprite D_monDesBGS;
+        Sprite D_getWin;
+        Sprite D_getCoin;
 };
 
 Game::Game(){
@@ -181,25 +510,28 @@ void Game::initVariables(){
     initInsertNameVariables();
     initChoosePlayersVariables();
     initChooseCharactersVariables();
-    initPlayingVariables();
     initWindowVariables();
     initSettingVariables();
     initGlobalVariables();
+    initPlayingVariables();
 }
 
 void Game::initFont(){
-    menuFontSize = 45;
-    choosePlayersFontSize = 35;
-    cinTextFontSize = 35;
-    insertedNameFontSize = 30;
-    choosingCharacterFontSize = 45;
-    playerChoosedFontSize = 20;
-    settingFontSize = 35;
-    menuFont.loadFromFile("font/8-BIT WONDER.TTF");
+    menuFontSize = 55;
+    choosePlayersFontSize = 45;
+    cinTextFontSize = 40;
+    insertedNameFontSize = 45;
+    choosingCharacterFontSize = 50;
+    playerChoosedFontSize = 25;
+    settingFontSize = 40;
+    miniMenuFontSize = 40;
+    UIFontSize = 35;
+    menuFont.loadFromFile("font/ka1.ttf");
+    cordiaFont.loadFromFile("font/cordia_0.ttf");
 }
 
 void Game::initWindow(){
-    gameWindow = new RenderWindow(VideoMode(windowWidth,windowHeight),GameName,Style::Close);
+    gameWindow = new RenderWindow(VideoMode(),GameName,Style::Fullscreen);
     this->gameWindow->setVerticalSyncEnabled(false);
     this->gameWindow->setFramerateLimit(60);
     this->gameWindow->setKeyRepeatEnabled(true);
@@ -209,14 +541,17 @@ void Game::initWindow(){
 
 void Game::initWindowVariables(){
     state.push(Menu);
+    player = NULL;
     gameWindow = NULL;
-    windowWidth = 1280;
-    windowHeight = 720;
+    windowWidth = 1920;
+    windowHeight = 1080;
     MouseReleased = true;
     keyReleased = true;
 }
 
 void Game::initGlobalVariables(){
+    deltaTime = 0.0f;
+    totalTime = 0.0f;
     backButtonTexture.loadFromFile("img/BackButton.png");
     backButtonTexture.setSmooth(true);
     backButtonSprite.setTexture(backButtonTexture);
@@ -229,6 +564,9 @@ void Game::initGlobalVariables(){
     mouseIconSprite.setTexture(mouseIconTexture);
     mouseIconSprite.setOrigin(10,10);
     mouseIconSprite.setScale(0.6,0.6);
+    animationSpeed = 0.2f;
+    startExp = 100;
+    turn = 0;
 }
 
 void Game::render(){
@@ -265,9 +603,9 @@ void Game::run(){
 
 void Game::update(){
     //Window
+    deltaTime = clock.restart().asSeconds();
     updateSfmlEvent();
     updateMouseIcon();
-    //Menu
     updateMousePos();
 }
 
@@ -330,6 +668,9 @@ void Game::initMenuVariables(){
     menuButton[0].setString("PLAY");
     menuButton[1].setString("SETTING");
     menuButton[2].setString("QUIT");
+    for(int i = 0;i < 3;i++){
+        menuButton[i].setFillColor(Color::Black);
+    }
 }
 
 void Game::drawMenu(){
@@ -353,7 +694,7 @@ void Game::setMenuButton(Text &text, int index){
     text.setLetterSpacing(1.5);
     text.setCharacterSize(menuFontSize);
     text.setOrigin(getObjWidth(text)/2.0,getObjHeight(text)/2.0);
-    text.setPosition(windowMidWidth(),(windowMidHeight() + index*90) + 25);
+    text.setPosition(windowMidWidth(),(windowMidHeight() + index*100) + 15);
 }
 
 void Game::updateMousePos(){
@@ -364,15 +705,13 @@ void Game::updateMousePos(){
 void Game::updateMenuButton(){
     for(int i = 0;i < 3;i++){
         if(menuButton[i].getGlobalBounds().contains(mousePos)){
-            menuButton[i].setFillColor(Color::Red);
+            menuButton[i].setScale(1.02,1.02);
             if(checkMouseClick()){
                 switch(i){
                     case 0: //play
-                        this->gameWindow->clear();
                         state.push(ChoosePlayers);
                         break;
                     case 1: //setting
-                        this->gameWindow->clear();
                         state.push(Setting);
                         break;
                     case 2: //quit
@@ -380,7 +719,7 @@ void Game::updateMenuButton(){
                 }
             }
         }
-        else menuButton[i].setFillColor(Color::Black);
+        else menuButton[i].setScale(1,1);
     }
 }
 
@@ -426,18 +765,18 @@ void Game::initSettingVariables(){
     for(int i = 0;i < settingIndex;i++){
         settingText[i].setFont(menuFont);
         settingText[i].setOutlineColor(Color::White);
-        settingText[i].setOutlineThickness(4);
+        settingText[i].setOutlineThickness(3);
         settingText[i].setFillColor(Color::Black);
         settingText[i].setCharacterSize(settingFontSize);
-        settingText[i].setPosition(100,(windowHeight / 4) * (i + 1));
+        settingText[i].setPosition(300,(windowHeight / 4) * (i + 1));
     }
     for(int i = 0;i < 3;i++){
         plusS[i].setTexture(plusT);
         minusS[i].setTexture(minusT);
         plusS[i].setOrigin(getObjWidth(plusS[i]) / 2,getObjHeight(plusS[i]) / 2);
         minusS[i].setOrigin(getObjWidth(minusS[i]) / 2,getObjHeight(minusS[i]) / 2);
-        plusS[i].setPosition(1200,settingText[i].getPosition().y);
-        minusS[i].setPosition(1000,settingText[i].getPosition().y);
+        plusS[i].setPosition(windowWidth - 300,settingText[i].getPosition().y);
+        minusS[i].setPosition(windowWidth - 500,settingText[i].getPosition().y);
         plusS[i].setScale(0.8,0.8);
         minusS[i].setScale(0.8,0.8);
     }
@@ -446,7 +785,6 @@ void Game::initSettingVariables(){
     ifstream fileIn("Setting.ini");
     while(getline(fileIn,settingString)){
         sscanf(settingString.c_str(),format,temp,&setting[i]);
-        cout << temp << " " << setting[i] << '\n';
         i++;
     }
     fileIn.close();
@@ -456,10 +794,10 @@ void Game::initSettingVariables(){
     for(int i = 0;i < settingIndex;i++){
         settingValue[i].setFont(menuFont);
         settingValue[i].setOutlineColor(Color::White);
-        settingValue[i].setOutlineThickness(4);
+        settingValue[i].setOutlineThickness(3);
         settingValue[i].setFillColor(Color::Black);
         settingValue[i].setCharacterSize(settingFontSize);
-        settingValue[i].setPosition(1100,settingText[i].getPosition().y);
+        settingValue[i].setPosition(windowWidth - 400,settingText[i].getPosition().y);
     }
 }
 
@@ -487,7 +825,7 @@ void Game::updatePlusMinus(int index){
         if(plusS[index].getGlobalBounds().contains(mousePos)){
             plusS[index].setScale(0.9,0.9);
             if(checkMouseClick()){
-                if(index != 2 && setting[index] < 25){
+                if(index != 2 && setting[index] < 40){
                     setting[index]++;
                 }
                 else if(index == 2 && setting[index] < 100){
@@ -530,14 +868,12 @@ void Game::updateBackButtonST(){
         backButtonSprite.setScale(0.7,0.7);
         if(checkMouseClick()){
             updateSettingIni();
-            this->gameWindow->clear();
             state.pop();
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
     if(checkEscape()){
         updateSettingIni();
-        this->gameWindow->clear();
         state.pop();
     }
 }
@@ -570,35 +906,38 @@ void Game::drawChoosePlayers(){
 
 void Game::setChoosePlayersButton(Text &text,int index){
     text.setFont(menuFont);
+    text.setFillColor(Color::Black);
     text.setCharacterSize(choosePlayersFontSize);
     text.setOutlineColor(Color::White);
     text.setOutlineThickness(4);
     text.setLetterSpacing(1.5);
     text.setOrigin(getObjWidth(text)/2.0,getObjHeight(text)/2.0);
-    text.setPosition(windowMidWidth(),(windowHeight / 4.0) * (index + 1));
+    text.setPosition(windowMidWidth(),windowHeight / 2 + 150 * arrIndex[index]);
 }
 
 void Game::updateChoosePlayersButton(){
     for(int i = 0;i < 3;i++){
         if(chooseButton[i].getGlobalBounds().contains(mousePos)){
-            chooseButton[i].setFillColor(Color::Red);
+            chooseButton[i].setScale(1.02,1.02);
             if(checkMouseClick()){
                 switch(i){
                     case 0: //2 players
                         players = 2;
+                        player = new Player[2];
                         break;
                     case 1: //3 players
                         players = 3;
+                        player = new Player[3];
                         break;
                     case 2: //4 players
                         players = 4;
+                        player = new Player[4];
                         break;
                 }
-                this->gameWindow->clear();
                 state.push(InsertName);
             }
         }
-        else chooseButton[i].setFillColor(Color::Black);
+        else chooseButton[i].setScale(1,1);
     }
 }
 
@@ -606,13 +945,11 @@ void Game::updateBackButtonHMP(){
     if(backButtonSprite.getGlobalBounds().contains(mousePos)){
         backButtonSprite.setScale(0.7,0.7);
         if(checkMouseClick()){
-            this->gameWindow->clear();
             state.pop();
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
     if(checkEscape()){
-        this->gameWindow->clear();
         state.pop();
     }
 }
@@ -624,6 +961,7 @@ void Game::updateBackButtonHMP(){
 #############################################################################################################*/
 
 void Game::initInsertNameVariables(){
+    isNameUsed = false;
     playerNamingIndex = 0;
     setCinText(cinText,0);
     name = "";
@@ -643,29 +981,40 @@ void Game::setInsertNameText(){
     cinText.setOutlineThickness(4);
     cinText.setLetterSpacing(1.5);
     cinText.setOrigin(getObjWidth(cinText)/2.0,getObjHeight(cinText)/2.0);
-    cinText.setPosition(windowMidWidth(),windowMidHeight());
+    cinText.setPosition(windowMidWidth(),windowMidHeight() - 100);
     InsertedName.setFont(menuFont);
+    InsertedName.setLetterSpacing(2);
     InsertedName.setFillColor(Color::White);
     InsertedName.setCharacterSize(insertedNameFontSize);
     InsertedName.setOrigin(getObjWidth(InsertedName)/2.0,getObjHeight(InsertedName)/2.0);
-    InsertedName.setPosition(windowMidWidth(),windowMidHeight() + 200);
+    InsertedName.setPosition(windowMidWidth(),windowMidHeight() + 100);
+    nameUsed.setString("This name was used");
+    nameUsed.setFont(menuFont);
+    nameUsed.setFillColor(Color::Red);
+    nameUsed.setCharacterSize(cinTextFontSize - 10);
+    nameUsed.setOutlineColor(Color::White);
+    nameUsed.setOutlineThickness(4);
+    nameUsed.setOrigin(getObjWidth(nameUsed)/2.0,getObjHeight(nameUsed)/2.0);
+    nameUsed.setPosition(windowMidWidth(),windowMidHeight() + 350);
+
 }
 
 void Game::drawInsertName(){
-    //resetIPN();
     setInsertNameText();
     this->gameWindow->draw(insertNameBGSprite);
     this->gameWindow->draw(backButtonSprite);
     updateBackButtonIPN();
     this->gameWindow->draw(cinText);
     this->gameWindow->draw(InsertedName);
+    if(isNameUsed)this->gameWindow->draw(nameUsed);
     this->gameWindow->draw(mouseIconSprite);
 }
 
 void Game::updateInsertNameTextBoxEvent(Event InsertNameEvent){
     if(InsertNameEvent.type == Event::TextEntered){
+        isNameUsed = false;
         textEntered = InsertNameEvent.text.unicode;
-            updateInsertedName(textEntered);
+        updateInsertedName(textEntered);
     }
 }
 
@@ -688,23 +1037,31 @@ void Game::updateInsertedName(char insertedChar){
         name += character[i];
     }
     InsertedName.setString(name);
-    if(insertedChar == 13 && name.size() > 0){
+    if(insertedChar == 13 && name.size() > 0 && checkUsedName(name)){
         playerName.push_back(name);
         InsertedName.setString("");
         while(!character.empty()){
                 character.pop_back();
         }
-        cout << "player " << playerNamingIndex + 1 << " name's : " << playerName[playerNamingIndex] << "\n";
         if(playerNamingIndex < players - 1){
             playerNamingIndex++;
             setCinText(cinText,playerNamingIndex);
         }
         else {
             randomPick(playerName);
-            this->gameWindow->clear();
             state.push(ChooseCharacters);
         }
     }
+    else if(insertedChar == 13 && name.size() > 0 && !checkUsedName(name)){
+        isNameUsed = true;
+    }
+}
+
+bool Game::checkUsedName(string checkingName){
+    for(unsigned int i = 0;i < playerName.size();i++){
+        if(checkingName == playerName[i])return false;
+    }
+    return true;
 }
 
 void Game::updateBackButtonIPN(){
@@ -712,14 +1069,12 @@ void Game::updateBackButtonIPN(){
         backButtonSprite.setScale(0.7,0.7);
         if(checkMouseClick()){
             resetIPN();
-            this->gameWindow->clear();
             state.pop();
         }
     }
     else backButtonSprite.setScale(0.6,0.6);
     if(checkEscape()){
         resetIPN();
-        this->gameWindow->clear();
         state.pop();
     }
 }
@@ -727,9 +1082,13 @@ void Game::updateBackButtonIPN(){
 void Game::resetIPN(){
     playerNamingIndex = 0;
     name = "";
+    InsertedName.setString("");
     setCinText(cinText,playerNamingIndex);
     while(!playerName.empty()){
         playerName.pop_back();
+    }
+    while(!character.empty()){
+        character.pop_back();
     }
 }
 
@@ -787,14 +1146,11 @@ void Game::setCharacterIcon(Sprite &sprite, int index){
 void Game::randomPick(vector<string> &playerName){
     for(int i = 0;i < rand() % 100 + 1;i++){
         randomIndexST = rand() % players;
-
         do{
             randomIndexND = rand() % players;
         }while(randomIndexND == randomIndexST);
-
         Swap(playerName[randomIndexST],playerName[randomIndexND]);
     }
-    for(unsigned int i = 0;i < playerName.size();i++)cout << playerName[i] << "\n";
 }
 
 void Game::updateCharacterIcon(){
@@ -803,8 +1159,8 @@ void Game::updateCharacterIcon(){
             charSprite[i].setScale(1.1,1.1);
             if(checkMouseClick()){
                 choosed[i] = true;
+                player[chooseIndex].character_number = i;
                 playerChoosedName[chooseIndex].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 130);
-                //setPlayer's Character
                 if(chooseIndex < players - 1)chooseIndex++;
                 else state.push(Playing);
             }
@@ -822,11 +1178,11 @@ void Game::updateChoosingState(){
     mainPlayerNameText.setCharacterSize(choosingCharacterFontSize);
     mainPlayerNameText.setFont(menuFont);
     mainPlayerNameText.setOrigin(getObjWidth(mainPlayerNameText) / 2,getObjHeight(mainPlayerNameText) / 2);
-    mainPlayerNameText.setPosition(windowMidWidth(),100);
+    mainPlayerNameText.setPosition(windowMidWidth(),120);
     for(int i = 0;i < players;i++){
         playerChoosedName[i].setFillColor(Color::Black);
         playerChoosedName[i].setOutlineColor(Color::White);
-        playerChoosedName[i].setOutlineThickness(1.5);
+        playerChoosedName[i].setOutlineThickness(2.1);
         playerChoosedName[i].setFont(menuFont);
         playerChoosedName[i].setCharacterSize(playerChoosedFontSize);
         playerChoosedName[i].setString(playerName[i]);
@@ -850,7 +1206,6 @@ void Game::updateBackButtonCC(){
         if(checkMouseClick()){
             resetCC();
             resetIPN();
-            this->gameWindow->clear();
             state.pop();
         }
     }
@@ -858,7 +1213,6 @@ void Game::updateBackButtonCC(){
     if(checkEscape()){
         resetCC();
         resetIPN();
-        this->gameWindow->clear();
         state.pop();
     }
 }
@@ -866,6 +1220,9 @@ void Game::updateBackButtonCC(){
 void Game::resetCC(){
     chooseIndex = 0;
     for(int i = 0;i < 6;i++)choosed[i] = false;
+    for(int i = 0;i < 4;i++){
+        playerChoosedName[i].setPosition(-300,-300);
+    }
 }
 
 /*#############################################################################################################
@@ -873,36 +1230,1751 @@ void Game::resetCC(){
 ##########                                       PLAYING                                            ###########
 ##########                                                                                          ###########
 #############################################################################################################*/
-
 void Game::initPlayingVariables(){
+    isBagOpen = false;
+    randomStart = false;
+    isMenuOpen = false;
+    isDesOpen = false;
+    isAskOpen = false;
+    isDunAskOpen = false;
+    isShopAskOpen = false;
+    isShopOpen = false;
+    isAskBuyOpen = false;
+    isDeathOpen = false;
+    isGetItem = false;
+    canUsePotion = true;
+    equip = false;
+    gameStates = 1;
+    buyNum = 1;
+    diceTemp.push_back(-1);
+    RPStemp.push_back(-1);
+    RPStempMon.push_back(-1);
+    expMax.push_back(0);
+    expMax.push_back(startExp);
+    while(expMax.size() != 30){
+        expMax.push_back(expMax.back() * 1.2);
+    }
+    setItemStat();
     mapTexture.loadFromFile("img/Map.jpg");
     mapSprite.setTexture(mapTexture);
     mapSprite.setPosition(0,0);
-    camera.setCenter(Vector2f(300,300));
-    camera.setSize(Vector2f(300,300));
+    miniMenuT.loadFromFile("img/miniMenuBG.png");
+    miniMenuS.setTexture(miniMenuT);
+    miniMenuS.setOrigin(getObjWidth(miniMenuS) / 2,getObjHeight(miniMenuS) / 2);
+    miniMenuS.setScale(0.9,0.7);
+    miniMenuS.setColor(Color(255,255,255,140));
+    camera.setCenter(Vector2f(windowMidWidth(),windowMidHeight()));
+    camera.setSize(Vector2f(1920,1080));
     camera.setViewport(FloatRect(0,0,1,1));
+    miniMenuText[0].setString("Reseum");
+    miniMenuText[1].setString("Setting");
+    miniMenuText[2].setString("Main Menu");
+    for(int i = 0;i < 3;i++){
+        miniMenuText[i].setFillColor(Color::Black);
+        miniMenuText[i].setOutlineColor(Color::White);
+        miniMenuText[i].setOutlineThickness(3.5);
+        miniMenuText[i].setFont(menuFont);
+        miniMenuText[i].setCharacterSize(miniMenuFontSize);
+    }
+    UI_starT.loadFromFile("img/Star.png");
+    UI_starT.setSmooth(true);
+    for(int i = 0;i < 3;i++){
+        UI_starS[i].setTexture(UI_starT);
+        UI_starS[i].setScale(0.35,0.35);
+    }
+    UI_charFaceT[0].loadFromFile("img/Face1.png");
+    UI_charFaceT[1].loadFromFile("img/Face2.png");
+    UI_charFaceT[2].loadFromFile("img/Face3.png");
+    UI_charFaceT[3].loadFromFile("img/Face4.png");
+    UI_charFaceT[4].loadFromFile("img/Face5.png");
+    UI_charFaceT[5].loadFromFile("img/Face6.png");
+    UI_charFaceS.setPosition(110,110);
+    UI_name.setFillColor(Color::Black);
+    UI_name.setOutlineColor(Color::White);
+    UI_name.setOutlineThickness(3.5);
+    UI_name.setFont(menuFont);
+    UI_name.setCharacterSize(UIFontSize);
+    UI_name.setPosition(UI_charFaceS.getPosition().x,UI_charFaceS.getPosition().y + 110);
+    UI_level.setFillColor(Color::Black);
+    UI_level.setOutlineColor(Color::White);
+    UI_level.setOutlineThickness(3.5);
+    UI_level.setFont(menuFont);
+    UI_level.setCharacterSize(UIFontSize);
+    UI_level.setPosition(230,30);
+    UI_hpBorderT.loadFromFile("img/HpBorder.png");
+    UI_hpBorderS.setTexture(UI_hpBorderT);
+    UI_hpBorderS.setPosition(360,85);
+    UI_maxHpT.loadFromFile("img/HpBarMax.png");
+    UI_maxHpS.setTexture(UI_maxHpT);
+    UI_maxHpS.setPosition(360,85);
+    UI_hpBarT.loadFromFile("img/HpBar.png");
+    UI_hpBarS.setTexture(UI_hpBarT);
+    UI_hpBarS.setPosition(362,85);
+    UI_hpText.setString("HP");
+    UI_hpText.setFillColor(Color::Black);
+    UI_hpText.setOutlineColor(Color::White);
+    UI_hpText.setOutlineThickness(3.5);
+    UI_hpText.setFont(menuFont);
+    UI_hpText.setCharacterSize(UIFontSize);
+    UI_hpValue.setFillColor(Color::Black);
+    UI_hpValue.setOutlineColor(Color::White);
+    UI_hpValue.setOutlineThickness(2);
+    UI_hpValue.setFont(cordiaFont);
+    UI_hpValue.setCharacterSize(UIFontSize);
+    UI_expBorderT.loadFromFile("img/HpBorder.png");
+    UI_expBorderS.setTexture(UI_expBorderT);
+    UI_expBorderS.setPosition(UI_hpBorderS.getPosition().x,UI_hpBorderS.getPosition().y + 55);
+    UI_maxExpT.loadFromFile("img/HpBarMax.png");
+    UI_maxExpS.setTexture(UI_maxHpT);
+    UI_maxExpS.setPosition(UI_expBorderS.getPosition().x,UI_expBorderS.getPosition().y);
+    UI_expBarT.loadFromFile("img/ExpBar.png");
+    UI_expBarS.setTexture(UI_expBarT);
+    UI_expBarS.setPosition(UI_hpBarS.getPosition().x,UI_expBorderS.getPosition().y);
+    UI_expText.setString("EXP");
+    UI_expText.setFillColor(Color::Black);
+    UI_expText.setOutlineColor(Color::White);
+    UI_expText.setOutlineThickness(3.5);
+    UI_expText.setFont(menuFont);
+    UI_expText.setCharacterSize(UIFontSize);
+    UI_expValue.setFillColor(Color::Black);
+    UI_expValue.setOutlineColor(Color::White);
+    UI_expValue.setOutlineThickness(2);
+    UI_expValue.setFont(cordiaFont);
+    UI_expValue.setCharacterSize(UIFontSize);
+    UI_diceT.loadFromFile("img/DiceIcon.png");
+    UI_diceT.setSmooth(true);
+    UI_diceS.setTexture(UI_diceT);
+    UI_diceS.setOrigin(getObjWidth(UI_diceS) / 2,getObjHeight(UI_diceS) / 2);
+    UI_diceS.setPosition(windowMidWidth(),windowMidHeight());
+    UI_diceValue.setString("1");
+    UI_diceValue.setFillColor(Color::Black);
+    UI_diceValue.setOutlineColor(Color::White);
+    UI_diceValue.setOutlineThickness(3.5);
+    UI_diceValue.setFont(menuFont);
+    UI_diceValue.setCharacterSize(UIFontSize + 30);
+    UI_invenT.loadFromFile("img/Inventory.png");
+    UI_invenT.setSmooth(true);
+    UI_invenS.setTexture(UI_invenT);
+    UI_invenS.setOrigin(getObjWidth(UI_invenS) / 2,getObjHeight(UI_invenS) / 2);
+    UI_invenS.setPosition(350,1015);
+    UI_invenS.setScale(1.3,1.1);
+    UI_invenS.setColor(Color(255,255,255,200));
+    UI_bagT.loadFromFile("img/Bag.png");
+    UI_bagT.setSmooth(true);
+    UI_bagS.setTexture(UI_bagT);
+    UI_bagS.setOrigin(getObjWidth(UI_bagS) / 2,getObjHeight(UI_bagS) / 2);
+    UI_bagS.setPosition(70,1015);
+    UI_bagS.setScale(0.8,0.8);
+    UI_HpST.loadFromFile("img/HpS.png");
+    UI_HpSS.setTexture(UI_HpST);
+    UI_HpSS.setOrigin(getObjWidth(UI_HpSS) / 2,getObjHeight(UI_HpSS) / 2);
+    UI_HpSS.setPosition(UI_invenS.getPosition().x,UI_invenS.getPosition().y);
+    UI_HpSS.setScale(0.65,0.65);
+    UI_HpLT.loadFromFile("img/HpL.png");
+    UI_HpLT.setSmooth(true);
+    UI_HpLS.setTexture(UI_HpLT);
+    UI_HpLS.setOrigin(getObjWidth(UI_HpLS) / 2,getObjHeight(UI_HpLS) / 2);
+    UI_HpLS.setPosition(UI_invenS.getPosition().x + 68,UI_invenS.getPosition().y);
+    UI_HpLS.setScale(0.65,0.65);
+    UI_hpSValue.setFillColor(Color::Black);
+    UI_hpSValue.setOutlineColor(Color::White);
+    UI_hpSValue.setOutlineThickness(2.5);
+    UI_hpSValue.setFont(cordiaFont);
+    UI_hpSValue.setCharacterSize(UIFontSize - 5);
+    UI_hpLValue.setFillColor(Color::Black);
+    UI_hpLValue.setOutlineColor(Color::White);
+    UI_hpLValue.setOutlineThickness(2.5);
+    UI_hpLValue.setFont(cordiaFont);
+    UI_hpLValue.setCharacterSize(UIFontSize - 5);
+    UI_swordT[0].loadFromFile("img/Fist.png");
+    UI_swordT[1].loadFromFile("img/Sword1.png");
+    UI_swordT[2].loadFromFile("img/Sword2.png");
+    UI_swordT[3].loadFromFile("img/Sword3.png");
+    UI_swordT[4].loadFromFile("img/Sword4.png");
+    UI_swordT[5].loadFromFile("img/Sword5.png");
+    UI_swordT[6].loadFromFile("img/Sword6.png");
+    UI_swordT[7].loadFromFile("img/Sword7.png");
+    UI_swordT[8].loadFromFile("img/Sword8.png");
+    UI_swordT[9].loadFromFile("img/Sword9.png");
+    UI_shieldT[0].loadFromFile("img/Shield1.png");
+    UI_shieldT[1].loadFromFile("img/Shield2.png");
+    UI_shieldT[2].loadFromFile("img/Shield3.png");
+    UI_shieldT[3].loadFromFile("img/Shield4.png");
+    UI_shieldT[4].loadFromFile("img/Shield5.png");
+    UI_shieldT[5].loadFromFile("img/Shield6.png");
+    UI_shieldT[6].loadFromFile("img/Shield7.png");
+    UI_shieldT[7].loadFromFile("img/Shield8.png");
+    UI_shieldT[8].loadFromFile("img/Shield9.png");
+    UI_shieldT[9].loadFromFile("img/Shield10.png");
+    UI_accT[0].loadFromFile("img/Accessory1.png");
+    UI_accT[1].loadFromFile("img/Accessory2.png");
+    UI_accT[2].loadFromFile("img/Accessory3.png");
+    UI_accT[3].loadFromFile("img/Accessory4.png");
+    UI_accT[4].loadFromFile("img/Accessory5.png");
+    UI_accT[5].loadFromFile("img/Accessory6.png");
+    UI_accT[6].loadFromFile("img/Accessory7.png");
+    UI_accT[7].loadFromFile("img/Accessory8.png");
+    UI_accT[8].loadFromFile("img/Accessory9.png");
+    UI_accT[9].loadFromFile("img/Accessory10.png");
+    for(int i = 0;i < 10;i++){
+        UI_swordName[i].setString(sword[i].name_object);
+        UI_shieldName[i].setString(shield[i].name_object);
+        UI_accName[i].setString(accessory[i].name);
+        UI_swordDes[i].setString(sword[i].Des);
+        UI_shieldDes[i].setString(shield[i].Des);
+        UI_accDes[i].setString(accessory[i].Des);
+        if(i < 2){
+            UI_potionName[i].setString(potion[i].name_object);
+            UI_potionName[i].setFillColor(Color::Black);
+            UI_potionName[i].setOutlineColor(Color::White);
+            UI_potionName[i].setOutlineThickness(2.5);
+            UI_potionName[i].setFont(cordiaFont);
+            UI_potionName[i].setCharacterSize(UIFontSize - 5);
+            UI_potionDes[i].setString(potion[i].Des);
+            UI_potionDes[i].setFillColor(Color::Black);
+            UI_potionDes[i].setOutlineColor(Color::White);
+            UI_potionDes[i].setOutlineThickness(2.5);
+            UI_potionDes[i].setFont(cordiaFont);
+            UI_potionDes[i].setCharacterSize(UIFontSize - 15);
+            UI_potionDes[i].setLineSpacing(0.7);
+        }
+        UI_swordName[i].setFillColor(Color::Black);
+        UI_swordName[i].setOutlineColor(Color::White);
+        UI_swordName[i].setOutlineThickness(2.5);
+        UI_swordName[i].setFont(cordiaFont);
+        UI_swordName[i].setCharacterSize(UIFontSize - 5);
+        UI_shieldName[i].setFillColor(Color::Black);
+        UI_shieldName[i].setOutlineColor(Color::White);
+        UI_shieldName[i].setOutlineThickness(2.5);
+        UI_shieldName[i].setFont(cordiaFont);
+        UI_shieldName[i].setCharacterSize(UIFontSize - 5);
+        UI_accName[i].setFillColor(Color::Black);
+        UI_accName[i].setOutlineColor(Color::White);
+        UI_accName[i].setOutlineThickness(2.5);
+        UI_accName[i].setFont(cordiaFont);
+        UI_accName[i].setCharacterSize(UIFontSize - 5);
+        UI_swordDes[i].setFillColor(Color::Black);
+        UI_swordDes[i].setOutlineColor(Color::White);
+        UI_swordDes[i].setOutlineThickness(2.5);
+        UI_swordDes[i].setFont(cordiaFont);
+        UI_swordDes[i].setCharacterSize(UIFontSize - 15);
+        UI_swordDes[i].setLineSpacing(0.7);
+        UI_shieldDes[i].setFillColor(Color::Black);
+        UI_shieldDes[i].setOutlineColor(Color::White);
+        UI_shieldDes[i].setOutlineThickness(2.5);
+        UI_shieldDes[i].setFont(cordiaFont);
+        UI_shieldDes[i].setCharacterSize(UIFontSize - 15);
+        UI_shieldDes[i].setLineSpacing(0.7);
+        UI_accDes[i].setFillColor(Color::Black);
+        UI_accDes[i].setOutlineColor(Color::White);
+        UI_accDes[i].setOutlineThickness(2.5);
+        UI_accDes[i].setFont(cordiaFont);
+        UI_accDes[i].setCharacterSize(UIFontSize - 15);
+        UI_accDes[i].setLineSpacing(0.7);
+    }
+    UI_playerDesBGT.loadFromFile("img/miniMenuBG.png");
+    UI_playerDesBGS.setTexture(UI_playerDesBGT);
+    UI_playerDesBGS.setOrigin(getObjWidth(UI_playerDesBGS) / 2,getObjHeight(UI_playerDesBGS) / 2);
+    UI_playerDesBGS.setPosition(windowMidWidth(),windowMidHeight());
+    UI_playerDesBGS.setScale(1.1,1.1);
+    UI_playerNameDes.setFillColor(Color::Black);
+    UI_playerNameDes.setOutlineColor(Color::White);
+    UI_playerNameDes.setOutlineThickness(3.5);
+    UI_playerNameDes.setFont(cordiaFont);
+    UI_playerNameDes.setCharacterSize(UIFontSize + 10);
+    UI_statDes.setFillColor(Color::Black);
+    UI_statDes.setOutlineColor(Color::White);
+    UI_statDes.setOutlineThickness(2.5);
+    UI_statDes.setFont(cordiaFont);
+    UI_statDes.setCharacterSize(UIFontSize - 5);
+    UI_statDes.setLineSpacing(1.2);
+    UI_statDesR.setFillColor(Color::Black);
+    UI_statDesR.setOutlineColor(Color::White);
+    UI_statDesR.setOutlineThickness(2.5);
+    UI_statDesR.setFont(cordiaFont);
+    UI_statDesR.setCharacterSize(UIFontSize - 5);
+    UI_statDesR.setLineSpacing(1.2);
+    UI_askWin.setTexture(miniMenuT);
+    UI_askWin.setOrigin(getObjWidth(UI_askWin) / 2,getObjHeight(UI_askWin) / 2);
+    UI_askWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_askWin.setScale(1.7,0.6);
+    UI_askWin.setColor(Color(255,255,255,128));
+    UI_ask.setString("Do you want to equip this item");
+    UI_ask.setFillColor(Color::Black);
+    UI_ask.setOutlineColor(Color::White);
+    UI_ask.setOutlineThickness(2.5);
+    UI_ask.setFont(menuFont);
+    UI_ask.setCharacterSize(UIFontSize - 5);
+    UI_yes.setString("YES");
+    UI_yes.setFillColor(Color::Black);
+    UI_yes.setOutlineColor(Color::White);
+    UI_yes.setOutlineThickness(2.5);
+    UI_yes.setFont(menuFont);
+    UI_yes.setCharacterSize(UIFontSize - 5);
+    UI_no.setString("NO");
+    UI_no.setFillColor(Color::Black);
+    UI_no.setOutlineColor(Color::White);
+    UI_no.setOutlineThickness(2.5);
+    UI_no.setFont(menuFont);
+    UI_no.setCharacterSize(UIFontSize - 5);
+    UI_dunAskWin.setTexture(miniMenuT);
+    UI_dunAskWin.setOrigin(getObjWidth(UI_dunAskWin) / 2,getObjHeight(UI_dunAskWin) / 2);
+    UI_dunAskWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_dunAskWin.setScale(1.9,0.6);
+    UI_dunAskWin.setColor(Color(255,255,255,128));
+    UI_dunAsk.setString("Do you want to enter this dungeon");
+    UI_dunAsk.setFillColor(Color::Black);
+    UI_dunAsk.setOutlineColor(Color::White);
+    UI_dunAsk.setOutlineThickness(2.5);
+    UI_dunAsk.setFont(menuFont);
+    UI_dunAsk.setCharacterSize(UIFontSize - 5);
+    UI_dunYes.setString("YES");
+    UI_dunYes.setFillColor(Color::Black);
+    UI_dunYes.setOutlineColor(Color::White);
+    UI_dunYes.setOutlineThickness(2.5);
+    UI_dunYes.setFont(menuFont);
+    UI_dunYes.setCharacterSize(UIFontSize - 5);
+    UI_dunNo.setString("NO");
+    UI_dunNo.setFillColor(Color::Black);
+    UI_dunNo.setOutlineColor(Color::White);
+    UI_dunNo.setOutlineThickness(2.5);
+    UI_dunNo.setFont(menuFont);
+    UI_dunNo.setCharacterSize(UIFontSize - 5);
+    UI_dunAskMonT[0].loadFromFile("img/Green Circle.png");
+    UI_dunAskMonT[1].loadFromFile("img/Yellow Circle.png");
+    UI_dunAskMonT[2].loadFromFile("img/Red Circle.png");
+    UI_dunAskMonT[3].loadFromFile("img/Boss Circle.png");
+    UI_shopIconT.loadFromFile("img/Shop Icon.png");
+    UI_shopIconS.setTexture(UI_shopIconT);
+    UI_shopIconS.setOrigin(getObjWidth(UI_shopIconS) / 2,getObjHeight(UI_shopIconS) / 2);
+    UI_shopIconS.setPosition(windowMidWidth(),windowMidHeight());
+    UI_shopAsk.setString("Do you want to enter market");
+    UI_shopAsk.setFillColor(Color::Black);
+    UI_shopAsk.setOutlineColor(Color::White);
+    UI_shopAsk.setOutlineThickness(2.5);
+    UI_shopAsk.setFont(menuFont);
+    UI_shopAsk.setCharacterSize(UIFontSize - 5);
+    UI_shopYes.setString("YES");
+    UI_shopYes.setFillColor(Color::Black);
+    UI_shopYes.setOutlineColor(Color::White);
+    UI_shopYes.setOutlineThickness(2.5);
+    UI_shopYes.setFont(menuFont);
+    UI_shopYes.setCharacterSize(UIFontSize - 5);
+    UI_shopNo.setString("NO");
+    UI_shopNo.setFillColor(Color::Black);
+    UI_shopNo.setOutlineColor(Color::White);
+    UI_shopNo.setOutlineThickness(2.5);
+    UI_shopNo.setFont(menuFont);
+    UI_shopNo.setCharacterSize(UIFontSize - 5);
+    UI_shopAskWin.setTexture(miniMenuT);
+    UI_shopAskWin.setOrigin(getObjWidth(UI_shopAskWin) / 2,getObjHeight(UI_shopAskWin) / 2);
+    UI_shopAskWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_shopAskWin.setScale(1.9,0.6);
+    UI_shopAskWin.setColor(Color(255,255,255,128));
+    UI_shopWinT.loadFromFile("img/Shop.png");
+    UI_shopWinS.setTexture(UI_shopWinT);
+    UI_shopWinS.setOrigin(getObjWidth(UI_shopWinS) / 2,getObjHeight(UI_shopWinS) / 2);
+    UI_shopWinS.setPosition(windowMidWidth(),windowMidHeight());
+    UI_quitShop.setString("QUIT");
+    UI_quitShop.setFillColor(Color::Black);
+    UI_quitShop.setOutlineColor(Color::White);
+    UI_quitShop.setOutlineThickness(2.5);
+    UI_quitShop.setFont(menuFont);
+    UI_quitShop.setCharacterSize(UIFontSize);
+    UI_playerMoney.setFillColor(Color::Black);
+    UI_playerMoney.setOutlineColor(Color::White);
+    UI_playerMoney.setOutlineThickness(2.5);
+    UI_playerMoney.setFont(menuFont);
+    UI_playerMoney.setCharacterSize(UIFontSize - 5);
+    UI_money.setString("MONEY");
+    UI_money.setFillColor(Color::Black);
+    UI_money.setOutlineColor(Color::White);
+    UI_money.setOutlineThickness(2.5);
+    UI_money.setFont(menuFont);
+    UI_money.setCharacterSize(UIFontSize - 5);
+    UI_money.setPosition(windowMidWidth() + 70,windowMidHeight() + 202);
+    UI_shopItem[0].setTexture(UI_HpST);       UI_shopItem[1].setTexture(UI_HpLT);       UI_shopItem[2].setTexture(UI_swordT[1]);   UI_shopItem[3].setTexture(UI_swordT[2]);   UI_shopItem[4].setTexture(UI_swordT[3]);   UI_shopItem[5].setTexture(UI_swordT[4]);
+    UI_shopItem[6].setTexture(UI_swordT[5]);  UI_shopItem[7].setTexture(UI_swordT[6]);  UI_shopItem[8].setTexture(UI_shieldT[0]);  UI_shopItem[9].setTexture(UI_shieldT[1]);  UI_shopItem[10].setTexture(UI_shieldT[2]); UI_shopItem[11].setTexture(UI_shieldT[3]);
+    UI_shopItem[12].setTexture(UI_shieldT[4]);UI_shopItem[13].setTexture(UI_shieldT[5]);UI_shopItem[14].setTexture(UI_shieldT[6]); UI_shopItem[15].setTexture(UI_shieldT[7]); UI_shopItem[16].setTexture(UI_accT[0]);    UI_shopItem[17].setTexture(UI_accT[1]);
+    UI_shopItem[18].setTexture(UI_accT[2]);   UI_shopItem[19].setTexture(UI_accT[3]);   UI_shopItem[20].setTexture(UI_accT[4]);    UI_shopItem[21].setTexture(UI_accT[5]);    UI_shopItem[22].setTexture(UI_accT[6]);    UI_shopItem[23].setTexture(UI_accT[7]);
+    UI_askBuyS[0].setTexture(UI_HpST);       UI_askBuyS[1].setTexture(UI_HpLT);       UI_askBuyS[2].setTexture(UI_swordT[1]);   UI_askBuyS[3].setTexture(UI_swordT[2]);   UI_askBuyS[4].setTexture(UI_swordT[3]);   UI_askBuyS[5].setTexture(UI_swordT[4]);
+    UI_askBuyS[6].setTexture(UI_swordT[5]);  UI_askBuyS[7].setTexture(UI_swordT[6]);  UI_askBuyS[8].setTexture(UI_shieldT[0]);  UI_askBuyS[9].setTexture(UI_shieldT[1]);  UI_askBuyS[10].setTexture(UI_shieldT[2]); UI_askBuyS[11].setTexture(UI_shieldT[3]);
+    UI_askBuyS[12].setTexture(UI_shieldT[4]);UI_askBuyS[13].setTexture(UI_shieldT[5]);UI_askBuyS[14].setTexture(UI_shieldT[6]); UI_askBuyS[15].setTexture(UI_shieldT[7]); UI_askBuyS[16].setTexture(UI_accT[0]);    UI_askBuyS[17].setTexture(UI_accT[1]);
+    UI_askBuyS[18].setTexture(UI_accT[2]);   UI_askBuyS[19].setTexture(UI_accT[3]);   UI_askBuyS[20].setTexture(UI_accT[4]);    UI_askBuyS[21].setTexture(UI_accT[5]);    UI_askBuyS[22].setTexture(UI_accT[6]);    UI_askBuyS[23].setTexture(UI_accT[7]);
+    for(int i = 0;i < 24;i++){
+        UI_shopItem[i].setOrigin(getObjWidth(UI_shopItem[i]) / 2,getObjHeight(UI_shopItem[i]) / 2);
+        UI_shopItem[i].setPosition(710 + 100*(i%6),340 + 100*(i/6));
+        UI_askBuyS[i].setOrigin(getObjWidth(UI_askBuyS[i]) / 2,getObjHeight(UI_askBuyS[i]) / 2);
+        if(i > 1)UI_askBuyS[i].setPosition(windowMidWidth(),windowMidHeight() + 10);
+        else UI_askBuyS[i].setPosition(windowMidWidth() - 50,windowMidHeight() + 10);
+    }
+    UI_shopPrice[0].setString("Price : " + to_string(potion[0].price) + " Coins");       UI_shopPrice[1].setString("Price : " + to_string(potion[1].price) + " Coins");  UI_shopPrice[2].setString("Price : " + to_string(sword[1].price) + " Coins");  UI_shopPrice[3].setString("Price : " + to_string(sword[2].price) + " Coins");  UI_shopPrice[4].setString("Price : " + to_string(sword[3].price) + " Coins");  UI_shopPrice[5].setString("Price : " + to_string(sword[4].price) + " Coins");
+    UI_shopPrice[6].setString("Price : " + to_string(sword[5].price) + " Coins");        UI_shopPrice[7].setString("Price : " + to_string(sword[6].price) + " Coins");  UI_shopPrice[8].setString("Price : " + to_string(shield[0].price) + " Coins");  UI_shopPrice[9].setString("Price : " + to_string(shield[1].price) + " Coins");  UI_shopPrice[10].setString("Price : " + to_string(shield[2].price) + " Coins");  UI_shopPrice[11].setString("Price : " + to_string(shield[3].price) + " Coins");
+    UI_shopPrice[12].setString("Price : " + to_string(shield[4].price) + " Coins");      UI_shopPrice[13].setString("Price : " + to_string(shield[5].price) + " Coins");  UI_shopPrice[14].setString("Price : " + to_string(shield[6].price) + " Coins");  UI_shopPrice[15].setString("Price : " + to_string(shield[7].price) + " Coins");  UI_shopPrice[16].setString("Price : " + to_string(accessory[0].price) + " Coins");  UI_shopPrice[17].setString("Price : " + to_string(accessory[1].price) + " Coins");
+    UI_shopPrice[18].setString("Price : " + to_string(accessory[2].price) + " Coins");   UI_shopPrice[19].setString("Price : " + to_string(accessory[3].price) + " Coins");  UI_shopPrice[20].setString("Price : " + to_string(accessory[4].price) + " Coins");  UI_shopPrice[21].setString("Price : " + to_string(accessory[5].price) + " Coins");  UI_shopPrice[22].setString("Price : " + to_string(accessory[6].price) + " Coins");  UI_shopPrice[23].setString("Price : " + to_string(accessory[7].price) + " Coins");
+    UI_shopName[0].setString(potion[0].name_object);       UI_shopName[1].setString(potion[1].name_object);     UI_shopName[2].setString(sword[1].name_object);     UI_shopName[3].setString(sword[2].name_object);     UI_shopName[4].setString(sword[3].name_object);     UI_shopName[5].setString(sword[4].name_object);
+    UI_shopName[6].setString(sword[5].name_object);        UI_shopName[7].setString(sword[6].name_object);      UI_shopName[8].setString(shield[0].name_object);    UI_shopName[9].setString(shield[1].name_object);    UI_shopName[10].setString(shield[2].name_object);   UI_shopName[11].setString(shield[3].name_object);
+    UI_shopName[12].setString(shield[4].name_object);      UI_shopName[13].setString(shield[5].name_object);    UI_shopName[14].setString(shield[6].name_object);   UI_shopName[15].setString(shield[7].name_object);   UI_shopName[16].setString(accessory[0].name);UI_shopName[17].setString(accessory[1].name);
+    UI_shopName[18].setString(accessory[2].name);   UI_shopName[19].setString(accessory[3].name); UI_shopName[20].setString(accessory[4].name);UI_shopName[21].setString(accessory[5].name);UI_shopName[22].setString(accessory[6].name);UI_shopName[23].setString(accessory[7].name);
+    UI_shopDes[0].setString(potion[0].Des);       UI_shopDes[1].setString(potion[1].Des);     UI_shopDes[2].setString(sword[1].Des);     UI_shopDes[3].setString(sword[2].Des);     UI_shopDes[4].setString(sword[3].Des);     UI_shopDes[5].setString(sword[4].Des);
+    UI_shopDes[6].setString(sword[5].Des);        UI_shopDes[7].setString(sword[6].Des);      UI_shopDes[8].setString(shield[0].Des);    UI_shopDes[9].setString(shield[1].Des);    UI_shopDes[10].setString(shield[2].Des);   UI_shopDes[11].setString(shield[3].Des);
+    UI_shopDes[12].setString(shield[4].Des);      UI_shopDes[13].setString(shield[5].Des);    UI_shopDes[14].setString(shield[6].Des);   UI_shopDes[15].setString(shield[7].Des);   UI_shopDes[16].setString(accessory[0].Des);UI_shopDes[17].setString(accessory[1].Des);
+    UI_shopDes[18].setString(accessory[2].Des);   UI_shopDes[19].setString(accessory[3].Des); UI_shopDes[20].setString(accessory[4].Des);UI_shopDes[21].setString(accessory[5].Des);UI_shopDes[22].setString(accessory[6].Des);UI_shopDes[23].setString(accessory[7].Des);
+    for(int i = 0;i < 24;i++){
+        UI_shopName[i].setFillColor(Color::Black);
+        UI_shopName[i].setOutlineColor(Color::White);
+        UI_shopName[i].setOutlineThickness(2.5);
+        UI_shopName[i].setFont(cordiaFont);
+        UI_shopName[i].setCharacterSize(UIFontSize - 5);
+        UI_shopPrice[i].setFillColor(Color::Black);
+        UI_shopPrice[i].setOutlineColor(Color::White);
+        UI_shopPrice[i].setOutlineThickness(2.5);
+        UI_shopPrice[i].setFont(cordiaFont);
+        UI_shopPrice[i].setCharacterSize(UIFontSize - 15);
+        UI_shopDes[i].setFillColor(Color::Black);
+        UI_shopDes[i].setOutlineColor(Color::White);
+        UI_shopDes[i].setOutlineThickness(2.5);
+        UI_shopDes[i].setFont(cordiaFont);
+        UI_shopDes[i].setCharacterSize(UIFontSize - 15);
+        UI_shopDes[i].setLineSpacing(0.7);
+    }
+    UI_askBuyWin.setTexture(miniMenuT);
+    UI_askBuyWin.setOrigin(getObjWidth(UI_askBuyWin) / 2,getObjHeight(UI_askBuyWin) / 2);
+    UI_askBuyWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_askBuyWin.setScale(1.7,0.6);
+    UI_askBuyWin.setColor(Color(255,255,255,210));
+    UI_askBuy.setString("Do you want to buy this item");
+    UI_askBuy.setFillColor(Color::Black);
+    UI_askBuy.setOutlineColor(Color::White);
+    UI_askBuy.setOutlineThickness(2.5);
+    UI_askBuy.setFont(menuFont);
+    UI_askBuy.setCharacterSize(UIFontSize - 5);
+    UI_askBuyOk.setString("Ok");
+    UI_askBuyOk.setFillColor(Color::Black);
+    UI_askBuyOk.setOutlineColor(Color::White);
+    UI_askBuyOk.setOutlineThickness(2.5);
+    UI_askBuyOk.setFont(menuFont);
+    UI_askBuyOk.setCharacterSize(UIFontSize - 5);
+    UI_askBuyCancle.setString("Cancle");
+    UI_askBuyCancle.setFillColor(Color::Black);
+    UI_askBuyCancle.setOutlineColor(Color::White);
+    UI_askBuyCancle.setOutlineThickness(2.5);
+    UI_askBuyCancle.setFont(menuFont);
+    UI_askBuyCancle.setCharacterSize(UIFontSize - 5);
+    shopPriceValue[0] = 10; shopPriceValue[1] = 10; shopPriceValue[2] = 10; shopPriceValue[3] = 10; shopPriceValue[4] = 10; shopPriceValue[5] = 10;
+    shopPriceValue[6] = 10; shopPriceValue[7] = 10; shopPriceValue[8] = 10; shopPriceValue[9] = 10; shopPriceValue[10] = 10;shopPriceValue[11] = 10;
+    shopPriceValue[12] = 10;shopPriceValue[13] = 10;shopPriceValue[14] = 10;shopPriceValue[15] = 10;shopPriceValue[16] = 10;shopPriceValue[17] = 10;
+    shopPriceValue[18] = 10;shopPriceValue[19] = 10;shopPriceValue[20] = 10;shopPriceValue[21] = 10;shopPriceValue[22] = 10;shopPriceValue[23] = 10;
+    UI_UArrowT.loadFromFile("img/UArrow.png");
+    UI_UArrowS.setTexture(UI_UArrowT);
+    UI_UArrowS.setOrigin(getObjWidth(UI_UArrowS) / 2,getObjHeight(UI_UArrowS) / 2);
+    UI_UArrowS.setPosition(windowMidWidth() + 27,windowMidHeight() - 23);
+    UI_DArrowT.loadFromFile("img/DArrow.png");
+    UI_DArrowS.setTexture(UI_DArrowT);
+    UI_DArrowS.setOrigin(getObjWidth(UI_DArrowS) / 2,getObjHeight(UI_DArrowS) / 2);
+    UI_DArrowS.setPosition(windowMidWidth() + 27,windowMidHeight() + 55);
+    UI_buyNum.setFillColor(Color::Black);
+    UI_buyNum.setOutlineColor(Color::White);
+    UI_buyNum.setOutlineThickness(2.5);
+    UI_buyNum.setFont(menuFont);
+    UI_buyNum.setCharacterSize(UIFontSize + 5);
+    D_startT.loadFromFile("img/Start.png");
+    D_startS.setTexture(D_startT);
+    D_startS.setOrigin(getObjWidth(D_startS) / 2,getObjHeight(D_startS) / 2);
+    D_startS.setPosition(windowMidWidth(),windowMidHeight());
+    D_rockT.loadFromFile("img/Rock.png");
+    D_paperT.loadFromFile("img/Paper.png");
+    D_scissorsT.loadFromFile("img/Scissors.png");
+    D_monRockT.loadFromFile("img/MonRock.png");
+    D_monPaperT.loadFromFile("img/MonPaper.png");
+    D_monScissorsT.loadFromFile("img/MonScissors.png");
+    D_Turn.setFillColor(Color::Black);
+    D_Turn.setOutlineColor(Color::White);
+    D_Turn.setOutlineThickness(3.5);
+    D_Turn.setFont(menuFont);
+    D_Turn.setCharacterSize(UIFontSize + 20);
+    D_monHpBorder.setTexture(UI_hpBorderT);
+    D_monHpBorder.setPosition(360,85);
+    D_monMaxHp.setTexture(UI_maxHpT);
+    D_monMaxHp.setPosition(360,85);
+    D_monHpBar.setTexture(UI_hpBarT);
+    D_monHpBar.setPosition(362,85);
+    D_monHpText.setString("HP");
+    D_monHpText.setFillColor(Color::Black);
+    D_monHpText.setOutlineColor(Color::White);
+    D_monHpText.setOutlineThickness(3.5);
+    D_monHpText.setFont(menuFont);
+    D_monHpText.setCharacterSize(UIFontSize);
+    D_monHpValue.setFillColor(Color::Black);
+    D_monHpValue.setOutlineColor(Color::White);
+    D_monHpValue.setOutlineThickness(2);
+    D_monHpValue.setFont(cordiaFont);
+    D_monHpValue.setCharacterSize(UIFontSize);
+    D_monsterFace[0].loadFromFile("img/MonFace1.png");
+    D_monsterFace[1].loadFromFile("img/MonFace2.png");
+    D_monsterFace[2].loadFromFile("img/MonFace3.png");
+    D_monsterFace[3].loadFromFile("img/MonFace4.png");
+    D_monChar[0].loadFromFile("img/Mon1.png");
+    D_monChar[1].loadFromFile("img/Mon2.png");
+    D_monChar[2].loadFromFile("img/Mon3.png");
+    D_monChar[3].loadFromFile("img/Mon4.png");
+    D_monName.setFillColor(Color::Black);
+    D_monName.setOutlineColor(Color::White);
+    D_monName.setOutlineThickness(3.5);
+    D_monName.setFont(menuFont);
+    D_monName.setCharacterSize(UIFontSize);
+    D_bgT.loadFromFile("img/DungeonBG.jpg");
+    D_bgS.setTexture(D_bgT);
+    D_playerRPS.setTexture(D_rockT);
+    D_monsterRPS.setTexture(D_rockT);
+    D_monLevel.setFillColor(Color::Black);
+    D_monLevel.setOutlineColor(Color::White);
+    D_monLevel.setOutlineThickness(3.5);
+    D_monLevel.setFont(menuFont);
+    D_monLevel.setCharacterSize(UIFontSize);
+    D_deathText.setString("You are death");
+    D_deathText.setFillColor(Color::Black);
+    D_deathText.setOutlineColor(Color::White);
+    D_deathText.setOutlineThickness(2.5);
+    D_deathText.setFont(menuFont);
+    D_deathText.setCharacterSize(UIFontSize + 5);
+    D_deathOk.setString("OK");
+    D_deathOk.setFillColor(Color::Black);
+    D_deathOk.setOutlineColor(Color::White);
+    D_deathOk.setOutlineThickness(2.5);
+    D_deathOk.setFont(menuFont);
+    D_deathOk.setCharacterSize(UIFontSize - 5);
+    D_deathWin.setTexture(miniMenuT);
+    D_deathWin.setOrigin(getObjWidth(D_deathWin) / 2,getObjHeight(D_deathWin) / 2);
+    D_deathWin.setPosition(windowMidWidth(),windowMidHeight());
+    D_deathWin.setScale(1.6,0.7);
+    D_deathWin.setColor(Color(255,255,255,200));
+    D_deathExp.setString("EXP");
+    D_deathExp.setFillColor(Color::Black);
+    D_deathExp.setOutlineColor(Color::White);
+    D_deathExp.setOutlineThickness(2.5);
+    D_deathExp.setFont(menuFont);
+    D_deathExp.setCharacterSize(UIFontSize - 5);
+    D_deathMoney.setString("MONEY");
+    D_deathMoney.setFillColor(Color::Black);
+    D_deathMoney.setOutlineColor(Color::White);
+    D_deathMoney.setOutlineThickness(2.5);
+    D_deathMoney.setFont(menuFont);
+    D_deathMoney.setCharacterSize(UIFontSize - 5);
+    D_deathMoneyValue.setFillColor(Color::Red);
+    D_deathMoneyValue.setOutlineColor(Color::White);
+    D_deathMoneyValue.setOutlineThickness(2.5);
+    D_deathMoneyValue.setFont(menuFont);
+    D_deathMoneyValue.setCharacterSize(UIFontSize - 5);
+    D_deathExpValue.setFillColor(Color::Red);
+    D_deathExpValue.setOutlineColor(Color::White);
+    D_deathExpValue.setOutlineThickness(2.5);
+    D_deathExpValue.setFont(menuFont);
+    D_deathExpValue.setCharacterSize(UIFontSize - 5);
+    D_coin.loadFromFile("img/Coin.png");
+    D_coin.setSmooth(true);
+    D_coinS.setTexture(D_coin);
+    D_coinS.setOrigin(getObjWidth(D_coinS) / 2,getObjHeight(D_coinS) / 2);
+    D_coinS.setScale(0.55,0.55);
+    D_monDesBGS.setTexture(UI_playerDesBGT);
+    D_monDesBGS.setOrigin(getObjWidth(D_monDesBGS) / 2,getObjHeight(D_monDesBGS) / 2);
+    D_monDesBGS.setPosition(windowMidWidth(),windowMidHeight());
+    D_monDesBGS.setScale(1.1,1);
+    D_monNameDes.setFillColor(Color::Black);
+    D_monNameDes.setOutlineColor(Color::White);
+    D_monNameDes.setOutlineThickness(3.5);
+    D_monNameDes.setFont(cordiaFont);
+    D_monNameDes.setCharacterSize(UIFontSize + 10);
+    D_monStatDes.setFillColor(Color::Black);
+    D_monStatDes.setOutlineColor(Color::White);
+    D_monStatDes.setOutlineThickness(2.5);
+    D_monStatDes.setFont(cordiaFont);
+    D_monStatDes.setCharacterSize(UIFontSize - 5);
+    D_monStatDes.setLineSpacing(1.2);
+    D_monStatDesR.setFillColor(Color::Black);
+    D_monStatDesR.setOutlineColor(Color::White);
+    D_monStatDesR.setOutlineThickness(2.5);
+    D_monStatDesR.setFont(cordiaFont);
+    D_monStatDesR.setCharacterSize(UIFontSize - 5);
+    D_monStatDesR.setLineSpacing(1.2);
+    D_getText.setString("You Win");
+    D_getText.setFillColor(Color::Black);
+    D_getText.setOutlineColor(Color::White);
+    D_getText.setOutlineThickness(2.5);
+    D_getText.setFont(menuFont);
+    D_getText.setCharacterSize(UIFontSize + 5);
+    D_getOk.setString("OK");
+    D_getOk.setFillColor(Color::Black);
+    D_getOk.setOutlineColor(Color::White);
+    D_getOk.setOutlineThickness(2.5);
+    D_getOk.setFont(menuFont);
+    D_getOk.setCharacterSize(UIFontSize - 5);
+    D_getWin.setTexture(miniMenuT);
+    D_getWin.setOrigin(getObjWidth(D_getWin) / 2,getObjHeight(D_getWin) / 2);
+    D_getWin.setPosition(windowMidWidth(),windowMidHeight());
+    D_getWin.setScale(1.6,0.7);
+    D_getWin.setColor(Color(255,255,255,200));
+    D_getExp.setString("EXP");
+    D_getExp.setFillColor(Color::Black);
+    D_getExp.setOutlineColor(Color::White);
+    D_getExp.setOutlineThickness(2.5);
+    D_getExp.setFont(menuFont);
+    D_getExp.setCharacterSize(UIFontSize - 5);
+    D_getMoney.setString("MONEY");
+    D_getMoney.setFillColor(Color::Black);
+    D_getMoney.setOutlineColor(Color::White);
+    D_getMoney.setOutlineThickness(2.5);
+    D_getMoney.setFont(menuFont);
+    D_getMoney.setCharacterSize(UIFontSize - 5);
+    D_getMoneyValue.setFillColor(Color(0,160,0,255));
+    D_getMoneyValue.setOutlineColor(Color::White);
+    D_getMoneyValue.setOutlineThickness(2.5);
+    D_getMoneyValue.setFont(menuFont);
+    D_getMoneyValue.setCharacterSize(UIFontSize - 5);
+    D_getExpValue.setFillColor(Color(0,160,0,255));
+    D_getExpValue.setOutlineColor(Color::White);
+    D_getExpValue.setOutlineThickness(2.5);
+    D_getExpValue.setFont(menuFont);
+    D_getExpValue.setCharacterSize(UIFontSize - 5);
+    D_getCoin.setTexture(D_coin);
+    D_getCoin.setOrigin(getObjWidth(D_getCoin) / 2,getObjHeight(D_getCoin) / 2);
+    D_getCoin.setScale(0.55,0.55);
 }
 
 void Game::drawPlaying(){
+    updateLevel();
+    updateTurn();
     this->gameWindow->setView(camera);
-    this->gameWindow->draw(mapSprite);
+    if(!isDun)this->gameWindow->draw(mapSprite);
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
-    updateView();
+    updateEscape();
+    updatePlayingState();
+    if(isDun){
+        this->gameWindow->draw(D_bgS);
+        this->gameWindow->draw(D_monsterFaceS);
+        this->gameWindow->draw(D_monCharS);
+        this->gameWindow->draw(D_monMaxHp);
+        this->gameWindow->draw(D_monHpBar);
+        this->gameWindow->draw(D_monHpBorder);
+        this->gameWindow->draw(D_monHpText);
+        this->gameWindow->draw(D_monName);
+        this->gameWindow->draw(D_monLevel);
+        this->gameWindow->draw(D_playerChar);
+        updateDungeon();
+    }
+    drawUI();
+    if(isDeathOpen){
+        updateDeath();
+        this->gameWindow->draw(D_deathWin);
+        this->gameWindow->draw(D_deathOk);
+        this->gameWindow->draw(D_deathText);
+        this->gameWindow->draw(D_deathExp);
+        this->gameWindow->draw(D_deathExpValue);
+        this->gameWindow->draw(D_deathMoney);
+        this->gameWindow->draw(D_deathMoneyValue);
+        this->gameWindow->draw(D_coinS);
+    }
+    if(isGetItem){
+        updateGetItem();
+        this->gameWindow->draw(D_getWin);
+        this->gameWindow->draw(D_getOk);
+        this->gameWindow->draw(D_getText);
+        this->gameWindow->draw(D_getExp);
+        this->gameWindow->draw(D_getExpValue);
+        this->gameWindow->draw(D_getMoney);
+        this->gameWindow->draw(D_getMoneyValue);
+        this->gameWindow->draw(D_getCoin);
+    }
+    if(isShopOpen){
+        this->gameWindow->draw(UI_shopWinS);
+        this->gameWindow->draw(UI_quitShop);
+        this->gameWindow->draw(UI_playerMoney);
+        this->gameWindow->draw(UI_money);
+        for(int i = 0;i < 24;i++){
+            this->gameWindow->draw(UI_shopItem[i]);
+        }
+        updateShop();
+    }
+    if(isAskBuyOpen){
+        updateAskBuy(itemBuyIndex);
+        this->gameWindow->draw(UI_askBuyWin);
+        this->gameWindow->draw(UI_askBuyS[itemBuyIndex]);
+        this->gameWindow->draw(UI_askBuy);
+        this->gameWindow->draw(UI_askBuyOk);
+        this->gameWindow->draw(UI_askBuyCancle);
+        if(askIndex < 2){
+            this->gameWindow->draw(UI_UArrowS);
+            this->gameWindow->draw(UI_DArrowS);
+            this->gameWindow->draw(UI_buyNum);
+        }
+    }
+    if(isDesOpen){
+            this->gameWindow->draw(UI_playerDesBGS);
+            this->gameWindow->draw(UI_playerDesCharS);
+            this->gameWindow->draw(UI_playerNameDes);
+            this->gameWindow->draw(UI_statDes);
+            this->gameWindow->draw(UI_statDesR);
+    }
+    if(isMonDes){
+        updateMonDes();
+        this->gameWindow->draw(D_monDesBGS);
+        this->gameWindow->draw(D_monDesCharS);
+        this->gameWindow->draw(D_monNameDes);
+        this->gameWindow->draw(D_monStatDes);
+        this->gameWindow->draw(D_monStatDesR);
+    }
+    if(isAskOpen){
+        updateAsk();
+        this->gameWindow->draw(UI_askWin);
+        switch(askKind){
+            case 0:
+                this->gameWindow->draw(UI_askWeaponS);
+                break;
+            case 1:
+                this->gameWindow->draw(UI_askShieldS);
+                break;
+            case 2:
+                this->gameWindow->draw(UI_askAccS);
+                break;
+        };
+        this->gameWindow->draw(UI_ask);
+        this->gameWindow->draw(UI_yes);
+        this->gameWindow->draw(UI_no);
+    }
+    if(isDunAskOpen){
+        this->gameWindow->draw(UI_dunAskWin);
+        this->gameWindow->draw(UI_dunAsk);
+        this->gameWindow->draw(UI_dunYes);
+        this->gameWindow->draw(UI_dunNo);
+        this->gameWindow->draw(UI_dunAskMonS);
+    }
+    if(isShopAskOpen){
+        this->gameWindow->draw(UI_shopAskWin);
+        this->gameWindow->draw(UI_shopAsk);
+        this->gameWindow->draw(UI_shopYes);
+        this->gameWindow->draw(UI_shopNo);
+        this->gameWindow->draw(UI_shopIconS);
+    }
+    if(isMenuOpen){
+        miniMenuS.setPosition(windowWidth / 2,windowHeight / 2);
+        this->gameWindow->draw(miniMenuS);
+        for(int i = 0;i < 3;i++){
+            miniMenuText[i].setOrigin(getObjWidth(miniMenuText[i]) / 2.0,getObjHeight(miniMenuText[i]) / 2.0);
+            miniMenuText[i].setPosition(windowWidth / 2,windowHeight / 2 + 100 * arrIndex[i]);
+            updateMiniMenuClick();
+            this->gameWindow->draw(miniMenuText[i]);
+        }
+    }
+    else {
+        if(!isDun)updateView();
+    }
     this->gameWindow->draw(mouseIconSprite);
 }
 
+void Game::updateMonDes(){
+        D_monDesCharS.setTexture(D_monChar[monsterIndex]);
+        D_monDesCharS.setOrigin(getObjWidth(D_monDesCharS) / 2,getObjHeight(D_monDesCharS) / 2);
+        D_monDesCharS.setPosition(D_monDesBGS.getPosition().x,D_monDesBGS.getPosition().y - 140);
+        D_monNameDes.setString("Prayuth");
+        D_monNameDes.setOrigin(getObjWidth(D_monNameDes) / 2,getObjHeight(D_monNameDes) / 2);
+        D_monNameDes.setPosition(D_monDesBGS.getPosition().x + 5,D_monDesBGS.getPosition().y - 50);
+        D_monStatDes.setString("Level  :     " + to_string(player[now_player].level) + '\n' +
+                             "ATK  :     " + to_string(player[now_player].getAtk()) + '\n' +
+                             "Max HP  :     " + to_string(player[now_player].HpMax()) + '\n' +
+                             "STR  :     " + to_string(player[now_player].std_str) + '\n' +
+                             "VIT  :     " + to_string(player[now_player].std_vit)
+                             );
+        D_monStatDesR.setString("DEF  :     " + to_string(player[now_player].getDef()) + "\n\n" +
+                              "AGI  :     " + to_string(player[now_player].std_agi) + '\n' +
+                              "LUK  :     " + to_string(player[now_player].std_luk)
+                              );
+        D_monStatDes.setPosition(D_monDesBGS.getPosition().x - 210,D_monDesBGS.getPosition().y);
+        D_monStatDesR.setPosition(D_monDesBGS.getPosition().x + 35,D_monDesBGS.getPosition().y + 37);
+}
+
+void Game::dungeon(int monster){
+    monsterIndex = monster;
+}
+
+void Game::updateDungeon(){
+    D_monName.setString("Prayuth");
+    D_monName.setOrigin(getObjWidth(D_monName) / 2,getObjHeight(D_monName) / 2);
+    D_monName.setPosition(D_monsterFaceS.getPosition().x,UI_name.getPosition().y);
+    D_monLevel.setString("LV. 10");
+    D_monLevel.setOrigin(getObjWidth(D_monLevel),0);
+    D_monLevel.setPosition(windowWidth - UI_level.getPosition().x,UI_level.getPosition().y);
+    D_playerChar.setTexture(charTexture[player[now_player].character_number]);
+    D_playerChar.setOrigin(getObjWidth(D_playerChar) / 2,getObjHeight(D_playerChar) / 2);
+    D_playerChar.setPosition(windowMidWidth() - 700,windowMidHeight());
+    D_monCharS.setTexture(D_monChar[monsterIndex]);
+    D_monCharS.setOrigin(getObjWidth(D_monCharS) / 2,getObjHeight(D_monCharS) / 2);
+    D_monCharS.setPosition(windowMidWidth() + 700,windowMidHeight());
+    D_monsterFaceS.setTexture(D_monsterFace[monsterIndex]);
+    D_monsterFaceS.setOrigin(getObjWidth(D_monsterFaceS) / 2,getObjHeight(D_monsterFaceS) / 2);
+    D_monsterFaceS.setPosition(windowWidth - 110,110);
+    D_monHpBar.setScale(1,1);
+    D_monHpBar.setPosition(windowWidth - UI_hpBarS.getPosition().x - getObjWidth(D_monHpBar) + 130,UI_hpBarS.getPosition().y);
+    D_monHpBorder.setOrigin(getObjWidth(D_monHpBorder),0);
+    D_monHpBorder.setPosition(windowWidth - UI_hpBorderS.getPosition().x + 130,UI_hpBorderS.getPosition().y);
+    D_monMaxHp.setOrigin(getObjWidth(D_monMaxHp),0);
+    D_monMaxHp.setPosition(windowWidth - UI_maxHpS.getPosition().x + 130,UI_maxHpS.getPosition().y);
+    D_monHpValue.setString("100/100");
+    D_monHpValue.setOrigin(getObjWidth(D_monHpValue),0);
+    D_monHpValue.setPosition(D_monMaxHp.getPosition().x - 55,UI_hpValue.getPosition().y);
+    D_monHpText.setOrigin(getObjWidth(D_monHpText),0);
+    D_monHpText.setPosition(windowWidth - UI_hpText.getPosition().x - 230,UI_hpText.getPosition().y);
+    D_playerRPS.setOrigin(getObjWidth(D_playerRPS) / 2,getObjHeight(D_playerRPS) / 2);
+    D_playerRPS.setPosition(windowMidWidth() - 500,windowMidHeight());
+    D_monsterRPS.setOrigin(getObjWidth(D_monsterRPS) / 2,getObjHeight(D_monsterRPS) / 2);
+    D_monsterRPS.setPosition(windowMidWidth() + 500,windowMidHeight());
+    if(fightTurn % 2 == 0)D_Turn.setString("Your Turn");
+    else D_Turn.setString("Enemy Turn");
+    D_Turn.setOrigin(getObjWidth(D_Turn) / 2,getObjHeight(D_Turn) / 2);
+    D_Turn.setPosition(windowMidWidth(),windowMidHeight() - 400);
+    this->gameWindow->draw(D_Turn);
+    if(D_monMaxHp.getGlobalBounds().contains(mousePos)){
+        this->gameWindow->draw(D_monHpValue);
+    }
+    switch(dunStates){
+        case 0:
+            this->gameWindow->draw(D_startS);
+            if(D_startS.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+                D_startS.setScale(1.05,1.05);
+                if(checkMouseClick()){
+                    dunStates = 1;
+                }
+            }
+            else D_startS.setScale(1,1);
+            break;
+        case 1:
+            randomRPS();
+            this->gameWindow->draw(D_playerRPS);
+            this->gameWindow->draw(D_monsterRPS);
+            break;
+        case 2:
+            this->gameWindow->draw(D_playerRPS);
+            this->gameWindow->draw(D_monsterRPS);
+            waitRPSAni(15);
+            break;
+        case 3:
+            if(playerDes == enemyDes){}
+            else if(playerDes == 0 && enemyDes == 1)isPlayerWin = false;//enemy win
+            else if(playerDes == 1 && enemyDes == 2)isPlayerWin = false;//enemy win
+            else if(playerDes == 2 && enemyDes == 0)isPlayerWin = false;//enemy win
+            else isPlayerWin = true;//player win
+            dunStates = 4;
+            break;
+        case 4:
+            if(isPlayerWin){
+                if(fightTurn % 2 == 0){
+
+                }
+                else{
+                    player[now_player].hp -= 10;
+                }
+            }
+            else{
+                if(fightTurn % 2 == 0){
+
+                }
+                else{
+                    player[now_player].hp -= 20;
+                }
+            }
+            dunStates = 5;
+            break;
+        case 5:
+            checkDeath();
+            break;
+        case 6:
+            dunStates = 0;
+            fightTurn++;
+            break;
+    };
+    if(D_monsterFaceS.getGlobalBounds().contains(mousePos)){
+        D_monsterFaceS.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            if(!isMonDes){
+                isMonDes = true;
+                isDesOpen = false;
+            }
+            else isMonDes = false;
+        }
+    }
+    else D_monsterFaceS.setScale(1,1);
+}
+
+void Game::checkDeath(){
+    if(player[now_player].hp == 0){
+        canUsePotion = false;
+        resetMonster();
+        death();
+    }
+    else if(1){
+        resetMonster();
+        getItem();
+        if(monsterIndex == 3)upgradeBoss();
+    }
+    else{
+        dunStates = 6;
+    }
+}
+
+void Game::getItem(){
+    isGetItem = true;
+}
+
+void Game::updateGetItem(){
+    D_getText.setOrigin(getObjWidth(D_getText) / 2,getObjHeight(D_getText) / 2);
+    D_getText.setPosition(windowMidWidth(),windowMidHeight() - 110);
+    D_getOk.setOrigin(getObjWidth(D_getOk) / 2,getObjHeight(D_getOk) / 2);
+    D_getOk.setPosition(windowMidWidth(),windowMidHeight() + 110);
+    D_getExp.setOrigin(getObjWidth(D_getExp) / 2,getObjHeight(D_getExp) / 2);
+    D_getExp.setPosition(windowMidWidth() - 150,windowMidHeight() - 20);
+    D_getExpValue.setString(to_string(getExp()));
+    D_getExpValue.setOrigin(getObjWidth(D_getExpValue) / 2,getObjHeight(D_getExpValue) / 2);
+    D_getExpValue.setPosition(windowMidWidth() + 150,D_getExp.getPosition().y);
+    D_getMoney.setOrigin(getObjWidth(D_getMoney) / 2,getObjHeight(D_getMoney) / 2);
+    D_getMoney.setPosition(windowMidWidth() - 150,windowMidHeight() + 30);
+    D_getMoneyValue.setString(to_string(getMoney()));
+    D_getMoneyValue.setOrigin(getObjWidth(D_getMoneyValue) / 2,getObjHeight(D_getMoneyValue) / 2);
+    D_getMoneyValue.setPosition(windowMidWidth() + 150,D_getMoney.getPosition().y);
+    D_getCoin.setPosition(D_getMoneyValue.getPosition().x + 110,D_getMoneyValue.getPosition().y + 3);
+    if(D_getOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+        D_getOk.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isDun = false;
+            isGetItem = false;
+            gameStates = 7;
+        }
+    }
+    else D_getOk.setScale(1,1);
+}
+
+void Game::resetMonster(){
+
+}
+
+void Game::upgradeBoss(){
+
+}
+
+int Game::loseMoney(){
+    player[now_player].money -= 100;
+    return 100;
+}
+
+int Game::getMoney(){
+    player[now_player].money += 100;
+    return 100;
+}
+
+int Game::loseExp(){
+    player[now_player].exp -= 50;
+    return 50;
+}
+
+int Game::getExp(){
+    player[now_player].exp += 50;
+    return 50;
+}
+
+void Game::death(){
+    isDeathOpen = true;
+}
+
+void Game::updateDeath(){
+    D_deathText.setOrigin(getObjWidth(D_deathText) / 2,getObjHeight(D_deathText) / 2);
+    D_deathText.setPosition(windowMidWidth(),windowMidHeight() - 110);
+    D_deathOk.setOrigin(getObjWidth(D_deathOk) / 2,getObjHeight(D_deathOk) / 2);
+    D_deathOk.setPosition(windowMidWidth(),windowMidHeight() + 110);
+    D_deathExp.setOrigin(getObjWidth(D_deathExp) / 2,getObjHeight(D_deathExp) / 2);
+    D_deathExp.setPosition(windowMidWidth() - 150,windowMidHeight() - 20);
+    D_deathExpValue.setString("-" + to_string(loseExp()));
+    D_deathExpValue.setOrigin(getObjWidth(D_deathExpValue) / 2,getObjHeight(D_deathExpValue) / 2);
+    D_deathExpValue.setPosition(windowMidWidth() + 150,D_deathExp.getPosition().y);
+    D_deathMoney.setOrigin(getObjWidth(D_deathMoney) / 2,getObjHeight(D_deathMoney) / 2);
+    D_deathMoney.setPosition(windowMidWidth() - 150,windowMidHeight() + 30);
+    D_deathMoneyValue.setString("-" + to_string(loseMoney()));
+    D_deathMoneyValue.setOrigin(getObjWidth(D_deathMoneyValue) / 2,getObjHeight(D_deathMoneyValue) / 2);
+    D_deathMoneyValue.setPosition(windowMidWidth() + 150,D_deathMoney.getPosition().y);
+    D_coinS.setPosition(D_deathMoneyValue.getPosition().x + 110,D_deathMoneyValue.getPosition().y + 3);
+    if(D_deathOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+        D_deathOk.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isDun = false;
+            isDeathOpen = false;
+            canUsePotion = true;
+            gameStates = 7;
+        }
+    }
+    else D_deathOk.setScale(1,1);
+}
+
+void Game::waitRPSAni(unsigned int time){
+    totalTime += deltaTime;
+    if(totalTime >= animationSpeed){
+        totalTime -= animationSpeed;
+        timeTemp.push_back(1);
+    }
+    if(timeTemp.size() == time){
+        while(timeTemp.size() != 0)timeTemp.pop_back();
+        totalTime = 0.0f;
+        dunStates = 3;
+    }
+}
+
+void Game::randomRPS(){
+    totalTime += deltaTime;
+    if(totalTime >= animationSpeed){
+        totalTime -= animationSpeed;
+        do{
+            playerRPS = rand() % 3;
+        }while(playerRPS == RPStemp.back());
+        do{
+            monsterRPS = rand() % 3;
+        }while(monsterRPS == RPStempMon.back());
+        RPStemp.push_back(playerRPS);
+        RPStempMon.push_back(monsterRPS);
+        switch(RPStemp.back()){
+            case 0:
+                D_playerRPS.setTexture(D_rockT);
+                break;
+            case 1:
+                D_playerRPS.setTexture(D_paperT);
+                break;
+            case 2:
+                D_playerRPS.setTexture(D_scissorsT);
+                break;
+        };
+        switch(RPStempMon.back()){
+            case 0:
+                D_monsterRPS.setTexture(D_monRockT);
+                break;
+            case 1:
+                D_monsterRPS.setTexture(D_monPaperT);
+                break;
+            case 2:
+                D_monsterRPS.setTexture(D_monScissorsT);
+                break;
+        };
+    }
+    if(RPStemp.size() == 21 && RPStempMon.size() == 21){
+        dunStates = 2;
+        totalTime = 0.0f;
+        while(RPStemp.size() != 1)RPStemp.pop_back();
+        while(RPStempMon.size() != 1)RPStempMon.pop_back();
+    }
+}
+
+void Game::askBuy(int index){
+    isAskBuyOpen = true;
+    itemBuyIndex = index;
+}
+
+void Game::updateAskBuy(int index){
+    UI_askBuy.setOrigin(getObjWidth(UI_askBuy) / 2,getObjHeight(UI_askBuy) / 2);
+    UI_askBuy.setPosition(windowMidWidth(),windowMidHeight() - 75);
+    UI_askBuyOk.setOrigin(getObjWidth(UI_askBuyOk) / 2,getObjHeight(UI_askBuyOk) / 2);
+    UI_askBuyOk.setPosition(windowMidWidth() - 200,windowMidHeight() + 75);
+    UI_askBuyCancle.setOrigin(getObjWidth(UI_askBuyCancle) / 2,getObjHeight(UI_askBuyCancle) / 2);
+    UI_askBuyCancle.setPosition(windowMidWidth() + 200,windowMidHeight() + 75);
+    if(index < 2){
+        UI_buyNum.setString(to_string(buyNum));
+        UI_buyNum.setOrigin(getObjWidth(UI_buyNum) / 2,getObjHeight(UI_buyNum) / 2);
+        UI_buyNum.setPosition(windowMidWidth() + 30,windowMidHeight() + 10);
+    }
+    int kind;
+    int innerIndex;
+    if(index < 8 && index > 1){
+        kind = 0;
+        innerIndex = index - 1;
+    }
+    else if(index < 16){
+        kind = 1;
+        innerIndex = index - 8;
+    }
+    else if(index < 24){
+        kind = 2;
+        innerIndex = index - 16;
+    }
+    if(UI_askBuyOk.getGlobalBounds().contains(mousePos)){
+        UI_askBuyOk.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            if(player[now_player].money >= shopPriceValue[index]){
+               isAskBuyOpen = false;
+               gameStates = 6;
+               if(index > 1){
+                   player[now_player].money -= shopPriceValue[index];
+                   ask(kind,innerIndex);
+               }
+               else{
+                   player[now_player].money -= shopPriceValue[index]*buyNum;
+                   if(index == 0)player[now_player].red_potion += buyNum;
+                   else player[now_player].green_potion += buyNum;
+               }
+               buyNum = 1;
+            }
+        }
+    }
+    else UI_askBuyOk.setScale(1,1);
+    if(UI_askBuyCancle.getGlobalBounds().contains(mousePos)){
+        UI_askBuyCancle.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isAskBuyOpen = false;
+            gameStates = 6;
+            buyNum = 1;
+        }
+    }
+    else UI_askBuyCancle.setScale(1,1);
+    if(index < 2){
+        if(UI_UArrowS.getGlobalBounds().contains(mousePos)){
+            UI_UArrowS.setScale(1.1,1.1);
+            if(checkMouseClick())buyNum++;
+        }
+        else UI_UArrowS.setScale(1,1);
+        if(UI_DArrowS.getGlobalBounds().contains(mousePos)){
+            UI_DArrowS.setScale(1.1,1.1);
+            if(checkMouseClick() && buyNum > 0)buyNum--;
+        }
+        else UI_DArrowS.setScale(1,1);
+    }
+}
+
+void Game::updateShop(){
+    UI_playerMoney.setString(to_string(player[now_player].money));
+    UI_quitShop.setOrigin(getObjWidth(UI_quitShop) / 2,getObjHeight(UI_quitShop) / 2);
+    UI_quitShop.setPosition(windowMidWidth() - 220,windowMidHeight() + 202);
+    UI_playerMoney.setOrigin(getObjWidth(UI_playerMoney),getObjHeight(UI_playerMoney) / 2);
+    UI_playerMoney.setPosition(windowMidWidth() + 230,windowMidHeight() + 202);
+    UI_money.setOrigin(getObjWidth(UI_money),getObjHeight(UI_money) / 2);
+    UI_money.setPosition(windowMidWidth() + 70,windowMidHeight() + 202);
+    if(UI_quitShop.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isAskBuyOpen && !isAskOpen){
+        UI_quitShop.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isShopOpen = false;
+            gameStates = 7;
+        }
+    }
+    else UI_quitShop.setScale(1,1);
+    for(int i = 0;i < 24;i++){
+        if(UI_shopItem[i].getGlobalBounds().contains(mousePos) && !isMenuOpen && !isAskBuyOpen && !isAskOpen){
+            UI_shopItem[i].setScale(1.05,1.05);
+            if(i < 2){
+                UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 80);
+                UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 50);
+                UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
+            }
+            else if(i < 8){
+                UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 110);
+                UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 80);
+                UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
+            }
+            else if(i < 16){
+                UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 110);
+                UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 80);
+                UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
+            }
+            else if(i < 24){
+                UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 142);
+                UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 112);
+                UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 32);
+            }
+            if(checkMouseClick()){
+                    askBuy(i);
+            }
+            this->gameWindow->draw(UI_shopName[i]);
+            this->gameWindow->draw(UI_shopDes[i]);
+            this->gameWindow->draw(UI_shopPrice[i]);
+        }
+        else UI_shopItem[i].setScale(1,1);
+    }
+}
+
+void Game::shopAsk(){
+    isShopAskOpen = true;
+    updateShopAsk();
+}
+
+void Game::updateShopAsk(){
+    UI_shopAsk.setOrigin(getObjWidth(UI_shopAsk) / 2,getObjHeight(UI_shopAsk) / 2);
+    UI_shopAsk.setPosition(windowMidWidth(),windowMidHeight() - 75);
+    UI_shopYes.setOrigin(getObjWidth(UI_shopYes) / 2,getObjHeight(UI_shopYes) / 2);
+    UI_shopYes.setPosition(windowMidWidth() - 200,windowMidHeight() + 75);
+    UI_shopNo.setOrigin(getObjWidth(UI_shopNo) / 2,getObjHeight(UI_shopNo) / 2);
+    UI_shopNo.setPosition(windowMidWidth() + 200,windowMidHeight() + 75);
+    if(UI_shopYes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
+        UI_shopYes.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            isShopAskOpen = false;
+            gameStates = 6;
+        }
+    }
+    else UI_shopYes.setScale(1,1);
+    if(UI_shopNo.getGlobalBounds().contains(mousePos) &&!isMenuOpen){
+        UI_shopNo.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            isShopAskOpen = false;
+            gameStates = 7;
+        }
+    }
+    else UI_shopNo.setScale(1,1);
+}
+
+void Game::dunAsk(int kind){
+    isDunAskOpen = true;
+    updateDunAsk(kind);
+}
+
+void Game::updateDunAsk(int kind){
+    UI_dunAskMonS.setTexture(UI_dunAskMonT[kind]);
+    UI_dunAskMonS.setOrigin(getObjWidth(UI_dunAskMonS) / 2,getObjHeight(UI_dunAskMonS) / 2);
+    UI_dunAskMonS.setPosition(windowMidWidth(),windowMidHeight() + 10);
+    UI_dunAsk.setOrigin(getObjWidth(UI_dunAsk) / 2,getObjHeight(UI_dunAsk) / 2);
+    UI_dunAsk.setPosition(windowMidWidth(),windowMidHeight() - 75);
+    UI_dunYes.setOrigin(getObjWidth(UI_dunYes) / 2,getObjHeight(UI_dunYes) / 2);
+    UI_dunYes.setPosition(windowMidWidth() - 200,windowMidHeight() + 75);
+    UI_dunNo.setOrigin(getObjWidth(UI_dunNo) / 2,getObjHeight(UI_dunNo) / 2);
+    UI_dunNo.setPosition(windowMidWidth() + 200,windowMidHeight() + 75);
+    if(UI_dunYes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
+        UI_dunYes.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            askKind = kind;
+            dunStates = 0;
+            if(player[now_player].getAgi() > 0)fightTurn = 0;
+            else fightTurn = 1;
+            isDunAskOpen = false;
+            gameStates = 5;
+        }
+    }
+    else UI_dunYes.setScale(1,1);
+    if(UI_dunNo.getGlobalBounds().contains(mousePos) &&!isMenuOpen){
+        UI_dunNo.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            isDunAskOpen = false;
+            gameStates = 7;
+        }
+    }
+    else UI_dunNo.setScale(1,1);
+}
+
+void Game::ask(int kind,int index){
+    askKind = kind;
+    askIndex = index;
+    isAskOpen = true;
+}
+
+void Game::updateAsk(){
+    switch(askKind){
+        case 0:
+            UI_askWeaponS.setTexture(UI_swordT[askIndex]);
+            UI_askWeaponS.setOrigin(getObjWidth(UI_askWeaponS) / 2,getObjHeight(UI_askWeaponS) / 2);
+            UI_askWeaponS.setPosition(windowMidWidth(),windowMidHeight() + 10);
+            break;
+        case 1:
+            UI_askShieldS.setTexture(UI_shieldT[askIndex]);
+            UI_askShieldS.setOrigin(getObjWidth(UI_askShieldS) / 2,getObjHeight(UI_askShieldS) / 2);
+            UI_askShieldS.setPosition(windowMidWidth(),windowMidHeight() + 10);
+            break;
+        case 2:
+            UI_askAccS.setTexture(UI_accT[askIndex]);
+            UI_askAccS.setOrigin(getObjWidth(UI_askAccS) / 2,getObjHeight(UI_askAccS) / 2);
+            UI_askAccS.setPosition(windowMidWidth(),windowMidHeight() + 10);
+            break;
+    };
+    UI_ask.setOrigin(getObjWidth(UI_ask) / 2,getObjHeight(UI_ask) / 2);
+    UI_ask.setPosition(windowMidWidth(),windowMidHeight() - 75);
+    UI_yes.setOrigin(getObjWidth(UI_yes) / 2,getObjHeight(UI_yes) / 2);
+    UI_yes.setPosition(windowMidWidth() - 200,windowMidHeight() + 75);
+    UI_no.setOrigin(getObjWidth(UI_no) / 2,getObjHeight(UI_no) / 2);
+    UI_no.setPosition(windowMidWidth() + 200,windowMidHeight() + 75);
+    if(UI_yes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
+        UI_yes.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            equip = true;
+            isAskOpen = false;
+            gameStates = 7;
+        }
+    }
+    else UI_yes.setScale(1,1);
+    if(UI_no.getGlobalBounds().contains(mousePos) &&!isMenuOpen){
+        UI_no.setScale(1.1,1.1);
+        if(checkMouseClick()){
+            equip = false;
+            isAskOpen = false;
+            gameStates = 7;
+        }
+    }
+    else UI_no.setScale(1,1);
+    switch(askKind){
+        case 0:
+            if(equip){
+                player[now_player].weaponIndex = askIndex;
+            }
+            equip = false;
+            break;
+        case 1:
+            if(equip){
+                player[now_player].shieldIndex = askIndex;
+            }
+            equip = false;
+            break;
+        case 2:
+            if(equip){
+                player[now_player].accessoryIndex = askIndex;
+            }
+            equip = false;
+            break;
+    };
+}
+
+void Game::updatePlayingState(){
+    if(gameStates == 1){ //randomDice
+        if(!randomStart)diceState();
+        else if(randomStart){
+            randomDice();
+            this->gameWindow->draw(UI_diceValue);
+        }
+    }
+    else if(gameStates == 2){ //ShowDiceNum
+        this->gameWindow->draw(UI_diceValue);
+        player[now_player].moveNum = diceTemp.back();
+        while(diceTemp.size() != 1)diceTemp.pop_back();
+        randomStart = false;
+        waitDiceAni(15);
+    }
+    else if(gameStates == 3){ //Move
+        gameStates = 4;
+    }
+    else if(gameStates == 4){ //checkPath
+        //if(1)ask(0,4);
+        if(1)dunAsk(3);
+        //if(1)shopAsk();
+    }
+    else if(gameStates == 5){ //dungeon
+        isDun = true;
+        dungeon(askKind);
+        //gameStates = 7;
+    }
+    else if(gameStates == 6){ //shop
+        isShopOpen = true;
+    }
+    else if(gameStates == 7){ //end turn
+        gameStates = 1;
+        turn++;
+    }
+}
+
+void Game::waitDiceAni(unsigned int time){
+    totalTime += deltaTime;
+    if(totalTime >= animationSpeed){
+        totalTime -= animationSpeed;
+        timeTemp.push_back(1);
+    }
+    if(timeTemp.size() == time){
+        while(timeTemp.size() != 0)timeTemp.pop_back();
+        totalTime = 0.0f;
+        gameStates = 3;
+    }
+}
+
+void Game::diceState(){
+        this->gameWindow->draw(UI_diceS);
+        if(UI_diceS.getGlobalBounds().contains(mousePos) && !isDesOpen && !isMenuOpen && !isAskOpen){
+            UI_diceS.setScale(1.05,1.05);
+            if(checkMouseClick()){
+                    randomStart = true;
+            }
+        }
+        else UI_diceS.setScale(1,1);
+}
+
+void Game::randomDice(){
+    totalTime += deltaTime;
+    if(totalTime >= animationSpeed){
+        totalTime -= animationSpeed;
+        do{
+            diceNum = rand() % 6 + 1;
+        }while(diceNum == diceTemp.back());
+        UI_diceValue.setString(to_string(diceNum));
+        this->gameWindow->draw(UI_diceValue);
+        diceTemp.push_back(diceNum);
+    }
+    if(diceTemp.size() == 26){
+        gameStates = 2;
+        totalTime = 0.0f;
+    }
+}
+
+void Game::updateLevel(){
+    if(player[now_player].level < 30){
+        for(int i = 0;i < 29;i++){
+            if(player[now_player].exp >= expMax[i]){
+                player[now_player].exp -= expMax[i];
+                player[now_player].level = i + 1;
+            }
+        }
+    }
+    else player[now_player].exp = expMax.back();
+}
+
 void Game::updateView(){
-    if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3){
+    cout << camera.getCenter().x << " " << windowMidWidth() << "\n";
+    if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3 && camera.getCenter().x < 2040){
         camera.move(horizontalScrollSpeed,0);
     }
-    else if(Mouse::getPosition(*this->gameWindow).x < 3){
+    else if(Mouse::getPosition(*this->gameWindow).x < 3 && camera.getCenter().x > windowMidWidth()){
         camera.move(-horizontalScrollSpeed,0);
     }
-    if(Mouse::getPosition(*this->gameWindow).y > windowHeight - 3){
+    if(Mouse::getPosition(*this->gameWindow).y > windowHeight - 3 && camera.getCenter().y < 1460){
         camera.move(0,verticalScrollSpeed);
     }
-    else if(Mouse::getPosition(*this->gameWindow).y < 3){
+    else if(Mouse::getPosition(*this->gameWindow).y < 3 && camera.getCenter().y > windowMidHeight()){
         camera.move(0,-verticalScrollSpeed);
+    }
+}
+
+void Game::updateEscape(){
+    if(checkEscape()){
+        if(isMenuOpen)isMenuOpen = false;
+        else if(!isMenuOpen && !isDesOpen && !isMonDes)isMenuOpen = true;
+        else if(!isMenuOpen && isDesOpen)isDesOpen = false;
+        if(!isMenuOpen && isMonDes)isMonDes = false;
+    }
+}
+
+void Game::updateMiniMenuClick(){
+    for(int i = 0;i < 3;i++){
+        if(miniMenuText[i].getGlobalBounds().contains(mousePos)){
+            miniMenuText[i].setScale(1.02,1.02);
+            if(checkMouseClick()){
+                switch(i){
+                    case 0:
+                        isMenuOpen = false;
+                        break;
+                    case 1:
+                        state.push(Setting);
+                        break;
+                    case 2:
+                        resetCC();
+                        resetIPN();
+                        isMenuOpen = false;
+                        while(state.top() != Menu)state.pop();
+                        break;
+                }
+            }
+        }
+        else miniMenuText[i].setScale(1,1);
+    }
+}
+
+void Game::drawUI(){
+    UI_level.setString("LV. " + to_string(player[now_player].level));
+    for(int i = 0;i < 3;i++){
+        if(i <= player[now_player].star - 1)UI_starS[i].setColor(Color(255,255,255,255));
+        else UI_starS[i].setColor(Color(128,128,128,128));
+        UI_starS[i].setPosition((UI_level.getPosition().x + 100) + (i+1) * 60,UI_level.getPosition().y);
+    }
+    UI_name.setString(playerName[now_player]);
+    UI_name.setOrigin(getObjWidth(UI_name) / 2,getObjHeight(UI_name) / 2);
+    UI_charFaceS.setTexture(UI_charFaceT[player[now_player].character_number]);
+    UI_charFaceS.setOrigin(getObjWidth(UI_charFaceS) / 2,getObjHeight(UI_charFaceS) / 2);
+    UI_expBarS.setScale((double)player[now_player].exp / expMax[player[now_player].level - 1],1);
+    UI_hpBarS.setScale((double)player[now_player].hp / player[now_player].HpMax(),1);
+    UI_hpText.setPosition(UI_hpBorderS.getPosition().x - 130,UI_hpBorderS.getPosition().y);
+    UI_hpValue.setPosition(UI_hpBorderS.getPosition().x + ((getObjWidth(UI_hpBorderS) / 2) - getObjWidth(UI_hpValue) / 2),UI_hpBorderS.getPosition().y + ((getObjHeight(UI_hpBorderS) / 2) - getObjHeight(UI_hpValue) / 2) - 17);
+    UI_expText.setPosition(UI_hpText.getPosition().x,UI_expBorderS.getPosition().y);
+    UI_expValue.setPosition(UI_expBorderS.getPosition().x + ((getObjWidth(UI_expBorderS) / 2) - getObjWidth(UI_expValue) / 2),UI_expBorderS.getPosition().y + ((getObjHeight(UI_expBorderS) / 2) - getObjHeight(UI_expValue) / 2) - 17);
+    UI_hpSValue.setString(to_string(player[now_player].red_potion));
+    UI_hpSValue.setOrigin(getObjWidth(UI_hpSValue) / 2,getObjHeight(UI_hpSValue) / 2);
+    UI_hpSValue.setPosition(UI_HpSS.getPosition().x - 17,UI_HpSS.getPosition().y + 4);
+    UI_hpLValue.setString(to_string(player[now_player].green_potion));
+    UI_hpLValue.setOrigin(getObjWidth(UI_hpLValue) / 2,getObjHeight(UI_hpLValue) / 2);
+    UI_hpLValue.setPosition(UI_HpLS.getPosition().x - 17,UI_HpLS.getPosition().y + 4);
+    if(isDesOpen){
+        UI_playerDesCharS.setTexture(charTexture[player[now_player].character_number]);
+        UI_playerDesCharS.setOrigin(getObjWidth(UI_playerDesCharS) / 2,getObjHeight(UI_playerDesCharS) / 2);
+        UI_playerDesCharS.setPosition(UI_playerDesBGS.getPosition().x,UI_playerDesBGS.getPosition().y - 160);
+        UI_playerNameDes.setString(playerName[now_player]);
+        UI_playerNameDes.setOrigin(getObjWidth(UI_playerNameDes) / 2,getObjHeight(UI_playerNameDes) / 2);
+        UI_playerNameDes.setPosition(UI_playerDesBGS.getPosition().x + 5,UI_playerDesBGS.getPosition().y - 70);
+        UI_statDes.setString("Level  :     " + to_string(player[now_player].level) + '\n' +
+                             "Class  :     " + '\n' +
+                             "ATK  :     " + to_string(player[now_player].getAtk()) + '\n' +
+                             "Max HP  :     " + to_string(player[now_player].HpMax()) + '\n' +
+                             "STR  :     " + to_string(player[now_player].std_str) + "  +  " + to_string((player[now_player].accessoryIndex > -1 ? accessory[player[now_player].accessoryIndex].extra_str:0) +
+                             sword[player[now_player].weaponIndex].sword_stat[0]) + '\n' +
+                             "VIT  :     " + to_string(player[now_player].std_vit) + "  +  " + to_string((player[now_player].accessoryIndex > -1 ? accessory[player[now_player].accessoryIndex].extra_vit:0) +
+                             (player[now_player].shieldIndex > -1 ? shield[player[now_player].shieldIndex].shield_stat[0]:0)) + '\n' +
+                             "MONEY  :     " + to_string(player[now_player].money) + "     Coins"
+                             );
+        UI_statDesR.setString("DEF  :     " + to_string(player[now_player].getDef()) + "\n\n" +
+                              "AGI  :     " + to_string(player[now_player].std_agi) + "  +  " + to_string((player[now_player].accessoryIndex > -1 ? accessory[player[now_player].accessoryIndex].extra_agi:0) + sword[player[now_player].weaponIndex].sword_stat[1]) + '\n' +
+                              "LUK  :     " + to_string(player[now_player].std_luk) + "  +  " + to_string((player[now_player].accessoryIndex > -1 ? accessory[player[now_player].accessoryIndex].extra_luck:0) + sword[player[now_player].weaponIndex].sword_stat[2])
+                              );
+        UI_statDes.setPosition(UI_playerDesBGS.getPosition().x - 210,UI_playerDesBGS.getPosition().y - 30);
+        UI_statDesR.setPosition(UI_playerDesBGS.getPosition().x + 35,UI_playerDesBGS.getPosition().y + 50);
+    }
+    if(gameStates == 1){
+        UI_diceValue.setOrigin(getObjWidth(UI_diceValue) / 2,getObjHeight(UI_diceValue) / 2);
+        UI_diceValue.setPosition(windowMidWidth(),windowMidHeight());
+    }
+    else if(gameStates == 2){
+        UI_diceValue.setScale(1.4,1.4);
+    }
+    else UI_diceValue.setScale(1,1);
+    this->gameWindow->draw(UI_maxHpS);
+    this->gameWindow->draw(UI_hpBarS);
+    this->gameWindow->draw(UI_hpBorderS);
+    this->gameWindow->draw(UI_hpText);
+    this->gameWindow->draw(UI_maxExpS);
+    this->gameWindow->draw(UI_expBarS);
+    this->gameWindow->draw(UI_expBorderS);
+    this->gameWindow->draw(UI_expText);
+    this->gameWindow->draw(UI_charFaceS);
+    this->gameWindow->draw(UI_name);
+    this->gameWindow->draw(UI_level);
+    for(int i = 0;i < 3;i++){
+        this->gameWindow->draw(UI_starS[i]);
+    }
+    this->gameWindow->draw(UI_bagS);
+    if(isBagOpen){
+        UI_swordS.setTexture(UI_swordT[player[now_player].weaponIndex]);
+        UI_swordS.setOrigin(getObjWidth(UI_swordS) / 2,getObjHeight(UI_swordS) / 2);
+        UI_swordS.setScale(0.65,0.65);
+        UI_swordS.setPosition(UI_HpSS.getPosition().x - 136,UI_HpSS.getPosition().y);
+        if(player[now_player].shieldIndex != -1){
+            UI_shieldS.setTexture(UI_shieldT[player[now_player].shieldIndex]);
+            UI_shieldS.setOrigin(getObjWidth(UI_shieldS) / 2,getObjHeight(UI_shieldS) / 2);
+            UI_shieldS.setScale(0.65,0.65);
+            UI_shieldS.setPosition(UI_HpSS.getPosition().x - 68,UI_HpSS.getPosition().y);
+        }
+        if(player[now_player].accessoryIndex != -1){
+            UI_accS.setTexture(UI_accT[player[now_player].accessoryIndex]);
+            UI_accS.setOrigin(getObjWidth(UI_accS) / 2,getObjHeight(UI_accS) / 2);
+            UI_accS.setScale(0.65,0.65);
+            UI_accS.setPosition(UI_HpSS.getPosition().x + 136,UI_HpSS.getPosition().y);
+        }
+        this->gameWindow->draw(UI_invenS);
+        if(player[now_player].red_potion == 0)UI_HpSS.setColor(Color(160,160,160,255));
+        else UI_HpSS.setColor(Color(255,255,255,255));
+        this->gameWindow->draw(UI_HpSS);
+        if(player[now_player].green_potion == 0)UI_HpLS.setColor(Color(160,160,160,255));
+        else UI_HpLS.setColor(Color(255,255,255,255));
+        this->gameWindow->draw(UI_HpLS);
+        this->gameWindow->draw(UI_hpSValue);
+        this->gameWindow->draw(UI_hpLValue);
+        this->gameWindow->draw(UI_swordS);
+        this->gameWindow->draw(UI_shieldS);
+        this->gameWindow->draw(UI_accS);
+    }
+    if(!isMenuOpen)updateUI();
+}
+
+void Game::updateUI(){
+    UI_hpValue.setString(to_string(player[now_player].hp) + "/" + to_string(player[now_player].HpMax()));
+    UI_expValue.setString(to_string(player[now_player].exp) + "/" + to_string(expMax[player[now_player].level]));
+    for(int i = 0;i < 10;i++){
+        if(player[now_player].weaponIndex != -1){
+            UI_swordName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 90);
+            UI_swordDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 60);
+        }
+        if(player[now_player].shieldIndex != -1){
+            UI_shieldName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 90);
+            UI_shieldDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 60);
+        }
+        if(player[now_player].accessoryIndex != -1){
+        UI_accDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 92);
+        UI_accName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 122);
+        }
+        if(i < 2){
+            UI_potionName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 60);
+            UI_potionDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
+        }
+    }
+    if(UI_maxHpS.getGlobalBounds().contains(mousePos)){
+        this->gameWindow->draw(UI_hpValue);
+    }
+    if(UI_maxExpS.getGlobalBounds().contains(mousePos)){
+        this->gameWindow->draw(UI_expValue);
+    }
+    if(UI_charFaceS.getGlobalBounds().contains(mousePos)){
+        UI_charFaceS.setScale(1.05,1.05);
+        if(checkMouseClick()){
+            if(isDesOpen)isDesOpen = false;
+            else{
+                isDesOpen = true;
+                isMonDes = false;
+            }
+        }
+    }
+    else UI_charFaceS.setScale(1,1);
+    if(UI_bagS.getGlobalBounds().contains(mousePos)){
+        UI_bagS.setScale(0.85,0.85);
+        if(checkMouseClick()){
+            if(isBagOpen)isBagOpen = false;
+            else isBagOpen = true;
+        }
+    }
+    else UI_bagS.setScale(0.8,0.8);
+    if(UI_HpSS.getGlobalBounds().contains(mousePos)){
+        if(player[now_player].red_potion > 0)UI_HpSS.setScale(0.7,0.7);
+        if(checkMouseClick() && player[now_player].hp < player[now_player].HpMax()){
+            if(player[now_player].red_potion > 0 && canUsePotion){
+                player[now_player].red_potion--;
+                usePotion(potion[0].potion_effect);
+            }
+        }
+    }
+    else UI_HpSS.setScale(0.65,0.65);
+    if(UI_HpLS.getGlobalBounds().contains(mousePos)){
+        if(player[now_player].green_potion > 0)UI_HpLS.setScale(0.7,0.7);
+        if(checkMouseClick() && player[now_player].hp < player[now_player].HpMax()){
+            if(player[now_player].green_potion > 0 && canUsePotion){
+                player[now_player].green_potion--;
+                usePotion(potion[1].potion_effect);
+            }
+        }
+    }
+    else UI_HpLS.setScale(0.65,0.65);
+    if(isBagOpen){
+        if(UI_swordS.getGlobalBounds().contains(mousePos)){
+            this->gameWindow->draw(UI_swordName[player[now_player].weaponIndex]);
+            this->gameWindow->draw(UI_swordDes[player[now_player].weaponIndex]);
+        }
+        if(UI_shieldS.getGlobalBounds().contains(mousePos) && player[now_player].shieldIndex != -1){
+            this->gameWindow->draw(UI_shieldName[player[now_player].shieldIndex]);
+            this->gameWindow->draw(UI_shieldDes[player[now_player].shieldIndex]);
+        }
+        if(UI_accS.getGlobalBounds().contains(mousePos) && player[now_player].accessoryIndex != -1){
+            this->gameWindow->draw(UI_accName[player[now_player].accessoryIndex]);
+            this->gameWindow->draw(UI_accDes[player[now_player].accessoryIndex]);
+        }
+        if(UI_HpSS.getGlobalBounds().contains(mousePos)){
+            this->gameWindow->draw(UI_potionName[0]);
+            this->gameWindow->draw(UI_potionDes[0]);
+        }
+        if(UI_HpLS.getGlobalBounds().contains(mousePos)){
+            this->gameWindow->draw(UI_potionName[1]);
+            this->gameWindow->draw(UI_potionDes[1]);
+        }
+    }
+}
+
+void Game::usePotion(int heal){
+        if(heal + player[now_player].hp >= player[now_player].HpMax()){
+            player[now_player].hp = player[now_player].HpMax();
+        }
+        else if(heal + player[now_player].hp < player[now_player].HpMax()){
+            player[now_player].hp += heal;
+        }
+}
+
+void Game::updateTurn(){
+    now_player = turn % players;
+}
+
+void Game::setItemStat(){
+    sword[0].name_object = "Fist";                                   sword[0].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[0].sword_stat[0] = 0;sword[0].sword_stat[1] = 0;sword[0].sword_stat[2] = 0;
+    sword[1].name_object = "Durandal";     sword[1].price = 10;      sword[1].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[1].sword_stat[0] = 2;sword[1].sword_stat[1] = 0;sword[1].sword_stat[2] = 1;
+    sword[2].name_object = "Muramasas";    sword[2].price = 10;     sword[2].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[2].sword_stat[0] = 3;sword[2].sword_stat[1] = 2;sword[2].sword_stat[2] = 2;
+    sword[3].name_object = "Murasame";     sword[3].price = 10;      sword[3].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[3].sword_stat[0] = 4;sword[3].sword_stat[1] = 2;sword[3].sword_stat[2] = 1;
+    sword[4].name_object = "Masamune";     sword[4].price = 10;      sword[4].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[4].sword_stat[0] = 3;sword[4].sword_stat[1] = 2;sword[4].sword_stat[2] = 4;
+    sword[5].name_object = "Shusui";       sword[5].price = 10;     sword[5].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[5].sword_stat[0] = 6;sword[5].sword_stat[1] = 3;sword[5].sword_stat[2] = 3;
+    sword[6].name_object = "Yubashiri";    sword[6].price = 10;      sword[6].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[6].sword_stat[0] = 5;sword[6].sword_stat[1] = 4;sword[6].sword_stat[2] = 4;
+    sword[7].name_object = "Kitetsu Sandai";                         sword[7].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[7].sword_stat[0] = 9;sword[7].sword_stat[1] = 2;sword[7].sword_stat[2] = 4;
+    sword[8].name_object = "Wado Ichimonji";                         sword[8].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[8].sword_stat[0] = 10;sword[8].sword_stat[1] = 3;sword[8].sword_stat[2] = 5;
+    sword[9].name_object = "Excalibur";                              sword[9].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[9].sword_stat[0] = 20;sword[9].sword_stat[1] = -5;sword[9].sword_stat[2] = 3;
+
+    potion[0].name_object ="Potion S" ;    potion[0].price = 10;      potion[0].Des = "HP + 10";                        potion[0].potion_effect = 10;
+    potion[1].name_object ="Potion L";     potion[1].price = 10;      potion[1].Des = "HP + 30";                        potion[1].potion_effect = 30;
+
+    shield[0].name_object = "Hand";        shield[0].price = 10;       shield[0].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[0].shield_stat[0] = 0;shield[0].shield_stat[1]= 0;shield[0].shield_stat[2]= 0;
+    shield[1].name_object = "Aegis Shield ";  shield[1].price = 10;    shield[1].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[1].shield_stat[0] = 2;shield[1].shield_stat[1]= 3;shield[1].shield_stat[2]= 30;
+    shield[2].name_object = "Saka Shield";    shield[2].price = 10;    shield[2].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[2].shield_stat[0] = 3;shield[2].shield_stat[1]= 0;shield[2].shield_stat[2]= 50;
+    shield[3].name_object = "Arachiki Shield"; shield[3].price = 10; shield[3].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[3].shield_stat[0] = 4;shield[3].shield_stat[1]= 4;shield[3].shield_stat[2]= 40;
+    shield[4].name_object = "Demose Shield";  shield[4].price = 10;   shield[4].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[4].shield_stat[0] = 5;shield[4].shield_stat[1]= 2;shield[4].shield_stat[2]= 2;
+    shield[5].name_object = "G.O.T Shield ";  shield[5].price = 10;    shield[5].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[5].shield_stat[0] = 2;shield[5].shield_stat[1]= 7;shield[5].shield_stat[2]= 20;
+    shield[6].name_object = "Power Shield ";  shield[6].price = 10;   shield[6].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[6].shield_stat[0] = 7;shield[6].shield_stat[1]= 8;shield[6].shield_stat[2]= 50;
+    shield[7].name_object = "DK Shield ";     shield[7].price = 10;    shield[7].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[7].shield_stat[0] = 5;shield[7].shield_stat[1]= 10;shield[7].shield_stat[2]= 60;
+    shield[8].name_object = "Invincible Shield ";                      shield[8].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[8].shield_stat[0] = 3;shield[8].shield_stat[1]= 15;shield[8].shield_stat[2]= 100;
+    shield[9].name_object = "Ultimate Ultra Extreme Super Power Invincible Shield";     shield[9].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";    shield[9].shield_stat[0] = 20;shield[9].shield_stat[1]= 25;shield[9].shield_stat[2]= 200;
+
+    accessory[0].name = "The balance";   accessory[0].price = 10;    accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 2"; accessory[0].extra_agi = 2;accessory[0].extra_atk = 0;accessory[0].extra_luck = 2;accessory[0].extra_str = 2;accessory[0].extra_vit = 2;
+    accessory[1].name = "Golden x";       accessory[1].price = 10;   accessory[1].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[1].extra_agi = 0;accessory[1].extra_atk = 5;accessory[1].extra_luck = 3;accessory[1].extra_str = 2;accessory[1].extra_vit = 1;
+    accessory[2].name = "Warrior necklace"; accessory[2].price = 10; accessory[2].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 5"; accessory[2].extra_agi = 0;accessory[2].extra_atk = 10;accessory[2].extra_luck = 0;accessory[2].extra_str = 5;accessory[2].extra_vit = 5;
+    accessory[3].name = "Ninja necklace";  accessory[3].price = 10; accessory[3].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 2"; accessory[3].extra_agi = 7;accessory[3].extra_atk = 10;accessory[3].extra_luck = 3;accessory[3].extra_str = -2;accessory[3].extra_vit = -2;
+    accessory[4].name = "LUCKY";          accessory[4].price = 10;  accessory[4].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[4].extra_agi = 1;accessory[4].extra_atk = 0;accessory[4].extra_luck = 10;accessory[4].extra_str = 0;accessory[4].extra_vit = 1;
+    accessory[5].name = "Power stone";     accessory[5].price = 10;  accessory[5].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 7"; accessory[5].extra_agi = -5;accessory[5].extra_atk = 14;accessory[5].extra_luck = -2;accessory[5].extra_str = 5;accessory[5].extra_vit = 7;
+    accessory[6].name = "Mystery";        accessory[6].price = 10;   accessory[6].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 6"; accessory[6].extra_agi = 6;accessory[6].extra_atk =6;accessory[6].extra_luck = 6;accessory[6].extra_str = 6;accessory[6].extra_vit = 6;
+    accessory[7].name = "Blood crystal";  accessory[7].price = 10;   accessory[7].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 15"; accessory[7].extra_agi = 10;accessory[7].extra_atk = 0;accessory[7].extra_luck = 5;accessory[7].extra_str = -2;accessory[7].extra_vit = -15;
+    accessory[8].name = "Darkness totem";                            accessory[8].Des = "AGI + 7\nATK + 15\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[8].extra_agi = 7;accessory[8].extra_atk = 15;accessory[8].extra_luck = 7;accessory[8].extra_str = 7;accessory[8].extra_vit = 1;
+    accessory[9].name = "WHOSYOURDADDY";                             accessory[9].Des = "AGI + 17\nATK + 20\nLUK + 15\nSTR + 10\nVIT + 10";accessory[9].extra_agi = 17;accessory[9].extra_atk = 20;accessory[9].extra_luck = 15;accessory[9].extra_str = 10;accessory[9].extra_vit = 10;
+}
+
+void Game::get_item_boss(){
+    int b = player[now_player].getLuk()*0.7;
+    int a = rand()%100+1;
+    int c = a+b;
+    int d;
+    int ea;
+    string e[3] = {"sword","potion","shield"};
+    int i = rand()%3;
+    int command_item_boss;
+    int potion_random = rand()%2;
+
+    if(potion_random == 0){
+         ea = rand()%3+1;
+    }
+    if(potion_random == 1){
+         ea = rand()%6+1;
+    }
+
+    if(c >95){     //5
+        d = 9;
+        i = 0;
+    }
+    if(c > 85 && c <= 95){  //10
+        d = 8;
+        i = 0;
+    }
+    if(c > 70 && c <= 85){ //15
+        d = 7;
+        i = 0;    }
+    if(c > 50 && c <= 70){ //20
+        d = rand()%3+4;
+        i = 0;
+    }
+    if(c > 0 && c <= 50){ // 50
+        d = rand()%3+1;
+        i = 2;
+    }
+    if(e[i] == "sword"){
+        cout << "You get the " << sword[d].name_object << "Stat : STR = " << sword[d].sword_stat[0] << "  AGI = " << sword[d].sword_stat[1] << "  Luk = " << sword[d].sword_stat[2] << endl;
+        cout << "Choose (1):OK (2):Cancel " ;
+        cin >> command_item_boss;
+        if(command_item_boss == 1){
+        player[now_player].weaponIndex = d;
+        }
+        else player[now_player].weaponIndex = player[now_player].weaponIndex;
+    }
+    if(e[i] == "potion"){
+        cout << "You get a " << potion[potion_random].name_object << "  " << ea << " EA"<< endl;
+        if(potion_random == 0){
+        player[now_player].green_potion += ea;
+        }
+        if(potion_random == 1){
+        player[now_player].red_potion += ea;
+        }
+    }
+    if(e[i] == "shield"){
+        cout << "You get the " << shield[d].name_object << "Stat : VIT = " << shield[d].shield_stat[0] << "  DEF = " << shield[d].shield_stat[1] << "  HP = " << shield[d].shield_stat[2] << endl;
+        cout << "Choose (1):OK (2):Cancel " ;
+        cin >> command_item_boss;
+        if(command_item_boss == 1){
+        player[now_player].shieldIndex = d;
+        }
+        else player[now_player].shieldIndex = player[now_player].shieldIndex;
     }
 }
 #endif
