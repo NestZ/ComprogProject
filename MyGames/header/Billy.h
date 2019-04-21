@@ -13,28 +13,15 @@ struct chara{
 };
 
 struct monster{
-	int stat[5],difficult[6];
+	int stat[5],strig name;
 };
 void upstat();
-void battlephase(int n,int[][4],int g);
+void battlephase();
 void edit ();
 void init ();
 									
-	Player chara [6]; Monster[4];
-	int main(){
-		init();
-		upstat();
-		chara[1].inven[3]=1;
-		chara[1].inven[4]=1;
-		battlephase(1,mon,0);
-	}
+	Player chara [6];Monster Monster[4];
 void init (){
-		for(int i=0;i<6;i++){
-		for(int j=0;j<3;j++){
-			chara[i].lv[j]=0;
-			chara[i].lv[0]=1;
-		}
-	}
 	
 	chara[0].clas="Berserker";chara[0].stat[0]=15;chara[0].stat[1]=5;chara[0].stat[2]=3;
 	chara[0].stat[3]=7;chara[0].stat[4]=70;chara[0].stat[5]=75;chara[0].stat[6]=5;
@@ -76,6 +63,7 @@ void init (){
 }
 void upstat(){
 	//0 lv 1nowexp 2needexp
+			int x=0;
 			chara[now_player].lv[2]=(chara[now_player].lv[0]-1)*50+100;
 			while(chara[now_player].lv[1]>=chara[now_player].lv[2]){
 			chara[now_player].lv[0]++;
@@ -89,7 +77,6 @@ void upstat(){
 				chara[nowplayer].lv[1]+=chara[now_player].lv[2];
 				x--;
 			}
- int x;x=chara[i].lv[0];
 	while(x>1){
 	 	if(character[now_player].character_number==0){
 			character[now_player].std_str+=3
