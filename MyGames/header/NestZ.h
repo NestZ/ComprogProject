@@ -331,7 +331,6 @@ class Game{
         vector<int> expMax;
         vector<int> diceTemp;
         vector<int> timeTemp;
-        vector<int> RPStemp;
         vector<int> RPStempMon;
         int startExp;
         int UIFontSize;
@@ -467,8 +466,9 @@ class Game{
         Sprite D_playerChar;
         Texture D_bgT;
         Sprite D_bgS;
-        Texture D_startT;
-        Sprite D_startS;
+        Sprite D_selectR;
+        Sprite D_selectP;
+        Sprite D_selectS;
         Texture D_rockT;
         Texture D_paperT;
         Texture D_scissorsT;
@@ -1247,7 +1247,6 @@ void Game::initPlayingVariables(){
     gameStates = 1;
     buyNum = 1;
     diceTemp.push_back(-1);
-    RPStemp.push_back(-1);
     RPStempMon.push_back(-1);
     expMax.push_back(0);
     expMax.push_back(startExp);
@@ -1678,16 +1677,21 @@ void Game::initPlayingVariables(){
     UI_buyNum.setOutlineThickness(2.5);
     UI_buyNum.setFont(menuFont);
     UI_buyNum.setCharacterSize(UIFontSize + 5);
-    D_startT.loadFromFile("img/Start.png");
-    D_startS.setTexture(D_startT);
-    D_startS.setOrigin(getObjWidth(D_startS) / 2,getObjHeight(D_startS) / 2);
-    D_startS.setPosition(windowMidWidth(),windowMidHeight());
     D_rockT.loadFromFile("img/Rock.png");
     D_paperT.loadFromFile("img/Paper.png");
     D_scissorsT.loadFromFile("img/Scissors.png");
     D_monRockT.loadFromFile("img/MonRock.png");
     D_monPaperT.loadFromFile("img/MonPaper.png");
     D_monScissorsT.loadFromFile("img/MonScissors.png");
+    D_selectR.setTexture(D_rockT);
+    D_selectR.setOrigin(getObjWidth(D_selectR) / 2,getObjHeight(D_selectR) / 2);
+    D_selectR.setPosition(windowMidWidth() - 300,windowMidHeight());
+    D_selectP.setTexture(D_paperT);
+    D_selectP.setOrigin(getObjWidth(D_selectP) / 2,getObjHeight(D_selectP) / 2);
+    D_selectP.setPosition(windowMidWidth(),windowMidHeight());
+    D_selectS.setTexture(D_scissorsT);
+    D_selectS.setOrigin(getObjWidth(D_selectS) / 2,getObjHeight(D_selectS) / 2);
+    D_selectS.setPosition(windowMidWidth() + 300,windowMidHeight());
     D_Turn.setFillColor(Color::Black);
     D_Turn.setOutlineColor(Color::White);
     D_Turn.setOutlineThickness(3.5);
@@ -1842,6 +1846,7 @@ void Game::initPlayingVariables(){
 }
 
 void Game::drawPlaying(){
+    cout << player[now_player].level << "\n";
     updateLevel();
     updateTurn();
     this->gameWindow->setView(camera);
@@ -1896,13 +1901,14 @@ void Game::drawPlaying(){
         updateShop();
     }
     if(isAskBuyOpen){
+            cout << askIndex << "\n";
         updateAskBuy(itemBuyIndex);
         this->gameWindow->draw(UI_askBuyWin);
         this->gameWindow->draw(UI_askBuyS[itemBuyIndex]);
         this->gameWindow->draw(UI_askBuy);
         this->gameWindow->draw(UI_askBuyOk);
         this->gameWindow->draw(UI_askBuyCancle);
-        if(askIndex < 2){
+        if(itemBuyIndex < 2){
             this->gameWindow->draw(UI_UArrowS);
             this->gameWindow->draw(UI_DArrowS);
             this->gameWindow->draw(UI_buyNum);
@@ -2037,14 +2043,33 @@ void Game::updateDungeon(){
     }
     switch(dunStates){
         case 0:
-            this->gameWindow->draw(D_startS);
-            if(D_startS.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
-                D_startS.setScale(1.05,1.05);
+            this->gameWindow->draw(D_selectR);
+            this->gameWindow->draw(D_selectP);
+            this->gameWindow->draw(D_selectS);
+            if(D_selectR.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+                D_selectR.setScale(1.05,1.05);
                 if(checkMouseClick()){
+                    D_playerRPS.setTexture(D_rockT);
                     dunStates = 1;
                 }
             }
-            else D_startS.setScale(1,1);
+            else D_selectR.setScale(1,1);
+            if(D_selectP.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+                D_selectP.setScale(1.05,1.05);
+                if(checkMouseClick()){
+                    D_playerRPS.setTexture(D_paperT);
+                    dunStates = 1;
+                }
+            }
+            else D_selectP.setScale(1,1);
+            if(D_selectS.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+                D_selectS.setScale(1.05,1.05);
+                if(checkMouseClick()){
+                    D_playerRPS.setTexture(D_scissorsT);
+                    dunStates = 1;
+                }
+            }
+            else D_selectS.setScale(1,1);
             break;
         case 1:
             randomRPS();
@@ -2229,24 +2254,9 @@ void Game::randomRPS(){
     if(totalTime >= animationSpeed){
         totalTime -= animationSpeed;
         do{
-            playerRPS = rand() % 3;
-        }while(playerRPS == RPStemp.back());
-        do{
             monsterRPS = rand() % 3;
         }while(monsterRPS == RPStempMon.back());
-        RPStemp.push_back(playerRPS);
         RPStempMon.push_back(monsterRPS);
-        switch(RPStemp.back()){
-            case 0:
-                D_playerRPS.setTexture(D_rockT);
-                break;
-            case 1:
-                D_playerRPS.setTexture(D_paperT);
-                break;
-            case 2:
-                D_playerRPS.setTexture(D_scissorsT);
-                break;
-        };
         switch(RPStempMon.back()){
             case 0:
                 D_monsterRPS.setTexture(D_monRockT);
@@ -2259,10 +2269,9 @@ void Game::randomRPS(){
                 break;
         };
     }
-    if(RPStemp.size() == 21 && RPStempMon.size() == 21){
+    if(RPStempMon.size() == 21){
         dunStates = 2;
         totalTime = 0.0f;
-        while(RPStemp.size() != 1)RPStemp.pop_back();
         while(RPStempMon.size() != 1)RPStempMon.pop_back();
     }
 }
@@ -2548,8 +2557,8 @@ void Game::updatePlayingState(){
     }
     else if(gameStates == 4){ //checkPath
         //if(1)ask(0,4);
-        if(1)dunAsk(3);
-        //if(1)shopAsk();
+        //if(1)dunAsk(3);
+        if(1)shopAsk();
     }
     else if(gameStates == 5){ //dungeon
         isDun = true;
@@ -2619,7 +2628,6 @@ void Game::updateLevel(){
 }
 
 void Game::updateView(){
-    cout << camera.getCenter().x << " " << windowMidWidth() << "\n";
     if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3 && camera.getCenter().x < 2040){
         camera.move(horizontalScrollSpeed,0);
     }
