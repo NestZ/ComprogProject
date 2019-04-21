@@ -19,10 +19,9 @@ void upstat();
 void battlephase();
 void edit ();
 void init ();
-									
-	Player chara [6];Monster Monster[4];
+
+	Player chara [6];monster Monster[4];
 void init (){
-	
 	chara[0].clas="Berserker";chara[0].stat[0]=15;chara[0].stat[1]=5;chara[0].stat[2]=3;
 	chara[0].stat[3]=7;chara[0].stat[4]=70;chara[0].stat[5]=75;chara[0].stat[6]=5;
 	chara[1].clas="HolyKnight";chara[1].stat[0]=8;chara[1].stat[1]=7;chara[1].stat[2]=3;
@@ -35,31 +34,28 @@ void init (){
 	chara[4].stat[3]=7;chara[4].stat[4]=70;chara[4].stat[5]=50;chara[4].stat[6]=5;
 	chara[5].clas="B2";chara[5].stat[0]=6;chara[5].stat[1]=6;chara[5].stat[2]=6;
 	chara[5].stat[3]=6;chara[5].stat[4]=60;chara[5].stat[5]=30;chara[5].stat[6]=6;
-	
 
-	monster[0].stat[0]=5;monster[0].stat[1]=400;monster[0].stat[2]=4;monster[0].stat[3]=3;monster[0].stat[4]=7;
-	monster[1].stat[0]=12;monster[1].stat[1]=800;monster[1].stat[2]=12;monster[1].stat[3]=6;monster[1].stat[4]=12;
-	monster[2].stat[0]=17;monster[2].stat[1]=1600;monster[2].stat[2]=22;monster[2].stat[3]=18;monster[2].stat[4]=20;
-	
-	
-	character[0].std_str=15; character[0].std_luk=5; character[0].std_agi=3; character[0].std_vit=7; 
+	monster[0].name = "kak";monster[0].stat[0]=5;monster[0].stat[1]=400;monster[0].stat[2]=4;monster[0].stat[3]=3;monster[0].stat[4]=7;
+	monster[1].name = "Shadow";monster[1].stat[0]=12;monster[1].stat[1]=800;monster[1].stat[2]=12;monster[1].stat[3]=6;monster[1].stat[4]=12;
+	monster[2].name = "high";monster[2].stat[0]=17;monster[2].stat[1]=1600;monster[2].stat[2]=22;monster[2].stat[3]=18;monster[2].stat[4]=20;
+
+	character[0].std_str=15; character[0].std_luk=5; character[0].std_agi=3; character[0].std_vit=7;
 	character[0].std_HP=70; character[0].std_ATK=75; character[0].std_Defense=5;
-	
-	character[1].std_str=8; character[1].std_luk=7; character[1].std_agi=3; character[1].std_vit=13; 
+
+	character[1].std_str=8; character[1].std_luk=7; character[1].std_agi=3; character[1].std_vit=13;
 	character[1].std_HP=130; character[1].std_ATK=40; character[1].std_Defense=5;
-	
-	character[2].std_str=5; character[2].std_luk=10; character[2].std_agi=14; character[2].std_vit=5; 
+
+	character[2].std_str=5; character[2].std_luk=10; character[2].std_agi=14; character[2].std_vit=5;
 	character[2].std_HP=50; character[2].std_ATK=25; character[2].std_Defense=5;
-	
-	character[3].std_str=7; character[3].std_luk=3; character[3].std_agi=10; character[3].std_vit=10; 
+
+	character[3].std_str=7; character[3].std_luk=3; character[3].std_agi=10; character[3].std_vit=10;
 	character[3].std_HP=100; character[3].std_ATK=35; character[3].std_Defense=5;
-	
-	character[4].std_str=10; character[4].std_luk=10; character[4].std_agi=3; character[4].std_vit=7; 
+
+	character[4].std_str=10; character[4].std_luk=10; character[4].std_agi=3; character[4].std_vit=7;
 	character[4].std_HP=70; character[4].std_ATK=50; character[4].std_Defense=5;
-	
-	character[5].std_str=6; character[5].std_luk=6; character[5].std_agi=6; character[5].std_vit=6; 
+
+	character[5].std_str=6; character[5].std_luk=6; character[5].std_agi=6; character[5].std_vit=6;
 	character[5].std_HP=60; character[5].std_ATK=30; character[5].std_Defense=5;
-	
 }
 void upstat(){
 	//0 lv 1nowexp 2needexp
@@ -236,8 +232,8 @@ while(monster[monsterIndex].stat[1]>0&&character[now_player].hp_max>0){
 			player[now_player].gethp-=((damm+cridamm)-player[now_player].getdef);
 		speedmon=speedmon/2;
 		speed+=speed;
- 
-	
+
+
 	if(monster[monsterIndex].stat[1]<0&&character[now_player].hp>0){
 		if(monster[monsterIndex]==0){
 				chara[now_player].lv[1]+=100;
@@ -263,7 +259,7 @@ while(monster[monsterIndex].stat[1]>0&&character[now_player].hp_max>0){
 		player[now_player].money+=money;
 		player[now_player].star++;
 		cout<<"Your win\n Recive Exp 2000 ";
-	
+
 	}
 	else if(character[now_player].hp<0&&mon[g][1]>0){
 		decress=(chara[now_player].lv[0]-1)*50+100*2;

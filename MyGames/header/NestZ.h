@@ -7,13 +7,64 @@
 #include <vector>
 #include <fstream>
 #include <cmath>
+#include <set>
 
 using namespace std;
 using namespace sf;
 
+
 class Game;
 class Player;
 struct itemStat;
+struct accessory;
+struct chara;
+struct monster;
+struct path_st;
+const int num_allpath = 3;
+
+class path_st
+{
+    public :
+        int number = 0 ;
+        float pos_x = 0;
+        float pos_y = 0;
+        int this_path_is = 0;
+        std::vector<int> nextpath;//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 : dum3 6 : boos 7;
+};
+
+path_st allpath[num_allpath];
+set<path_st> ablePath;
+
+void path_set(){
+    allpath[0].number = 0;
+    allpath[0].pos_x = 100;
+    allpath[0].pos_y = 100;
+    allpath[0].nextpath.push_back(1);
+    allpath[0].this_path_is = 1;
+
+    allpath[1].number = 1;
+    allpath[1].pos_x = 200;
+    allpath[1].pos_y = 200;
+    allpath[1].nextpath.push_back(2);
+    allpath[1].this_path_is = 0;
+
+    allpath[2].number = 2;
+    allpath[2].pos_x = 300;
+    allpath[2].pos_y = 300;
+    allpath[2].nextpath.push_back(0);
+    allpath[2].nextpath.push_back(1);
+    allpath[2].this_path_is = 4;
+}
+
+struct chara{
+	int stat[6],lv[3];//str agi luk  vit atk def
+	string clas;
+}character[6];
+
+struct monster{
+	int stat[5];//
+	string name;
+}monster[4];
 
 struct itemStat{
     int sword_stat[3];
@@ -44,7 +95,7 @@ class Player{
         int character_number;
         int level;
         int exp;
-        int now_path;
+        int now_path = 0;
         int hp;
         int weaponIndex;
         int shieldIndex;
@@ -60,9 +111,7 @@ class Player{
         int red_potion;
         int green_potion;
         int moveNum;
-        double pos_x;
-        double pos_y;
-        int now_player_path;
+        int now_player_path_is = -1;
         //Function
         Player();
         int getAtk();
@@ -107,7 +156,7 @@ int Player::getVit(){
     return std_vit + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_vit:0) + (shieldIndex > -1 ? shield[shieldIndex].shield_stat[0]:0);
 }
 int Player::HpMax(){
-    return getVit()*5;
+    return getVit()*10;
 }
 int now_player = 0;
 class Game{
@@ -216,8 +265,17 @@ class Game{
         void updateGetItem();
         int getMoney();
         int getExp();
+        void initStat();
         void setItemStat();
         void get_item_boss();
+        void RandomMoney();
+        void useThisItem(bool);
+        void Get_Heal(Player &);
+        void updateAskGo();
+        void Player_choose_path();
+        void askGo();
+        void cal_path(path_st,int);
+        void find_path(int,int);
     private:
         //Menu
         Vector2i mousePosView;
@@ -311,6 +369,7 @@ class Game{
         int fightTurn;
         int playerDes;
         int enemyDes;
+        int moveNum;
         bool randomStart;
         bool isBagOpen;
         bool isDesOpen;
@@ -325,6 +384,7 @@ class Game{
         bool isMonDes;
         bool isPlayerWin;
         bool isGetItem;
+        bool isAskGO;
         bool canUsePotion;
         bool equip;
         Font cordiaFont;
@@ -332,6 +392,7 @@ class Game{
         vector<int> diceTemp;
         vector<int> timeTemp;
         vector<int> RPStempMon;
+        vector<Text> TextGo;
         int startExp;
         int UIFontSize;
         Texture mapTexture;
@@ -382,7 +443,7 @@ class Game{
         Text UI_playerMoney;
         Text UI_money;
         Text UI_shopPrice[24];
-        Text  UI_shopDes[24];
+        Text UI_shopDes[24];
         Text UI_shopName[24];
         Text UI_askBuyOk;
         Text UI_askBuyCancle;
@@ -491,6 +552,9 @@ class Game{
         Sprite D_monDesBGS;
         Sprite D_getWin;
         Sprite D_getCoin;
+        Text UI_t1;
+        int willGOPath = 0;
+        Sprite charOnMap[6];
 };
 
 Game::Game(){
@@ -1242,6 +1306,7 @@ void Game::initPlayingVariables(){
     isAskBuyOpen = false;
     isDeathOpen = false;
     isGetItem = false;
+    isAskGO = false;
     canUsePotion = true;
     equip = false;
     gameStates = 1;
@@ -1253,6 +1318,7 @@ void Game::initPlayingVariables(){
     while(expMax.size() != 30){
         expMax.push_back(expMax.back() * 1.2);
     }
+    path_set();
     setItemStat();
     mapTexture.loadFromFile("img/Map.jpg");
     mapSprite.setTexture(mapTexture);
@@ -1843,10 +1909,40 @@ void Game::initPlayingVariables(){
     D_getCoin.setTexture(D_coin);
     D_getCoin.setOrigin(getObjWidth(D_getCoin) / 2,getObjHeight(D_getCoin) / 2);
     D_getCoin.setScale(0.55,0.55);
+    charOnMap[0].setTexture(charTexture[0]);
+    charOnMap[0].setOrigin(getObjWidth(charOnMap[0]) / 2,getObjHeight(charOnMap[0]));
+    charOnMap[1].setTexture(charTexture[1]);
+    charOnMap[1].setOrigin(getObjWidth(charOnMap[1]) / 2,getObjHeight(charOnMap[1]));
+    charOnMap[2].setTexture(charTexture[2]);
+    charOnMap[2].setOrigin(getObjWidth(charOnMap[2]) / 2,getObjHeight(charOnMap[2]));
+    charOnMap[3].setTexture(charTexture[3]);
+    charOnMap[3].setOrigin(getObjWidth(charOnMap[3]) / 2,getObjHeight(charOnMap[3]));
+    charOnMap[4].setTexture(charTexture[4]);
+    charOnMap[4].setOrigin(getObjWidth(charOnMap[4]) / 2,getObjHeight(charOnMap[4]));
+    charOnMap[5].setTexture(charTexture[5]);
+    charOnMap[5].setOrigin(getObjWidth(charOnMap[5]) / 2,getObjHeight(charOnMap[5]));
+}
+
+void initStat(){
+	character[0].clas="Berserker";character[0].stat[0]=15;character[0].stat[1]=5;character[0].stat[2]=3;
+	character[0].stat[3]=7;character[0].stat[4]=70;character[0].stat[5]=5;
+	character[1].clas="HolyKnight";character[1].stat[0]=8;character[1].stat[1]=7;character[1].stat[2]=3;
+	character[1].stat[3]=13;character[1].stat[4]=130;character[1].stat[5]=5;
+	character[2].clas="Thief";character[2].stat[0]=5;character[2].stat[1]=10;character[2].stat[2]=14;
+	character[2].stat[3]=5;character[2].stat[4]=50;character[2].stat[5]=5;
+	character[3].clas="B";character[3].stat[0]=7;character[3].stat[1]=3;character[3].stat[2]=10;
+	character[3].stat[3]=10;character[3].stat[4]=100;character[3].stat[5]=5;
+	character[4].clas="B1";character[4].stat[0]=10;character[4].stat[1]=10;character[4].stat[2]=3;
+	character[4].stat[3]=7;character[4].stat[4]=70;character[4].stat[5]=5;
+	character[5].clas="B2";character[5].stat[0]=6;character[5].stat[1]=6;character[5].stat[2]=6;
+	character[5].stat[3]=6;character[5].stat[4]=60;character[5].stat[5]=6;
+
+	monster[0].name = "kak";monster[0].stat[0]=5;monster[0].stat[1]=400;monster[0].stat[2]=4;monster[0].stat[3]=3;monster[0].stat[4]=7;
+	monster[1].name = "Shadow";monster[1].stat[0]=12;monster[1].stat[1]=800;monster[1].stat[2]=12;monster[1].stat[3]=6;monster[1].stat[4]=12;
+	monster[2].name = "high";monster[2].stat[0]=17;monster[2].stat[1]=1600;monster[2].stat[2]=22;monster[2].stat[3]=18;monster[2].stat[4]=20;
 }
 
 void Game::drawPlaying(){
-    cout << player[now_player].level << "\n";
     updateLevel();
     updateTurn();
     this->gameWindow->setView(camera);
@@ -1854,6 +1950,10 @@ void Game::drawPlaying(){
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
     updateEscape();
     updatePlayingState();
+    for(int i = 0;i < players;i++){
+        charOnMap[player[i].character_number].setPosition(allpath[player[i].now_path].pos_x,allpath[player[i].now_path].pos_y);
+        this->gameWindow->draw(charOnMap[player[i].character_number]);
+    }
     if(isDun){
         this->gameWindow->draw(D_bgS);
         this->gameWindow->draw(D_monsterFaceS);
@@ -1878,6 +1978,10 @@ void Game::drawPlaying(){
         this->gameWindow->draw(D_deathMoney);
         this->gameWindow->draw(D_deathMoneyValue);
         this->gameWindow->draw(D_coinS);
+    }
+    if(isAskGO){
+        updateAskGo();
+
     }
     if(isGetItem){
         updateGetItem();
@@ -2344,7 +2448,7 @@ void Game::updateAskBuy(int index){
         else UI_UArrowS.setScale(1,1);
         if(UI_DArrowS.getGlobalBounds().contains(mousePos)){
             UI_DArrowS.setScale(1.1,1.1);
-            if(checkMouseClick() && buyNum > 0)buyNum--;
+            if(checkMouseClick() && buyNum > 1)buyNum--;
         }
         else UI_DArrowS.setScale(1,1);
     }
@@ -2537,6 +2641,10 @@ void Game::updateAsk(){
     };
 }
 
+void Game::RandomMoney(){
+    player[now_player].money += 10 + (rand() % player[now_player].getLuk() * 1.2);
+}
+
 void Game::updatePlayingState(){
     if(gameStates == 1){ //randomDice
         if(!randomStart)diceState();
@@ -2553,12 +2661,41 @@ void Game::updatePlayingState(){
         waitDiceAni(15);
     }
     else if(gameStates == 3){ //Move
-        gameStates = 4;
+            find_path(diceNum,player[now_player].now_path);
+            Player_choose_path();
+            ablePath.clear();
+            TextGo.clear();
+            gameStates = 4;
     }
     else if(gameStates == 4){ //checkPath
         //if(1)ask(0,4);
         //if(1)dunAsk(3);
-        if(1)shopAsk();
+        int check_path_is = player[now_player].now_player_path_is;//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 : dum3 6 : boos 7;
+        if(check_path_is == 0){
+            shopAsk();
+        }
+        if(check_path_is == 1){
+            RandomMoney();
+        }
+        if(check_path_is == 2){
+            useThisItem(false);
+        }
+        if(check_path_is == 3){
+            Get_Heal(player[now_player]);
+        }
+        if(check_path_is == 4){
+            dunAsk(0);
+        }
+        if(check_path_is == 5){
+            dunAsk(1);
+        }
+        if(check_path_is == 6){
+            dunAsk(2);
+        }
+        if(check_path_is == 7){
+            dunAsk(3);
+        }
+        //if(1)shopAsk();
     }
     else if(gameStates == 5){ //dungeon
         isDun = true;
@@ -2571,6 +2708,39 @@ void Game::updatePlayingState(){
     else if(gameStates == 7){ //end turn
         gameStates = 1;
         turn++;
+    }
+}
+
+void Game::Player_choose_path(){
+    if(ablePath.size() == 1){
+        willGOPath = ablePath.begin();
+    }else if(ablePath.size() > 1){
+        askGo();
+    }
+    path_st path_a;
+    for(int i = 0 ; i < num_allpath ; i++){
+        if(allpath[i].number == willGOPath){
+            path_a = allpath[i];
+        }
+    }
+    player[now_player].now_path = path_a.number;
+    player[now_player].now_player_path_is = path_a.this_path_is;
+
+}
+
+void Game::askGo(){
+    isAskGO = true;
+}
+
+void Game::updateAskGo(){
+    for(int i = 0;i < ablePath.size();i++){
+        this->gameWindow->draw(charSprite[0]);
+        if(TextGo[i].getGlobalBounds().contains(mousePos)){
+            if(checkMouseClick()){
+                willGOPath = ablePath[0].number;
+                isAskGO = false;
+            }
+        }
     }
 }
 
@@ -2882,6 +3052,49 @@ void Game::updateTurn(){
     now_player = turn % players;
 }
 
+void Game::cal_path(path_st now_path, int can_walk){
+    path_st next_path;
+    if(can_walk == 0){
+        int temp = ablePath.size();
+        cout << now_path.number << " ";
+        ablePath.insert(now_path);
+        if(temp < ablePath.size()){
+            UI_t1.setString(to_string(now_path.number) + "kuyuyuyuyuyu");
+            UI_t1.setFillColor(Color::Black);
+            UI_t1.setOutlineColor(Color::White);
+            UI_t1.setOutlineThickness(2.5);
+            UI_t1.setFont(menuFont);
+            UI_t1.setCharacterSize(UIFontSize - 5);
+            UI_t1.setPosition(500,500);
+            TextGo.push_back(UI_t1);
+            cout << TextGo.size() << "\n";
+        }
+
+    }else{
+        for(int i = 0 ; i < now_path.nextpath.size() ; i++){
+            for(int j = 0 ; j < num_allpath ;j++){
+                if(now_path.nextpath[i] == allpath[j].number){
+                    next_path = allpath[j];
+                    cal_path(next_path,can_walk-1);
+                }
+            }
+
+        }
+    }
+}
+
+void Game::find_path(int can_walk,int nowpath_of_player){
+    path_st now_path;
+    for(int i = 0 ; i < num_allpath ; i++){
+        if(allpath[i].number == nowpath_of_player){
+            now_path = allpath[i];
+            break;
+        }
+    }
+    //cout << now_path.number << endl;
+    cal_path(now_path,can_walk);
+}
+
 void Game::setItemStat(){
     sword[0].name_object = "Fist";                                   sword[0].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[0].sword_stat[0] = 0;sword[0].sword_stat[1] = 0;sword[0].sword_stat[2] = 0;
     sword[1].name_object = "Durandal";     sword[1].price = 10;      sword[1].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[1].sword_stat[0] = 2;sword[1].sword_stat[1] = 0;sword[1].sword_stat[2] = 1;
@@ -2983,6 +3196,52 @@ void Game::get_item_boss(){
         player[now_player].shieldIndex = d;
         }
         else player[now_player].shieldIndex = player[now_player].shieldIndex;
+    }
+}
+void Game::useThisItem(bool high_grade){
+    int x = rand()%100+1;
+    if(high_grade == false){
+        if(x > 30){
+            ask(0,1);
+        }else if(x > 50){
+            ask(0,2);
+        }else if(x > 60){
+            ask(0,3);
+        }else if(x > 70){
+            ask(0,4);
+        }else if(x > 80){
+            ask(0,5);
+        }else if(x > 90){
+            ask(0,6);
+        }else if(x > 95){
+            ask(0,7);
+        }
+    }else{
+        if(x > 50){
+            ask(0,8);
+        }else if(x > 80){
+            ask(0,9);
+        }else{
+            ask(0,10);
+        }
+    }
+}
+void Game::Get_Heal(Player & that_player){
+    int x;
+    if(that_player.character_number == 1){
+        x = (rand()%20)+1;
+        if(that_player.hp + x >  that_player.HpMax()){
+            that_player.hp = that_player.HpMax();
+        }else{
+            that_player.hp += x;
+        }
+    }else{
+        x = (rand()%10)+1;
+        if(that_player.hp + x > that_player.HpMax()){
+            that_player.hp = that_player.HpMax();
+        }else{
+            that_player.hp += x;
+        }
     }
 }
 #endif
