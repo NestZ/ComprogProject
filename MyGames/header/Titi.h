@@ -60,12 +60,12 @@ void inputstat_object(){
 }
 
 void get_item_boss(){
-    int b = character[now_player].luk()*0.7;
+    int b = character[now_player].getLuk*0.3;
     int a = rand()%100+1;
     int c = a+b;
     int d;
     int ea;
-    string e[3] = {"sword","potion","shield"};
+    string e[4] = {"sword","potion","shield","accessory"};
     int i = rand()%3;
     int command_item_boss;
     int potion_random = rand()%2;
@@ -80,32 +80,25 @@ void get_item_boss(){
 
     if(c >95){     //5
         d = 9;
-        i = 0;
+        i = 3;
     }
     if(c > 85 && c <= 95){  //10
         d = 8;
-        i = 0;
+        i =3;
     }
     if(c > 70 && c <= 85){ //15
         d = 7;
-        i = 0;    }
+        i = 2;    }
     if(c > 50 && c <= 70){ //20
         d = rand()%3+4;
-        i = 0;
+        i = 2;
     }
     if(c > 0 && c <= 50){ // 50
         d = rand()%3+1;
-        i = 2;
+        i = 0;
     }
     if(e[i] == "sword"){
-        cout << "You get the " << sword[d].name_object << "Stat : STR = " << sword[d].sword_stat[0] << "  AGI = " << sword[d].sword_stat[1] << "  Luk = " << sword[d].sword_stat[2] << endl;
-        cout << "Choose (1):OK (2):Cancel " ;
-        cin >> command_item_boss;
-        if(command_item_boss = 1){
-        character[now_player].weapon = d;
-        }
-        else character[now_player].weapon = character[now_player].weapon;
-
+        ask(0,d);
     }
     if(e[i] == "potion"){
         cout << "You get a " << potion[potion_random].name_object << "  " << ea << " EA"<< endl;
@@ -117,13 +110,10 @@ void get_item_boss(){
         }
     }
     if(e[i] == "shield"){
-        cout << "You get the " << shield[d].name_object << "Stat : VIT = " << shield[d].shield_stat[0] << "  DEF = " << shield[d].shield_stat[1] << "  HP = " << shield[d].shield_stat[2] << endl;
-        cout << "Choose (1):OK (2):Cancel " ;
-        cin >> command_item_boss;
-        if(command_item_boss = 1){
-        character[now_player].shield = d;
-        }
-        else character[now_player].shield = character[now_player].shield;
+      ask(1,d);
+    }
+    if(e[i] == "accessory"){
+      ask(2,d);
     }
 }
 
