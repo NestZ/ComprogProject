@@ -18,15 +18,32 @@ struct itemStat;
 struct accessory;
 struct chara;
 struct monster;
-struct NestZpath;
+class NestZpath;
 
-typedef struct NestZpath{
-    int pathEf;
-    double X;
-    double Y;
-    vector<int> nextPathNum;
+typedef class NestZpath{
+    public:
+        int pathEf;
+        double X;
+        double Y;
+        int goPath_1;
+        int goPath_2;
+        int lastPathCon = 0;
+        vector<int> nextPathNum_1;
+        vector<int> nextPathNum_2;
+        vector<int> nextPath(int);
 }P;
-P Path[11];
+P Path[76];
+
+vector<int> NestZpath::nextPath(int lastPath){
+    if(lastPathCon == 0){
+        if(lastPath == goPath_1)return nextPathNum_1;
+        else if(lastPath == goPath_2) return nextPathNum_2;
+    }
+    else if(lastPathCon != 0){
+        if(lastPath == goPath_1)return nextPathNum_1;
+        else if(lastPath == goPath_2 || lastPath == lastPathCon) return nextPathNum_2;
+    }
+}
 
 struct chara{
 	int stat[6],lv[3];//str agi luk  vit atk def
@@ -67,7 +84,6 @@ class Player{
         int character_number;
         int level;
         int exp;
-        int now_path = 0;
         int NestZ_nowPath;
         int hp;
         int weaponIndex;
@@ -84,6 +100,7 @@ class Player{
         int red_potion;
         int green_potion;
         int moveNum;
+        vector<int> allPath;
         //Function
         Player();
         int getAtk();
@@ -107,6 +124,7 @@ Player::Player(){
     accessoryIndex = -1;
     hp = 50;
     NestZ_nowPath = 0;
+    allPath.push_back(0);
     //hp = HpMax();
 }
 
@@ -365,6 +383,7 @@ class Game{
         vector<int> diceTemp;
         vector<int> timeTemp;
         vector<int> RPStempMon;
+        vector<int> nextPath;
         int startExp;
         int UIFontSize;
         Texture mapTexture;
@@ -2648,7 +2667,9 @@ void Game::RandomMoney(){
 }
 
 void Game::updatePlayingState(){
-    cout << mousePos.x << " " << mousePos.y << "\n";
+    cout << player[now_player].NestZ_nowPath << " " << player[now_player].allPath.size() << " " << player[now_player].allPath[player[now_player].allPath.size() - 2] << "\n";
+    for(int i = 0;i < player[now_player].allPath.size();i++)cout << player[now_player].allPath[i] << " ";
+    cout << "\n";
     if(gameStates == 1){ //randomDice
         if(!randomStart)diceState();
         else if(randomStart){
@@ -2714,7 +2735,9 @@ void Game::updatePlayingState(){
 }
 
 void Game::NestZwalk(int &diceMove){
-    if(Path[player[now_player].NestZ_nowPath].nextPathNum.size() == 1){
+    if(player[now_player].NestZ_nowPath == 0)nextPath = Path[player[now_player].NestZ_nowPath].nextPath(-1);
+    else nextPath = Path[player[now_player].NestZ_nowPath].nextPath(player[now_player].allPath[player[now_player].allPath.size() - 2]);
+    if(nextPath.size() == 1){
         moveDelay(diceMove);
     }
     else{
@@ -2727,8 +2750,11 @@ void Game::moveDelay(int &diceMove){
     if(totalTime >= 0.8f){
         totalTime -= 0.8f;
         timeTemp.push_back(1);
-        player[now_player].NestZ_nowPath = Path[player[now_player].NestZ_nowPath].nextPathNum.back();
+        if(player[now_player].NestZ_nowPath == 0)nextPath = Path[player[now_player].NestZ_nowPath].nextPath(-1);
+        else nextPath = Path[player[now_player].NestZ_nowPath].nextPath(player[now_player].allPath[player[now_player].allPath.size() - 2]);
+        player[now_player].NestZ_nowPath = nextPath.back();
         diceMove--;
+        player[now_player].allPath.push_back(player[now_player].NestZ_nowPath);
     }
     if(timeTemp.size() == moveTemp){
         while(timeTemp.size() != 0)timeTemp.pop_back();
@@ -2749,10 +2775,10 @@ void Game::moveDelayJunction(int &diceMove){
             timeTemp.push_back(1);
             player[now_player].NestZ_nowPath = playerChoosedPath;
             diceMove--;
+            player[now_player].allPath.push_back(player[now_player].NestZ_nowPath);
             askTemp = true;
         }
         if(timeTemp.size() == moveTemp){
-            cout << "kuy";
             while(timeTemp.size() != 0)timeTemp.pop_back();
             totalTime = 0.0f;
             gameStates = 4;
@@ -2761,19 +2787,21 @@ void Game::moveDelayJunction(int &diceMove){
 }
 
 void Game::updateAskGo(){
+    if(player[now_player].NestZ_nowPath == 0)nextPath = Path[player[now_player].NestZ_nowPath].nextPath(-1);
+    else nextPath = Path[player[now_player].NestZ_nowPath].nextPath(player[now_player].allPath[player[now_player].allPath.size() - 2]);
     UI_askGoText.setOrigin(getObjWidth(UI_askGoText) / 2,getObjHeight(UI_askGoText) / 2);
     UI_askGoText.setPosition(windowMidWidth(),windowMidHeight() - 50);
-    UI_askGoPath[0].setString("Path " + to_string(Path[player[now_player].NestZ_nowPath].nextPathNum.front()));
+    UI_askGoPath[0].setString("Path  " + to_string(nextPath.front()));
     UI_askGoPath[0].setOrigin(getObjWidth(UI_askGoPath[0]) / 2,getObjHeight(UI_askGoPath[0]) / 2);
     UI_askGoPath[0].setPosition(windowMidWidth() + 250,windowMidHeight() + 50);
-    UI_askGoPath[1].setString("Path " + to_string(Path[player[now_player].NestZ_nowPath].nextPathNum.back()));
+    UI_askGoPath[1].setString("Path  " + to_string(nextPath.back()));
     UI_askGoPath[1].setOrigin(getObjWidth(UI_askGoPath[1]) / 2,getObjHeight(UI_askGoPath[1]) / 2);
     UI_askGoPath[1].setPosition(windowMidWidth() - 250,windowMidHeight() + 50);
     if(UI_askGoPath[0].getGlobalBounds().contains(mousePos)){
         UI_askGoPath[0].setScale(1.05,1.05);
         if(checkMouseClick()){
             isAskGo = false;
-            playerChoosedPath = Path[player[now_player].NestZ_nowPath].nextPathNum.front();
+            playerChoosedPath = nextPath.front();
         }
     }
     else UI_askGoPath[0].setScale(1,1);
@@ -2781,46 +2809,333 @@ void Game::updateAskGo(){
         UI_askGoPath[1].setScale(1.05,1.05);
         if(checkMouseClick()){
             isAskGo = false;
-            playerChoosedPath = Path[player[now_player].NestZ_nowPath].nextPathNum.back();
+            playerChoosedPath = nextPath.back();
         }
     }
     else UI_askGoPath[1].setScale(1,1);
 }
 
 void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 : dum3 6 : boos 7;
-    Path[0] = {-1,1143,1806};
-    Path[0].nextPathNum.push_back(1);
+    Path[0] = {-1,1143,1806,-1,-1};
+    Path[0].nextPathNum_1.push_back(1);
+    Path[0].nextPathNum_2.push_back(1);
 
-    Path[1] = {1,988,1806};
-    Path[1].nextPathNum.push_back(2);
+    Path[1] = {1,988,1806,0,2};
+    Path[1].nextPathNum_1.push_back(2);
+    Path[1].nextPathNum_1.push_back(52);
+    Path[1].nextPathNum_2.push_back(52);
 
-    Path[2] = {4,822,1806};
-    Path[2].nextPathNum.push_back(3);
+    Path[2] = {4,822,1806,1,3};
+    Path[2].nextPathNum_1.push_back(3);
+    Path[2].nextPathNum_2.push_back(1);
 
-    Path[3] = {4,659,1806};
-    Path[3].nextPathNum.push_back(4);
+    Path[3] = {4,659,1806,2,4};
+    Path[3].nextPathNum_1.push_back(4);
+    Path[3].nextPathNum_2.push_back(2);
 
-    Path[4] = {1,502,1806};
-    Path[4].nextPathNum.push_back(5);
+    Path[4] = {1,502,1806,3,5};
+    Path[4].nextPathNum_1.push_back(5);
+    Path[4].nextPathNum_2.push_back(3);
 
-    Path[5] = {4,392,1697};
-    Path[5].nextPathNum.push_back(6);
+    Path[5] = {4,392,1697,4,6};
+    Path[5].nextPathNum_1.push_back(6);
+    Path[5].nextPathNum_2.push_back(4);
 
-    Path[6] = {5,381,1556};
-    Path[6].nextPathNum.push_back(7);
+    Path[6] = {5,381,1556,5,7};
+    Path[6].nextPathNum_1.push_back(7);
+    Path[6].nextPathNum_2.push_back(5);
 
-    Path[7] = {0,387,1410};
-    Path[7].nextPathNum.push_back(8);
-    Path[7].nextPathNum.push_back(9);
+    Path[7] = {0,387,1410,6,8};
+    Path[7].nextPathNum_1.push_back(8);
+    Path[7].nextPathNum_2.push_back(6);
 
-    Path[8] = {0,388,1265};
-    Path[8].nextPathNum.push_back(9);
+    Path[8] = {0,388,1265,7,9};
+    Path[8].nextPathNum_1.push_back(9);
+    Path[8].nextPathNum_2.push_back(7);
 
-    Path[9] = {3,552,1410};
-    Path[9].nextPathNum.push_back(10);
+    Path[9] = {3,386,1120,8,10};
+    Path[9].nextPathNum_1.push_back(10);
+    Path[9].nextPathNum_2.push_back(8);
 
-    Path[10] = {4,684,1333};
-    Path[10].nextPathNum.push_back(1);
+    Path[10] = {6,390,976,9,11};
+    Path[10].nextPathNum_1.push_back(11);
+    Path[10].nextPathNum_2.push_back(9);
+
+    Path[11] = {4,391,829,10,12,53};
+    Path[11].nextPathNum_1.push_back(12);
+    Path[11].nextPathNum_1.push_back(53);
+    Path[11].nextPathNum_2.push_back(10);
+
+    Path[12] = {5,397,690,13,11,53};
+    Path[12].nextPathNum_1.push_back(11);
+    Path[12].nextPathNum_1.push_back(53);
+    Path[12].nextPathNum_2.push_back(13);
+
+    Path[13] = {5,398,549,12,14};
+    Path[13].nextPathNum_1.push_back(14);
+    Path[13].nextPathNum_2.push_back(12);
+
+    Path[14] = {3,400,409,13,15};
+    Path[14].nextPathNum_1.push_back(15);
+    Path[14].nextPathNum_2.push_back(13);
+
+    Path[15] = {0,530,324,14,16};
+    Path[15].nextPathNum_1.push_back(16);
+    Path[15].nextPathNum_2.push_back(14);
+
+    Path[16] = {0,657,246,15,17};
+    Path[16].nextPathNum_1.push_back(17);
+    Path[16].nextPathNum_2.push_back(15);
+
+    Path[17] = {0,788,314,16,18};
+    Path[17].nextPathNum_1.push_back(18);
+    Path[17].nextPathNum_2.push_back(16);
+
+    Path[18] = {6,921,243,17,19};
+    Path[18].nextPathNum_1.push_back(19);
+    Path[18].nextPathNum_2.push_back(17);
+
+    Path[19] = {5,1055,306,18,20};
+    Path[19].nextPathNum_1.push_back(20);
+    Path[19].nextPathNum_2.push_back(18);
+
+    Path[20] = {6,1182,239,19,21};
+    Path[20].nextPathNum_1.push_back(21);
+    Path[20].nextPathNum_2.push_back(19);
+
+    Path[21] = {3,1310,307,20,22};
+    Path[21].nextPathNum_1.push_back(22);
+    Path[21].nextPathNum_2.push_back(20);
+
+    Path[22] = {1,1440,232,21,23};
+    Path[22].nextPathNum_1.push_back(23);
+    Path[22].nextPathNum_2.push_back(21);
+
+    Path[23] = {6,1564,305,22,24};
+    Path[23].nextPathNum_1.push_back(24);
+    Path[23].nextPathNum_2.push_back(22);
+
+    Path[24] = {4,1701,233,23,25};
+    Path[24].nextPathNum_1.push_back(25);
+    Path[24].nextPathNum_2.push_back(23);
+
+    Path[25] = {4,1830,304,24,26};
+    Path[25].nextPathNum_1.push_back(26);
+    Path[25].nextPathNum_2.push_back(24);
+
+    Path[26] = {5,1962,226,25,27};
+    Path[26].nextPathNum_1.push_back(27);
+    Path[26].nextPathNum_2.push_back(25);
+
+    Path[27] = {3,2094,310,26,28};
+    Path[27].nextPathNum_1.push_back(28);
+    Path[27].nextPathNum_2.push_back(26);
+
+    Path[28] = {3,2223,400,27,29,70};
+    Path[28].nextPathNum_1.push_back(29);
+    Path[28].nextPathNum_1.push_back(70);
+    Path[28].nextPathNum_2.push_back(27);
+
+    Path[29] = {1,2377,400,30,28,70};
+    Path[29].nextPathNum_1.push_back(28);
+    Path[29].nextPathNum_1.push_back(70);
+    Path[29].nextPathNum_2.push_back(30);
+
+    Path[30] = {1,2502,378,29,31};
+    Path[30].nextPathNum_1.push_back(31);
+    Path[30].nextPathNum_2.push_back(29);
+
+    Path[31] = {1,2616,464,30,32};
+    Path[31].nextPathNum_1.push_back(32);
+    Path[31].nextPathNum_2.push_back(30);
+
+    Path[32] = {0,2733,452,31,33};
+    Path[32].nextPathNum_1.push_back(33);
+    Path[32].nextPathNum_2.push_back(31);
+
+    Path[33] = {0,2769,700,32,34};
+    Path[33].nextPathNum_1.push_back(34);
+    Path[33].nextPathNum_2.push_back(32);
+
+    Path[34] = {4,2733,847,33,35};
+    Path[34].nextPathNum_1.push_back(35);
+    Path[34].nextPathNum_2.push_back(33);
+
+    Path[35] = {6,2775,997,34,36};
+    Path[35].nextPathNum_1.push_back(36);
+    Path[35].nextPathNum_2.push_back(34);
+
+    Path[36] = {6,2778,1145,35,37};
+    Path[36].nextPathNum_1.push_back(37);
+    Path[36].nextPathNum_2.push_back(35);
+
+    Path[37] = {5,2781,1308,36,38};
+    Path[37].nextPathNum_1.push_back(38);
+    Path[37].nextPathNum_2.push_back(36);
+
+    Path[38] = {4,2664,1394,37,39};
+    Path[38].nextPathNum_1.push_back(39);
+    Path[38].nextPathNum_2.push_back(37);
+
+    Path[39] = {3,2533,1460,38,40};
+    Path[39].nextPathNum_1.push_back(40);
+    Path[39].nextPathNum_2.push_back(38);
+
+    Path[40] = {3,2404,1526,39,41,75};
+    Path[40].nextPathNum_1.push_back(41);
+    Path[40].nextPathNum_1.push_back(75);
+    Path[40].nextPathNum_2.push_back(39);
+
+    Path[41] = {3,2263,1590,42,40,75};
+    Path[41].nextPathNum_1.push_back(40);
+    Path[41].nextPathNum_1.push_back(75);
+    Path[41].nextPathNum_2.push_back(42);
+
+    Path[42] = {4,2154,1713,41,43};
+    Path[42].nextPathNum_1.push_back(43);
+    Path[42].nextPathNum_2.push_back(41);
+
+    Path[43] = {5,1995,1712,42,44};
+    Path[43].nextPathNum_1.push_back(44);
+    Path[43].nextPathNum_2.push_back(42);
+
+    Path[44] = {3,1833,1712,43,45};
+    Path[44].nextPathNum_1.push_back(45);
+    Path[44].nextPathNum_2.push_back(43);
+
+    Path[45] = {0,1704,1635,44,46};
+    Path[45].nextPathNum_1.push_back(46);
+    Path[45].nextPathNum_2.push_back(44);
+
+    Path[46] = {0,1576,1560,45,47};
+    Path[46].nextPathNum_1.push_back(47);
+    Path[46].nextPathNum_2.push_back(45);
+
+    Path[47] = {0,1456,1478,46,48,69};
+    Path[47].nextPathNum_1.push_back(48);
+    Path[47].nextPathNum_1.push_back(69);
+    Path[47].nextPathNum_2.push_back(46);
+
+    Path[48] = {1,1332,1398,49,47,69};
+    Path[48].nextPathNum_1.push_back(69);
+    Path[48].nextPathNum_1.push_back(47);
+    Path[48].nextPathNum_2.push_back(49);
+
+    Path[49] = {1,1206,1328,48,50};
+    Path[49].nextPathNum_1.push_back(50);
+    Path[49].nextPathNum_2.push_back(48);
+
+    Path[50] = {1,1077,1401,49,51};
+    Path[50].nextPathNum_1.push_back(51);
+    Path[50].nextPathNum_2.push_back(49);
+
+    Path[51] = {5,1053,1544,50,52};
+    Path[51].nextPathNum_1.push_back(52);
+    Path[51].nextPathNum_2.push_back(50);
+
+    Path[52] = {5,991,1670,1,51};
+    Path[52].nextPathNum_1.push_back(51);
+    Path[52].nextPathNum_2.push_back(1);
+
+    Path[53] = {1,526,763,54,11,12};
+    Path[53].nextPathNum_1.push_back(11);
+    Path[53].nextPathNum_1.push_back(12);
+    Path[53].nextPathNum_2.push_back(54);
+
+    Path[54] = {4,651,829,53,55};
+    Path[54].nextPathNum_1.push_back(55);
+    Path[54].nextPathNum_2.push_back(53);
+
+    Path[55] = {5,786,755,54,56};
+    Path[55].nextPathNum_1.push_back(56);
+    Path[55].nextPathNum_2.push_back(54);
+
+    Path[56] = {3,906,827,55,57};
+    Path[56].nextPathNum_1.push_back(57);
+    Path[56].nextPathNum_2.push_back(55);
+
+    Path[57] = {3,1032,752,56,58};
+    Path[57].nextPathNum_1.push_back(58);
+    Path[57].nextPathNum_2.push_back(56);
+
+    Path[58] = {7,1197,782,57,59};
+    Path[58].nextPathNum_1.push_back(59);
+    Path[58].nextPathNum_2.push_back(57);
+
+    Path[59] = {7,1374,782,58,60};
+    Path[59].nextPathNum_1.push_back(60);
+    Path[59].nextPathNum_2.push_back(58);
+
+    Path[60] = {7,1545,782,59,61};
+    Path[60].nextPathNum_1.push_back(61);
+    Path[60].nextPathNum_2.push_back(59);
+
+    Path[61] = {7,1717,784,60,62};
+    Path[61].nextPathNum_1.push_back(62);
+    Path[61].nextPathNum_2.push_back(60);
+
+    Path[62] = {7,1893,784,61,63};
+    Path[62].nextPathNum_1.push_back(63);
+    Path[62].nextPathNum_2.push_back(61);
+
+    Path[63] = {3,2058,778,62,64,71};
+    Path[63].nextPathNum_1.push_back(64);
+    Path[63].nextPathNum_1.push_back(71);
+    Path[63].nextPathNum_2.push_back(62);
+
+    Path[64] = {3,2062,928,63,65,72};
+    Path[64].nextPathNum_1.push_back(65);
+    Path[64].nextPathNum_1.push_back(72);
+    Path[64].nextPathNum_2.push_back(63);
+
+    Path[65] = {5,1944,1015,66,64,72};
+    Path[65].nextPathNum_1.push_back(64);
+    Path[65].nextPathNum_1.push_back(72);
+    Path[65].nextPathNum_2.push_back(66);
+
+    Path[66] = {6,1802,1069,65,67};
+    Path[66].nextPathNum_1.push_back(67);
+    Path[66].nextPathNum_2.push_back(65);
+
+    Path[67] = {1,1677,1136,66,68};
+    Path[67].nextPathNum_1.push_back(68);
+    Path[67].nextPathNum_2.push_back(66);
+
+    Path[68] = {3,1558,1220,67,69};
+    Path[68].nextPathNum_1.push_back(69);
+    Path[68].nextPathNum_2.push_back(67);
+
+    Path[69] = {4,1462,1332,68,47,48};
+    Path[69].nextPathNum_1.push_back(47);
+    Path[69].nextPathNum_1.push_back(48);
+    Path[69].nextPathNum_2.push_back(68);
+
+    Path[70] = {5,2259,548,71,28,29};
+    Path[70].nextPathNum_1.push_back(28);
+    Path[70].nextPathNum_1.push_back(29);
+    Path[70].nextPathNum_2.push_back(71);
+
+    Path[71] = {5,2187,700,63,70};
+    Path[71].nextPathNum_1.push_back(70);
+    Path[71].nextPathNum_2.push_back(63);
+
+    Path[72] = {4,2093,1066,73,64,65};
+    Path[72].nextPathNum_1.push_back(64);
+    Path[72].nextPathNum_1.push_back(65);
+    Path[72].nextPathNum_2.push_back(73);
+
+    Path[73] = {4,2215,1155,72,74};
+    Path[73].nextPathNum_1.push_back(74);
+    Path[73].nextPathNum_2.push_back(72);
+
+    Path[74] = {6,2256,1298,73,75};
+    Path[74].nextPathNum_1.push_back(75);
+    Path[74].nextPathNum_2.push_back(73);
+
+    Path[75] = {1,2260,1442,74,40,41};
+    Path[75].nextPathNum_1.push_back(40);
+    Path[75].nextPathNum_1.push_back(41);
+    Path[75].nextPathNum_2.push_back(74);
 }
 
 void Game::waitDiceAni(unsigned int time){
