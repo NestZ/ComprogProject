@@ -376,7 +376,6 @@ class Game{
         bool isGetItem;
         bool isAskGo;
         bool canUsePotion;
-        bool equip;
         bool askTemp;
         Font cordiaFont;
         vector<int> expMax;
@@ -1302,7 +1301,6 @@ void Game::initPlayingVariables(){
     isGetItem = false;
     isAskGo = false;
     canUsePotion = true;
-    equip = false;
     askTemp = true;
     gameStates = 1;
     buyNum = 1;
@@ -2437,9 +2435,10 @@ void Game::updateAskBuy(int index){
         if(checkMouseClick()){
             if(player[now_player].money >= shopPriceValue[index]){
                isAskBuyOpen = false;
-               gameStates = 6;
                if(index > 1){
                    player[now_player].money -= shopPriceValue[index];
+                   isShopOpen = false;
+                   gameStates = 8;
                    ask(kind,innerIndex);
                }
                else{
@@ -2625,7 +2624,16 @@ void Game::updateAsk(){
     if(UI_yes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
         UI_yes.setScale(1.1,1.1);
         if(checkMouseClick()){
-            equip = true;
+            switch(askKind){
+                case 0:
+                    player[now_player].weaponIndex = askIndex;
+            break;
+                case 1:
+                    player[now_player].shieldIndex = askIndex;
+            break;
+                case 2:
+                    player[now_player].accessoryIndex = askIndex;
+    };
             isAskOpen = false;
             gameStates = 7;
         }
@@ -2634,32 +2642,12 @@ void Game::updateAsk(){
     if(UI_no.getGlobalBounds().contains(mousePos) &&!isMenuOpen){
         UI_no.setScale(1.1,1.1);
         if(checkMouseClick()){
-            equip = false;
             isAskOpen = false;
             gameStates = 7;
         }
     }
     else UI_no.setScale(1,1);
-    switch(askKind){
-        case 0:
-            if(equip){
-                player[now_player].weaponIndex = askIndex;
-            }
-            equip = false;
-            break;
-        case 1:
-            if(equip){
-                player[now_player].shieldIndex = askIndex;
-            }
-            equip = false;
-            break;
-        case 2:
-            if(equip){
-                player[now_player].accessoryIndex = askIndex;
-            }
-            equip = false;
-            break;
-    };
+
 }
 
 void Game::RandomMoney(){
@@ -2667,9 +2655,9 @@ void Game::RandomMoney(){
 }
 
 void Game::updatePlayingState(){
-    cout << player[now_player].NestZ_nowPath << " " << player[now_player].allPath.size() << " " << player[now_player].allPath[player[now_player].allPath.size() - 2] << "\n";
+    /*cout << player[now_player].NestZ_nowPath << " " << player[now_player].allPath.size() << " " << player[now_player].allPath[player[now_player].allPath.size() - 2] << "\n";
     for(int i = 0;i < player[now_player].allPath.size();i++)cout << player[now_player].allPath[i] << " ";
-    cout << "\n";
+    cout << "\n";*/
     if(gameStates == 1){ //randomDice
         if(!randomStart)diceState();
         else if(randomStart){
@@ -2732,6 +2720,7 @@ void Game::updatePlayingState(){
         gameStates = 1;
         turn++;
     }
+    else if(gameStates == 8){}
 }
 
 void Game::NestZwalk(int &diceMove){
@@ -3337,8 +3326,8 @@ void Game::drawUI(){
         this->gameWindow->draw(UI_hpSValue);
         this->gameWindow->draw(UI_hpLValue);
         this->gameWindow->draw(UI_swordS);
-        this->gameWindow->draw(UI_shieldS);
-        this->gameWindow->draw(UI_accS);
+        if(player[now_player].shieldIndex != -1)this->gameWindow->draw(UI_shieldS);
+        if(player[now_player].accessoryIndex != -1)this->gameWindow->draw(UI_accS);
     }
     if(!isMenuOpen)updateUI();
 }
