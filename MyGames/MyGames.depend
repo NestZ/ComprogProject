@@ -5,7 +5,7 @@
 	<cstdlib>
 	<ctime>
 
-1555974461 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
+1555983959 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
 	<SFML/Graphics.hpp>
 	<string>
 	<iostream>
@@ -13,7 +13,6 @@
 	<vector>
 	<fstream>
 	<cmath>
-	<set>
 
 1525812018 d:\project\cmu cpe\comprog 261102\project\games\sfml-2.5.1\include\sfml\graphics.hpp
 	<SFML/Window.hpp>

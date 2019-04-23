@@ -20,7 +20,7 @@ void battlephase();
 void edit ();
 void init ();
 
-	Player chara [6];monster Monster[4];
+	chara chara[6];monster Monster[4];
 void init (){
 	chara[0].clas="Berserker";chara[0].stat[0]=15;chara[0].stat[1]=5;chara[0].stat[2]=3;
 	chara[0].stat[3]=7;chara[0].stat[4]=70;chara[0].stat[5]=75;chara[0].stat[6]=5;
