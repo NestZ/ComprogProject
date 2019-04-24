@@ -272,6 +272,7 @@ class Game{
         void setPath();
         void moveDelay(int &);
         void moveDelayJunction(int &);
+        void upstat();
     private:
         //Menu
         Vector2i mousePosView;
@@ -389,6 +390,7 @@ class Game{
         bool isAskGo;
         bool canUsePotion;
         bool askTemp;
+        bool issetstat=true;
         Font cordiaFont;
         //vector<int> expMax;
         vector<int> needexp;
@@ -1246,7 +1248,11 @@ void Game::updateCharacterIcon(){
                 playerChoosedName[chooseIndex].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 130);
                 if(chooseIndex < players - 1)chooseIndex++;
                 else {
-                    setPlayerStat();
+
+                    if(issetstat) {
+                    	setPlayerStat();
+                    	issetstat=false;
+					}
                     state.push(Playing);
                 }
             }
@@ -1992,6 +1998,8 @@ void Game::initPlayingVariables(){
 
 void Game::drawPlaying(){
     updateTurn();
+    upstat();
+    cout<<player[now_player].std_str;
     this->gameWindow->setView(camera);
     if(!isDun){
         this->gameWindow->draw(mapSprite);
@@ -2216,12 +2224,12 @@ void Game::updateDungeon(){
             if(playerSpeed >= monsterSpeed){
                 fightTurn = 0;
                 critP = rand() % 100 + 1;
-                if(critP > player[now_player].getLuk() * 3)playerDamage *= 1.5;
+                if(critP <= player[now_player].getLuk() * 3)playerDamage *= 1.5;
             }
             else{
                 fightTurn = 1;
                 critP = rand() % 100 + 1;
-                if(critP > monster[monsterIndex].stat[2] * 3)monsterDamage *= 2;
+                if(critP <= monster[monsterIndex].stat[2] * 3)monsterDamage *= 2;
             }
             dunStates = 0;
             break;
@@ -2289,7 +2297,6 @@ void Game::updateDungeon(){
             else if(fightTurn == 1){
                 monsterDamage -= player[now_player].getDef();
                 if(monsterDamage > 0)player[now_player].hp -= monsterDamage;
-                cout << "md " << monsterDamage << "\n";
                 if(player[now_player].hp < 0)player[now_player].hp = 0;
                 monsterSpeed /= 2;
                 playerSpeed += player[now_player].getAgi();
@@ -2391,7 +2398,7 @@ int Game::loseExp(){
 
 int Game::getExp(){
     //player[now_player].exp += 50;
-    return 50;
+    return 1000;
 }
 
 void Game::death(){
@@ -3567,8 +3574,8 @@ void Game::initMob(){
 	characters[5].stat[3]=6;characters[5].stat[4]=6;characters[5].stat[5]=30;
 
 	//atk hp agi luk def
-    monster[0].name = "m1";monster[0].stat[0]=3;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=15;monster[0].stat[5]=400;monster[0].stat[6]=6;monster[0].lv=5;
-	monster[1].name = "m1";monster[1].stat[0]=6;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=30;monster[1].stat[5]=800;monster[1].stat[6]=12;monster[1].lv=15;
+    monster[0].name = "m1";monster[0].stat[0]=3;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=15;monster[0].stat[5]=1;monster[0].stat[6]=6;monster[0].lv=5;
+	monster[1].name = "m1";monster[1].stat[0]=6;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=30;monster[1].stat[5]=1;monster[1].stat[6]=12;monster[1].lv=15;
 	monster[2].name = "m1";monster[2].stat[0]=10;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=50;monster[2].stat[5]=1200;monster[2].stat[6]=18;monster[2].lv=20;
 	monster[3].name = "m1";monster[3].stat[0]=16;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=80;monster[3].stat[5]=3000;monster[3].stat[6]=22;monster[3].lv=30;
 	monster[4].name = "m1";monster[4].stat[0]=20;monster[4].stat[1]=29;monster[3].stat[2]=25;monster[3].stat[3]=350;monster[3].stat[4]=100;monster[3].stat[5]=3500;monster[3].stat[6]=24;monster[4].lv=35;
@@ -3688,126 +3695,115 @@ void Game::Get_Heal(Player & that_player){
     }
 }
 
-/*void upstat(){
+
+void Game::upstat(){
 	//0 lv 1nowexp 2needexp
 			int x=0;
-			player[now_player].level=(characterss[now_player].lv[0]-1)*50+100;
-			if(characterss[now_player].lv[1]>=chara[now_player].lv[2]){
-			characters[now_player].lv[0]++;
-			characters[now_player].lv[1]=characters[now_player].lv[1]-characters[now_players].lv[2];
-			characters[now_player].lv[2]=(characters[now_player].lv[0]-1)*50+100;
-			x++;
+			if(player[now_player].exp>=(needexp[player[now_player].level-1])){
+				player[now_player].level++;
+				player[now_player].exp=player[now_player].exp-(needexp[player[now_player].level-1]);
+				needexp[player[now_player].level-1]=(player[now_player].level-1)*50+100;
+				x++;
 			}
-			while(characters[now_player].lv[1]<0){
-				if(chacracters[now_player].lv[0]==1){
-					character[now_player].lv[1]==0;
+			if(player[now_player].exp<0){
+				if(player[now_player].level==1){
+					player[now_player].exp==0;
 				}
-				characters[now_player].lv[0]--;
-				characters[now_player].lv[2]=(characters[now_player].lv[0]-1)*50+100;
-				characters[nowplayer].lv[1]+=characters[now_player].lv[2];
+				player[now_player].level--;
+				player[now_player].exp+=(needexp[player[now_player].level-1]);
 				x--;
 			}
-	while(x>1){
-	 	if(characters[now_player].character_number==0){
-			characters[now_player].std_str+=3
-			characters[now_player].std_vit+=2
-			characters[now_player].std_agi+=2
-			characters[now_player].std_luk+=1
-			characters[now_player].std_Hp+=20
-			characters[now_player].std_Atk+=15
+        if(x>1){
+	 	if(player[now_player].character_number==0){
+			player[now_player].std_str+=3;
+			player[now_player].std_vit+=2;
+			player[now_player].std_agi+=2;
+			player[now_player].std_luk+=1;
+			player[now_player].std_atk+=15;
 		}
-	else if(characters[now_player].characters_number==1){
-			characters[now_player].std_str+=2
-			characters[now_player].std_vit+=3
-			characters[now_player].std_agi+=2
-			characters[now_player].std_luk+=1
-			characters[now_player].std_Hp+=30
-			characters[now_player].std_Atk+=10
+	else if(player[now_player].character_number==1){
+			player[now_player].std_str+=2;
+			player[now_player].std_vit+=3;
+			player[now_player].std_agi+=2;
+			player[now_player].std_luk+=1;
+			player[now_player].std_atk+=10;
 		}
-	else if(characters[now_player].characters_number==2){
-			characters[now_player].std_str+=2
-			characters[now_player].std_vit+=1
-			characters[now_player].std_agi+=3
-			characters[now_player].std_luk+=2
-			characters[now_player].std_Hp+=10
-			characters[now_player].std_Atk+=10
+	else if(player[now_player].character_number==2){
+            cout<<"luy";
+			player[now_player].std_str+=2;
+			player[now_player].std_vit+=1;
+			player[now_player].std_agi+=3;
+			player[now_player].std_luk+=2;
+			player[now_player].std_atk+=10;
 		}
-	else if(characters[now_player].characters_number==3){
-			characters[now_player].std_str+=1
-			characters[now_player].std_vit+=3
-			characters[now_player].std_agi+=3
-			characters[now_player].std_luk+=1
-			characters[now_player].std_Hp+=10
-			characters[now_player].std_Atk+=5
+	else if(player[now_player].character_number==3){
+			player[now_player].std_str+=1;
+			player[now_player].std_vit+=3;
+			player[now_player].std_agi+=3;
+			player[now_player].std_luk+=1;
+			player[now_player].std_atk+=5;
 		}
-	else if(characters[now_player].characters_number==4){
-			characters[now_player].std_str+=3
-			characters[now_player].std_vit+=1
-			characters[now_player].std_agi+=1
-			characters[now_player].std_luk+=3
-			characters[now_player].std_Hp+=10
-			characters[now_player].std_Atk+=15
+	else if(player[now_player].character_number==4){
+			player[now_player].std_str+=3;
+			player[now_player].std_vit+=1;
+			player[now_player].std_agi+=1;
+			player[now_player].std_luk+=3;
+			player[now_player].std_atk+=15;
 		}
-	else if(characters[now_player].characters_number==5){
-			characters[now_player].std_str+=2
-			characters[now_player].std_vit+=2
-			characters[now_player].std_agi+=2
-			characters[now_player].std_luk+=2
-			characters[now_player].std_Hp+=20
-			characters[now_player].std_Atk+=10
+	else if(player[now_player].character_number==5){
+			player[now_player].std_str+=2;
+			player[now_player].std_vit+=2;
+			player[now_player].std_agi+=2;
+			player[now_player].std_luk+=2;
+			player[now_player].std_atk+=10;
 		}
 		x=x-1;
 	}
-		while(x<0){
-	 	if(characters[now_player].characters_number--0){
-			characters[now_player].std_str-=3
-			characters[now_player].std_vit-=2
-			characters[now_player].std_agi-=2
-			characters[now_player].std_luk-=1
-			characters[now_player].std_Hp-=20
-			characters[now_player].std_Atk-=15
+		if(x<0){
+	 	if(player[now_player].character_number==0){
+			player[now_player].std_str-=3;
+			player[now_player].std_vit-=2;
+			player[now_player].std_agi-=2;
+			player[now_player].std_luk-=1;
+			player[now_player].std_atk-=15;
 		}
-	else if(characters[now_player].characters_number==1){
-			characters[now_player].std_str-=2
-			characters[now_player].std_vit-=3
-			characters[now_player].std_agi-=2
-			characters[now_player].std_luk-=1
-			characters[now_player].std_Hp-=30
-			characters[now_player].std_Atk-=10
+        else if(player[now_player].character_number==1){
+			player[now_player].std_str-=2;
+			player[now_player].std_vit-=3;
+			player[now_player].std_agi-=2;
+			player[now_player].std_luk-=1;
+			player[now_player].std_atk-=10;
 		}
-	else if(characters[now_player].characters_number==2){
-			characters[now_player].std_str-=2
-			characters[now_player].std_vit-=1
-			characters[now_player].std_agi-=3
-			characters[now_player].std_luk-=2
-			characters[now_player].std_Hp-=10
-			characters[now_player].std_Atk-=10
+	else if(player[now_player].character_number==2){
+			player[now_player].std_str-=2;
+			player[now_player].std_vit-=1;
+			player[now_player].std_agi-=3;
+			player[now_player].std_luk-=2;
+			player[now_player].std_atk-=10;
 		}
-	else if(characters[now_player].characters_number==3){
-			characters[now_player].std_str-=1
-			characters[now_player].std_vit-=3
-			characters[now_player].std_agi-=3
-			characters[now_player].std_luk-=1
-			characters[now_player].std_Hp-=10
-			characters[now_player].std_Atk-=5
+	else if(player[now_player].character_number==3){
+			player[now_player].std_str-=1;
+			player[now_player].std_vit-=3;
+			player[now_player].std_agi-=3;
+			player[now_player].std_luk-=1;
+			player[now_player].std_atk-=5;
 		}
-	else if(characters[now_player].characters_number==4){
-			characters[now_player].std_str-=3
-			characters[now_player].std_vit-=1
-			characters[now_player].std_agi-=1
-			characters[now_player].std_luk-=3
-			characters[now_player].std_Hp-=10
-			characters[now_player].std_Atk-=15
+	else if(player[now_player].character_number==4){
+			player[now_player].std_str-=3;
+			player[now_player].std_vit-=1;
+			player[now_player].std_agi-=1;
+			player[now_player].std_luk-=3;
+			player[now_player].std_atk-=15;
 		}
-	else if(characters[now_player].characters_number==5){
-			characters[now_player].std_str-=2
-			characters[now_player].std_vit-=2
-			characters[now_player].std_agi-=2
-			characters[now_player].std_luk-=2
-			characters[now_player].std_Hp-=20
-			characters[now_player].std_Atk-=10
+	else if(player[now_player].character_number==5){
+			player[now_player].std_str-=2;
+			player[now_player].std_vit-=2;
+			player[now_player].std_agi-=2;
+			player[now_player].std_luk-=2;
+			player[now_player].std_atk-=10;
 		}
 		x=x+1;
 	}
-}*/
+}
+
 #endif
