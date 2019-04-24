@@ -7,11 +7,9 @@
 #include <vector>
 #include <fstream>
 #include <cmath>
-#include <set>
 
 using namespace std;
 using namespace sf;
-
 
 class Game;
 class Player;
@@ -19,52 +17,46 @@ struct itemStat;
 struct accessory;
 struct chara;
 struct monster;
-struct path_st;
-const int num_allpath = 3;
+class NestZpath;
 
-class path_st
-{
-    public :
-        int number = 0 ;
-        float pos_x = 0;
-        float pos_y = 0;
-        int this_path_is = 0;
-        std::vector<int> nextpath;//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 : dum3 6 : boos 7;
-};
+typedef class NestZpath{
+    public:
+        int pathEf;
+        double X;
+        double Y;
+        int goPath_1;
+        int goPath_2;
+        int lastPathCon = 0;
+        vector<int> nextPathNum_1;
+        vector<int> nextPathNum_2;
+        vector<int> nextPath(int);
+}P;
+P Path[76];
 
-path_st allpath[num_allpath];
-set<path_st> ablePath;
-
-void path_set(){
-    allpath[0].number = 0;
-    allpath[0].pos_x = 100;
-    allpath[0].pos_y = 100;
-    allpath[0].nextpath.push_back(1);
-    allpath[0].this_path_is = 1;
-
-    allpath[1].number = 1;
-    allpath[1].pos_x = 200;
-    allpath[1].pos_y = 200;
-    allpath[1].nextpath.push_back(2);
-    allpath[1].this_path_is = 0;
-
-    allpath[2].number = 2;
-    allpath[2].pos_x = 300;
-    allpath[2].pos_y = 300;
-    allpath[2].nextpath.push_back(0);
-    allpath[2].nextpath.push_back(1);
-    allpath[2].this_path_is = 4;
+vector<int> NestZpath::nextPath(int lastPath){
+    if(lastPathCon == 0){
+        if(lastPath == goPath_1)return nextPathNum_1;
+        else if(lastPath == goPath_2) return nextPathNum_2;
+    }
+    else if(lastPathCon != 0){
+        if(lastPath == goPath_1)return nextPathNum_1;
+        else if(lastPath == goPath_2 || lastPath == lastPathCon) return nextPathNum_2;
+    }
+    return nextPathNum_1;
 }
 
 struct chara{
-	int stat[6],lv[3];//str agi luk  vit atk def
+	int stat[6],lv[3];
 	string clas;
-}character[6];
+};
+chara characters[6];
 
 struct monster{
-	int stat[5];//
+	int stat[7]; //str agi luk vit atk hp def
+	int lv;
+	int maxhp;
 	string name;
-}monster[4];
+}monster[6];
 
 struct itemStat{
     int sword_stat[3];
@@ -95,23 +87,24 @@ class Player{
         int character_number;
         int level;
         int exp;
-        int now_path = 0;
+        int NestZ_nowPath;
         int hp;
         int weaponIndex;
         int shieldIndex;
         int accessoryIndex;
         int star;
         int money;
-        int std_str = 20;
-        int std_vit = 20;
-        int std_agi = 20;
-        int std_luk = 20;
-        int std_atk = 20;
-        int std_def = 20;
+        int std_str;
+        int std_vit;
+        int std_agi;
+        int std_luk;
+        int std_atk;
+        int std_def;
         int red_potion;
         int green_potion;
         int moveNum;
-        int now_player_path_is = -1;
+        int bossIndex;
+        vector<int> allPath;
         //Function
         Player();
         int getAtk();
@@ -126,19 +119,20 @@ class Player{
 Player::Player(){
     level = 1;
     exp = 0;
-    money = 1000;
+    money = 0;
     red_potion = 10;
     green_potion = 10;
     star = 0;
     weaponIndex = 0;
     shieldIndex = -1;
     accessoryIndex = -1;
-    hp = 50;
-    //hp = HpMax();
+    NestZ_nowPath = 0;
+    bossIndex = 0;
+    allPath.push_back(0);
 }
 
 int Player::getAtk(){
-    return std_atk + getStr()/2 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_atk:0);
+    return std_atk + getStr() * 5 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_atk:0);
 }
 int Player::getDef(){
     return std_def + getVit() + (shieldIndex > -1 ? shield[shieldIndex].shield_stat[1]:0);
@@ -158,7 +152,7 @@ int Player::getVit(){
 int Player::HpMax(){
     return getVit()*10;
 }
-int now_player = 0;
+
 class Game{
     public:
         //Window
@@ -214,6 +208,7 @@ class Game{
         void updateChoosed();
         void updateBackButtonCC();
         void resetCC();
+        void setPlayerStat();
         //InsertName
         void initInsertNameVariables();
         void drawInsertName();
@@ -225,6 +220,7 @@ class Game{
         void resetIPN();
         bool isValidCharacter(char);
         bool checkUsedName(string);
+        void initMob();
         //Playing
         int loseExp();
         int loseMoney();
@@ -272,10 +268,11 @@ class Game{
         void useThisItem(bool);
         void Get_Heal(Player &);
         void updateAskGo();
-        void Player_choose_path();
-        void askGo();
-        void cal_path(path_st,int);
-        void find_path(int,int);
+        void NestZwalk(int &);
+        void setPath();
+        void moveDelay(int &);
+        void moveDelayJunction(int &);
+        void upstat();
     private:
         //Menu
         Vector2i mousePosView;
@@ -327,6 +324,7 @@ class Game{
         bool choosed[6];
         Texture charTexture[6];
         Sprite charSprite[6];
+        Text className[6];
         Texture chooseCharacterBGTexture;
         Sprite chooseCharacterBGSprite;
         Texture choosedIconTexture;
@@ -369,7 +367,13 @@ class Game{
         int fightTurn;
         int playerDes;
         int enemyDes;
-        int moveNum;
+        int now_player;
+        int isPlayerWin;
+        int playerSpeed;
+        int monsterSpeed;
+        int playerDamage;
+        int monsterDamage;
+        int critP;
         bool randomStart;
         bool isBagOpen;
         bool isDesOpen;
@@ -382,17 +386,18 @@ class Game{
         bool isDeathOpen;
         bool isDun;
         bool isMonDes;
-        bool isPlayerWin;
         bool isGetItem;
-        bool isAskGO;
+        bool isAskGo;
         bool canUsePotion;
-        bool equip;
+        bool askTemp;
+        bool issetstat=true;
         Font cordiaFont;
-        vector<int> expMax;
+        //vector<int> expMax;
+        vector<int> needexp;
         vector<int> diceTemp;
         vector<int> timeTemp;
         vector<int> RPStempMon;
-        vector<Text> TextGo;
+        vector<int> nextPath;
         int startExp;
         int UIFontSize;
         Texture mapTexture;
@@ -409,6 +414,8 @@ class Game{
         int askKind;
         int askIndex;
         int buyNum;
+        int playerChoosedPath;
+        unsigned int moveTemp;
         Text UI_name;
         Text UI_hpText;
         Text UI_level;
@@ -538,12 +545,12 @@ class Game{
         Texture D_monScissorsT;
         Sprite D_playerRPS;
         Sprite D_monsterRPS;
-        Texture D_monsterFace[4];
+        Texture D_monsterFace[6];
         Sprite D_monsterFaceS;
         Sprite D_monHpBar;
         Sprite D_monHpBorder;
         Sprite D_monMaxHp;
-        Texture D_monChar[4];
+        Texture D_monChar[6];
         Sprite D_monCharS;
         Sprite D_deathWin;
         Texture D_coin;
@@ -552,9 +559,11 @@ class Game{
         Sprite D_monDesBGS;
         Sprite D_getWin;
         Sprite D_getCoin;
-        Text UI_t1;
-        int willGOPath = 0;
         Sprite charOnMap[6];
+        Sprite UI_askGoWin;
+        Text UI_askGoPath[2];
+        Text UI_askGoText;
+        Texture UI_shopStarT;
 };
 
 Game::Game(){
@@ -630,6 +639,7 @@ void Game::initGlobalVariables(){
     mouseIconSprite.setScale(0.6,0.6);
     animationSpeed = 0.2f;
     startExp = 100;
+    now_player = 0;
     turn = 0;
 }
 
@@ -996,7 +1006,6 @@ void Game::updateChoosePlayersButton(){
                     case 2: //4 players
                         players = 4;
                         player = new Player[4];
-                        break;
                 }
                 state.push(InsertName);
             }
@@ -1060,7 +1069,6 @@ void Game::setInsertNameText(){
     nameUsed.setOutlineThickness(4);
     nameUsed.setOrigin(getObjWidth(nameUsed)/2.0,getObjHeight(nameUsed)/2.0);
     nameUsed.setPosition(windowMidWidth(),windowMidHeight() + 350);
-
 }
 
 void Game::drawInsertName(){
@@ -1113,6 +1121,7 @@ void Game::updateInsertedName(char insertedChar){
         }
         else {
             randomPick(playerName);
+            initMob();
             state.push(ChooseCharacters);
         }
     }
@@ -1189,6 +1198,15 @@ void Game::initChooseCharactersVariables(){
 }
 
 void Game::drawChooseCharacters(){
+    for(int i = 0;i < 6;i++){
+        className[i].setString(characters[i].clas);
+        className[i].setFillColor(Color::Black);
+        className[i].setOutlineColor(Color::White);
+        className[i].setOutlineThickness(2.5);
+        className[i].setFont(cordiaFont);
+        className[i].setCharacterSize(UIFontSize + 10);
+        className[i].setLetterSpacing(1.3);
+    }
     this->gameWindow->draw(chooseCharacterBGSprite);
     this->gameWindow->draw(backButtonSprite);
     updateBackButtonCC();
@@ -1198,6 +1216,7 @@ void Game::drawChooseCharacters(){
     for(int i = 0;i < 6;i++){
         setCharacterIcon(charSprite[i],i);
         this->gameWindow->draw(charSprite[i]);
+        this->gameWindow->draw(className[i]);
     }
     this->gameWindow->draw(mouseIconSprite);
 }
@@ -1205,6 +1224,8 @@ void Game::drawChooseCharacters(){
 void Game::setCharacterIcon(Sprite &sprite, int index){
     sprite.setOrigin(getObjWidth(sprite) / 2.0,getObjHeight(sprite) / 2.0);
     sprite.setPosition((index + 1) * (windowWidth / 7),windowMidHeight());
+    className[index].setOrigin(getObjWidth(className[index]) / 2.0,getObjHeight(className[index]) / 2.0);
+    className[index].setPosition((index + 1) * (windowWidth / 7),windowMidHeight() + 200);
 }
 
 void Game::randomPick(vector<string> &playerName){
@@ -1226,12 +1247,31 @@ void Game::updateCharacterIcon(){
                 player[chooseIndex].character_number = i;
                 playerChoosedName[chooseIndex].setPosition(charSprite[i].getPosition().x,charSprite[i].getPosition().y - 130);
                 if(chooseIndex < players - 1)chooseIndex++;
-                else state.push(Playing);
+                else {
+
+                    if(issetstat) {
+                    	setPlayerStat();
+                    	issetstat=false;
+					}
+                    state.push(Playing);
+                }
             }
         }
         else charSprite[i].setScale(1,1);
         if(choosed[i] == true)charSprite[i].setColor(Color(128,128,128,255));
         else charSprite[i].setColor(Color(255,255,255,255));
+    }
+}
+
+void Game::setPlayerStat(){
+    for(int i = 0;i < players;i++){
+        player[i].std_agi = characters[player[i].character_number].stat[1];
+        player[i].std_atk = characters[player[i].character_number].stat[5];
+        player[i].std_def = characters[player[i].character_number].stat[4];
+        player[i].std_luk = characters[player[i].character_number].stat[2];
+        player[i].std_str = characters[player[i].character_number].stat[0];
+        player[i].std_vit = characters[player[i].character_number].stat[3];
+        player[i].hp = player[i].HpMax();
     }
 }
 
@@ -1306,19 +1346,26 @@ void Game::initPlayingVariables(){
     isAskBuyOpen = false;
     isDeathOpen = false;
     isGetItem = false;
-    isAskGO = false;
+    isAskGo = false;
     canUsePotion = true;
-    equip = false;
+    askTemp = true;
     gameStates = 1;
     buyNum = 1;
     diceTemp.push_back(-1);
     RPStempMon.push_back(-1);
-    expMax.push_back(0);
-    expMax.push_back(startExp);
-    while(expMax.size() != 30){
+    //expMax.push_back(0);
+    //expMax.push_back(startExp);
+    /*while(expMax.size() != 30){
         expMax.push_back(expMax.back() * 1.2);
+    }*/
+    int sum;
+    int n;
+    for(int i=0;i<29;i++){
+        n=i*50+100;
+        sum=sum+n;
+        needexp.push_back(n);
     }
-    path_set();
+    setPath();
     setItemStat();
     mapTexture.loadFromFile("img/Map.jpg");
     mapSprite.setTexture(mapTexture);
@@ -1345,7 +1392,7 @@ void Game::initPlayingVariables(){
     UI_starT.setSmooth(true);
     for(int i = 0;i < 3;i++){
         UI_starS[i].setTexture(UI_starT);
-        UI_starS[i].setScale(0.35,0.35);
+        UI_starS[i].setScale(0.7,0.7);
     }
     UI_charFaceT[0].loadFromFile("img/Face1.png");
     UI_charFaceT[1].loadFromFile("img/Face2.png");
@@ -1658,17 +1705,18 @@ void Game::initPlayingVariables(){
     UI_money.setFont(menuFont);
     UI_money.setCharacterSize(UIFontSize - 5);
     UI_money.setPosition(windowMidWidth() + 70,windowMidHeight() + 202);
+    UI_shopStarT.loadFromFile("img/Star.png");
     UI_shopItem[0].setTexture(UI_HpST);       UI_shopItem[1].setTexture(UI_HpLT);       UI_shopItem[2].setTexture(UI_swordT[1]);   UI_shopItem[3].setTexture(UI_swordT[2]);   UI_shopItem[4].setTexture(UI_swordT[3]);   UI_shopItem[5].setTexture(UI_swordT[4]);
     UI_shopItem[6].setTexture(UI_swordT[5]);  UI_shopItem[7].setTexture(UI_swordT[6]);  UI_shopItem[8].setTexture(UI_shieldT[0]);  UI_shopItem[9].setTexture(UI_shieldT[1]);  UI_shopItem[10].setTexture(UI_shieldT[2]); UI_shopItem[11].setTexture(UI_shieldT[3]);
     UI_shopItem[12].setTexture(UI_shieldT[4]);UI_shopItem[13].setTexture(UI_shieldT[5]);UI_shopItem[14].setTexture(UI_shieldT[6]); UI_shopItem[15].setTexture(UI_shieldT[7]); UI_shopItem[16].setTexture(UI_accT[0]);    UI_shopItem[17].setTexture(UI_accT[1]);
-    UI_shopItem[18].setTexture(UI_accT[2]);   UI_shopItem[19].setTexture(UI_accT[3]);   UI_shopItem[20].setTexture(UI_accT[4]);    UI_shopItem[21].setTexture(UI_accT[5]);    UI_shopItem[22].setTexture(UI_accT[6]);    UI_shopItem[23].setTexture(UI_accT[7]);
+    UI_shopItem[18].setTexture(UI_accT[2]);   UI_shopItem[19].setTexture(UI_accT[3]);   UI_shopItem[20].setTexture(UI_accT[4]);    UI_shopItem[21].setTexture(UI_accT[5]);    UI_shopItem[22].setTexture(UI_accT[6]);    UI_shopItem[23].setTexture(UI_shopStarT);
     UI_askBuyS[0].setTexture(UI_HpST);       UI_askBuyS[1].setTexture(UI_HpLT);       UI_askBuyS[2].setTexture(UI_swordT[1]);   UI_askBuyS[3].setTexture(UI_swordT[2]);   UI_askBuyS[4].setTexture(UI_swordT[3]);   UI_askBuyS[5].setTexture(UI_swordT[4]);
     UI_askBuyS[6].setTexture(UI_swordT[5]);  UI_askBuyS[7].setTexture(UI_swordT[6]);  UI_askBuyS[8].setTexture(UI_shieldT[0]);  UI_askBuyS[9].setTexture(UI_shieldT[1]);  UI_askBuyS[10].setTexture(UI_shieldT[2]); UI_askBuyS[11].setTexture(UI_shieldT[3]);
     UI_askBuyS[12].setTexture(UI_shieldT[4]);UI_askBuyS[13].setTexture(UI_shieldT[5]);UI_askBuyS[14].setTexture(UI_shieldT[6]); UI_askBuyS[15].setTexture(UI_shieldT[7]); UI_askBuyS[16].setTexture(UI_accT[0]);    UI_askBuyS[17].setTexture(UI_accT[1]);
-    UI_askBuyS[18].setTexture(UI_accT[2]);   UI_askBuyS[19].setTexture(UI_accT[3]);   UI_askBuyS[20].setTexture(UI_accT[4]);    UI_askBuyS[21].setTexture(UI_accT[5]);    UI_askBuyS[22].setTexture(UI_accT[6]);    UI_askBuyS[23].setTexture(UI_accT[7]);
+    UI_askBuyS[18].setTexture(UI_accT[2]);   UI_askBuyS[19].setTexture(UI_accT[3]);   UI_askBuyS[20].setTexture(UI_accT[4]);    UI_askBuyS[21].setTexture(UI_accT[5]);    UI_askBuyS[22].setTexture(UI_accT[6]);    UI_askBuyS[23].setTexture(UI_shopStarT);
     for(int i = 0;i < 24;i++){
         UI_shopItem[i].setOrigin(getObjWidth(UI_shopItem[i]) / 2,getObjHeight(UI_shopItem[i]) / 2);
-        UI_shopItem[i].setPosition(710 + 100*(i%6),340 + 100*(i/6));
+        UI_shopItem[i].setPosition(710 + 100 * (i % 6),340 + 100 * (i / 6));
         UI_askBuyS[i].setOrigin(getObjWidth(UI_askBuyS[i]) / 2,getObjHeight(UI_askBuyS[i]) / 2);
         if(i > 1)UI_askBuyS[i].setPosition(windowMidWidth(),windowMidHeight() + 10);
         else UI_askBuyS[i].setPosition(windowMidWidth() - 50,windowMidHeight() + 10);
@@ -1680,11 +1728,11 @@ void Game::initPlayingVariables(){
     UI_shopName[0].setString(potion[0].name_object);       UI_shopName[1].setString(potion[1].name_object);     UI_shopName[2].setString(sword[1].name_object);     UI_shopName[3].setString(sword[2].name_object);     UI_shopName[4].setString(sword[3].name_object);     UI_shopName[5].setString(sword[4].name_object);
     UI_shopName[6].setString(sword[5].name_object);        UI_shopName[7].setString(sword[6].name_object);      UI_shopName[8].setString(shield[0].name_object);    UI_shopName[9].setString(shield[1].name_object);    UI_shopName[10].setString(shield[2].name_object);   UI_shopName[11].setString(shield[3].name_object);
     UI_shopName[12].setString(shield[4].name_object);      UI_shopName[13].setString(shield[5].name_object);    UI_shopName[14].setString(shield[6].name_object);   UI_shopName[15].setString(shield[7].name_object);   UI_shopName[16].setString(accessory[0].name);UI_shopName[17].setString(accessory[1].name);
-    UI_shopName[18].setString(accessory[2].name);   UI_shopName[19].setString(accessory[3].name); UI_shopName[20].setString(accessory[4].name);UI_shopName[21].setString(accessory[5].name);UI_shopName[22].setString(accessory[6].name);UI_shopName[23].setString(accessory[7].name);
+    UI_shopName[18].setString(accessory[2].name);   UI_shopName[19].setString(accessory[3].name); UI_shopName[20].setString(accessory[4].name);UI_shopName[21].setString(accessory[5].name);UI_shopName[22].setString(accessory[6].name);UI_shopName[23].setString("Star");
     UI_shopDes[0].setString(potion[0].Des);       UI_shopDes[1].setString(potion[1].Des);     UI_shopDes[2].setString(sword[1].Des);     UI_shopDes[3].setString(sword[2].Des);     UI_shopDes[4].setString(sword[3].Des);     UI_shopDes[5].setString(sword[4].Des);
     UI_shopDes[6].setString(sword[5].Des);        UI_shopDes[7].setString(sword[6].Des);      UI_shopDes[8].setString(shield[0].Des);    UI_shopDes[9].setString(shield[1].Des);    UI_shopDes[10].setString(shield[2].Des);   UI_shopDes[11].setString(shield[3].Des);
     UI_shopDes[12].setString(shield[4].Des);      UI_shopDes[13].setString(shield[5].Des);    UI_shopDes[14].setString(shield[6].Des);   UI_shopDes[15].setString(shield[7].Des);   UI_shopDes[16].setString(accessory[0].Des);UI_shopDes[17].setString(accessory[1].Des);
-    UI_shopDes[18].setString(accessory[2].Des);   UI_shopDes[19].setString(accessory[3].Des); UI_shopDes[20].setString(accessory[4].Des);UI_shopDes[21].setString(accessory[5].Des);UI_shopDes[22].setString(accessory[6].Des);UI_shopDes[23].setString(accessory[7].Des);
+    UI_shopDes[18].setString(accessory[2].Des);   UI_shopDes[19].setString(accessory[3].Des); UI_shopDes[20].setString(accessory[4].Des);UI_shopDes[21].setString(accessory[5].Des);UI_shopDes[22].setString(accessory[6].Des);UI_shopDes[23].setString("The Shining Star");
     for(int i = 0;i < 24;i++){
         UI_shopName[i].setFillColor(Color::Black);
         UI_shopName[i].setOutlineColor(Color::White);
@@ -1784,10 +1832,14 @@ void Game::initPlayingVariables(){
     D_monsterFace[1].loadFromFile("img/MonFace2.png");
     D_monsterFace[2].loadFromFile("img/MonFace3.png");
     D_monsterFace[3].loadFromFile("img/MonFace4.png");
+    D_monsterFace[4].loadFromFile("img/MonFace5.png");
+    D_monsterFace[5].loadFromFile("img/MonFace6.png");
     D_monChar[0].loadFromFile("img/Mon1.png");
     D_monChar[1].loadFromFile("img/Mon2.png");
     D_monChar[2].loadFromFile("img/Mon3.png");
     D_monChar[3].loadFromFile("img/Mon4.png");
+    D_monChar[4].loadFromFile("img/Mon5.png");
+    D_monChar[5].loadFromFile("img/Mon6.png");
     D_monName.setFillColor(Color::Black);
     D_monName.setOutlineColor(Color::White);
     D_monName.setOutlineThickness(3.5);
@@ -1921,39 +1973,44 @@ void Game::initPlayingVariables(){
     charOnMap[4].setOrigin(getObjWidth(charOnMap[4]) / 2,getObjHeight(charOnMap[4]));
     charOnMap[5].setTexture(charTexture[5]);
     charOnMap[5].setOrigin(getObjWidth(charOnMap[5]) / 2,getObjHeight(charOnMap[5]));
-}
-
-void initStat(){
-	character[0].clas="Berserker";character[0].stat[0]=15;character[0].stat[1]=5;character[0].stat[2]=3;
-	character[0].stat[3]=7;character[0].stat[4]=70;character[0].stat[5]=5;
-	character[1].clas="HolyKnight";character[1].stat[0]=8;character[1].stat[1]=7;character[1].stat[2]=3;
-	character[1].stat[3]=13;character[1].stat[4]=130;character[1].stat[5]=5;
-	character[2].clas="Thief";character[2].stat[0]=5;character[2].stat[1]=10;character[2].stat[2]=14;
-	character[2].stat[3]=5;character[2].stat[4]=50;character[2].stat[5]=5;
-	character[3].clas="B";character[3].stat[0]=7;character[3].stat[1]=3;character[3].stat[2]=10;
-	character[3].stat[3]=10;character[3].stat[4]=100;character[3].stat[5]=5;
-	character[4].clas="B1";character[4].stat[0]=10;character[4].stat[1]=10;character[4].stat[2]=3;
-	character[4].stat[3]=7;character[4].stat[4]=70;character[4].stat[5]=5;
-	character[5].clas="B2";character[5].stat[0]=6;character[5].stat[1]=6;character[5].stat[2]=6;
-	character[5].stat[3]=6;character[5].stat[4]=60;character[5].stat[5]=6;
-
-	monster[0].name = "kak";monster[0].stat[0]=5;monster[0].stat[1]=400;monster[0].stat[2]=4;monster[0].stat[3]=3;monster[0].stat[4]=7;
-	monster[1].name = "Shadow";monster[1].stat[0]=12;monster[1].stat[1]=800;monster[1].stat[2]=12;monster[1].stat[3]=6;monster[1].stat[4]=12;
-	monster[2].name = "high";monster[2].stat[0]=17;monster[2].stat[1]=1600;monster[2].stat[2]=22;monster[2].stat[3]=18;monster[2].stat[4]=20;
+    UI_askGoWin.setTexture(miniMenuT);
+    UI_askGoWin.setOrigin(getObjWidth(UI_askGoWin) / 2,getObjHeight(UI_askGoWin) / 2);
+    UI_askGoWin.setPosition(windowMidWidth(),windowMidHeight());
+    UI_askGoWin.setScale(1.7,0.6);
+    UI_askGoWin.setColor(Color(255,255,255,210));
+    UI_askGoText.setString("Which Path do you want to go");
+    UI_askGoText.setFillColor(Color::Black);
+    UI_askGoText.setOutlineColor(Color::White);
+    UI_askGoText.setOutlineThickness(2.5);
+    UI_askGoText.setFont(menuFont);
+    UI_askGoText.setCharacterSize(UIFontSize - 5);
+    UI_askGoPath[0].setFillColor(Color::Black);
+    UI_askGoPath[0].setOutlineColor(Color::White);
+    UI_askGoPath[0].setOutlineThickness(2.5);
+    UI_askGoPath[0].setFont(menuFont);
+    UI_askGoPath[0].setCharacterSize(UIFontSize - 5);
+    UI_askGoPath[1].setFillColor(Color::Black);
+    UI_askGoPath[1].setOutlineColor(Color::White);
+    UI_askGoPath[1].setOutlineThickness(2.5);
+    UI_askGoPath[1].setFont(menuFont);
+    UI_askGoPath[1].setCharacterSize(UIFontSize - 5);
 }
 
 void Game::drawPlaying(){
-    updateLevel();
     updateTurn();
+    upstat();
+    cout<<player[now_player].std_str;
     this->gameWindow->setView(camera);
-    if(!isDun)this->gameWindow->draw(mapSprite);
+    if(!isDun){
+        this->gameWindow->draw(mapSprite);
+        for(int i = 0;i < players;i++){
+            charOnMap[player[i].character_number].setPosition(Path[player[i].NestZ_nowPath].X,Path[player[i].NestZ_nowPath].Y);
+            this->gameWindow->draw(charOnMap[player[i].character_number]);
+        }
+    }
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
     updateEscape();
     updatePlayingState();
-    for(int i = 0;i < players;i++){
-        charOnMap[player[i].character_number].setPosition(allpath[player[i].now_path].pos_x,allpath[player[i].now_path].pos_y);
-        this->gameWindow->draw(charOnMap[player[i].character_number]);
-    }
     if(isDun){
         this->gameWindow->draw(D_bgS);
         this->gameWindow->draw(D_monsterFaceS);
@@ -1979,9 +2036,12 @@ void Game::drawPlaying(){
         this->gameWindow->draw(D_deathMoneyValue);
         this->gameWindow->draw(D_coinS);
     }
-    if(isAskGO){
+    if(isAskGo){
         updateAskGo();
-
+        this->gameWindow->draw(UI_askGoWin);
+        this->gameWindow->draw(UI_askGoPath[0]);
+        this->gameWindow->draw(UI_askGoPath[1]);
+        this->gameWindow->draw(UI_askGoText);
     }
     if(isGetItem){
         updateGetItem();
@@ -2005,7 +2065,6 @@ void Game::drawPlaying(){
         updateShop();
     }
     if(isAskBuyOpen){
-            cout << askIndex << "\n";
         updateAskBuy(itemBuyIndex);
         this->gameWindow->draw(UI_askBuyWin);
         this->gameWindow->draw(UI_askBuyS[itemBuyIndex]);
@@ -2036,18 +2095,30 @@ void Game::drawPlaying(){
     if(isAskOpen){
         updateAsk();
         this->gameWindow->draw(UI_askWin);
+        this->gameWindow->draw(UI_ask);
         switch(askKind){
             case 0:
                 this->gameWindow->draw(UI_askWeaponS);
+                if(UI_askWeaponS.getGlobalBounds().contains(mousePos)){
+                    this->gameWindow->draw(UI_swordName[askIndex]);
+                    this->gameWindow->draw(UI_swordDes[askIndex]);
+                }
                 break;
             case 1:
                 this->gameWindow->draw(UI_askShieldS);
+                if(UI_askShieldS.getGlobalBounds().contains(mousePos)){
+                    this->gameWindow->draw(UI_shieldName[askIndex]);
+                    this->gameWindow->draw(UI_shieldDes[askIndex]);
+                }
                 break;
             case 2:
                 this->gameWindow->draw(UI_askAccS);
+                if(UI_askAccS.getGlobalBounds().contains(mousePos)){
+                    this->gameWindow->draw(UI_accName[askIndex]);
+                    this->gameWindow->draw(UI_accDes[askIndex]);
+                }
                 break;
         };
-        this->gameWindow->draw(UI_ask);
         this->gameWindow->draw(UI_yes);
         this->gameWindow->draw(UI_no);
     }
@@ -2081,22 +2152,22 @@ void Game::drawPlaying(){
     this->gameWindow->draw(mouseIconSprite);
 }
 
-void Game::updateMonDes(){
+void Game::updateMonDes(){//str agi luk vit atk hp def
         D_monDesCharS.setTexture(D_monChar[monsterIndex]);
         D_monDesCharS.setOrigin(getObjWidth(D_monDesCharS) / 2,getObjHeight(D_monDesCharS) / 2);
         D_monDesCharS.setPosition(D_monDesBGS.getPosition().x,D_monDesBGS.getPosition().y - 140);
-        D_monNameDes.setString("Prayuth");
+        D_monNameDes.setString(monster[monsterIndex].name);
         D_monNameDes.setOrigin(getObjWidth(D_monNameDes) / 2,getObjHeight(D_monNameDes) / 2);
         D_monNameDes.setPosition(D_monDesBGS.getPosition().x + 5,D_monDesBGS.getPosition().y - 50);
         D_monStatDes.setString("Level  :     " + to_string(player[now_player].level) + '\n' +
-                             "ATK  :     " + to_string(player[now_player].getAtk()) + '\n' +
-                             "Max HP  :     " + to_string(player[now_player].HpMax()) + '\n' +
-                             "STR  :     " + to_string(player[now_player].std_str) + '\n' +
-                             "VIT  :     " + to_string(player[now_player].std_vit)
+                             "ATK  :     " + to_string(monster[monsterIndex].stat[4]) + '\n' +
+                             "Max HP  :     " + to_string(monster[monsterIndex].maxhp) + '\n' +
+                             "STR  :     " + to_string(monster[monsterIndex].stat[0]) + '\n' +
+                             "VIT  :     " + to_string(monster[monsterIndex].stat[3])
                              );
-        D_monStatDesR.setString("DEF  :     " + to_string(player[now_player].getDef()) + "\n\n" +
-                              "AGI  :     " + to_string(player[now_player].std_agi) + '\n' +
-                              "LUK  :     " + to_string(player[now_player].std_luk)
+        D_monStatDesR.setString("DEF  :     " + to_string(monster[monsterIndex].stat[6]) + "\n\n" +
+                              "AGI  :     " + to_string(monster[monsterIndex].stat[1]) + '\n' +
+                              "LUK  :     " + to_string(monster[monsterIndex].stat[2])
                               );
         D_monStatDes.setPosition(D_monDesBGS.getPosition().x - 210,D_monDesBGS.getPosition().y);
         D_monStatDesR.setPosition(D_monDesBGS.getPosition().x + 35,D_monDesBGS.getPosition().y + 37);
@@ -2107,10 +2178,11 @@ void Game::dungeon(int monster){
 }
 
 void Game::updateDungeon(){
-    D_monName.setString("Prayuth");
+    cout << "turn : " << fightTurn << " dun state : " << dunStates << "\n";
+    D_monName.setString(monster[monsterIndex].name);
     D_monName.setOrigin(getObjWidth(D_monName) / 2,getObjHeight(D_monName) / 2);
     D_monName.setPosition(D_monsterFaceS.getPosition().x,UI_name.getPosition().y);
-    D_monLevel.setString("LV. 10");
+    D_monLevel.setString("LV. " + to_string(monster[monsterIndex].lv));
     D_monLevel.setOrigin(getObjWidth(D_monLevel),0);
     D_monLevel.setPosition(windowWidth - UI_level.getPosition().x,UI_level.getPosition().y);
     D_playerChar.setTexture(charTexture[player[now_player].character_number]);
@@ -2122,13 +2194,13 @@ void Game::updateDungeon(){
     D_monsterFaceS.setTexture(D_monsterFace[monsterIndex]);
     D_monsterFaceS.setOrigin(getObjWidth(D_monsterFaceS) / 2,getObjHeight(D_monsterFaceS) / 2);
     D_monsterFaceS.setPosition(windowWidth - 110,110);
-    D_monHpBar.setScale(1,1);
+    D_monHpBar.setScale((double)monster[monsterIndex].stat[5] / monster[monsterIndex].maxhp,1);
     D_monHpBar.setPosition(windowWidth - UI_hpBarS.getPosition().x - getObjWidth(D_monHpBar) + 130,UI_hpBarS.getPosition().y);
     D_monHpBorder.setOrigin(getObjWidth(D_monHpBorder),0);
     D_monHpBorder.setPosition(windowWidth - UI_hpBorderS.getPosition().x + 130,UI_hpBorderS.getPosition().y);
     D_monMaxHp.setOrigin(getObjWidth(D_monMaxHp),0);
     D_monMaxHp.setPosition(windowWidth - UI_maxHpS.getPosition().x + 130,UI_maxHpS.getPosition().y);
-    D_monHpValue.setString("100/100");
+    D_monHpValue.setString(to_string(monster[monsterIndex].stat[5]) + "/" + to_string(monster[monsterIndex].maxhp));
     D_monHpValue.setOrigin(getObjWidth(D_monHpValue),0);
     D_monHpValue.setPosition(D_monMaxHp.getPosition().x - 55,UI_hpValue.getPosition().y);
     D_monHpText.setOrigin(getObjWidth(D_monHpText),0);
@@ -2137,7 +2209,7 @@ void Game::updateDungeon(){
     D_playerRPS.setPosition(windowMidWidth() - 500,windowMidHeight());
     D_monsterRPS.setOrigin(getObjWidth(D_monsterRPS) / 2,getObjHeight(D_monsterRPS) / 2);
     D_monsterRPS.setPosition(windowMidWidth() + 500,windowMidHeight());
-    if(fightTurn % 2 == 0)D_Turn.setString("Your Turn");
+    if(fightTurn == 0)D_Turn.setString("Your Turn");
     else D_Turn.setString("Enemy Turn");
     D_Turn.setOrigin(getObjWidth(D_Turn) / 2,getObjHeight(D_Turn) / 2);
     D_Turn.setPosition(windowMidWidth(),windowMidHeight() - 400);
@@ -2146,34 +2218,52 @@ void Game::updateDungeon(){
         this->gameWindow->draw(D_monHpValue);
     }
     switch(dunStates){
+        case 7:
+            playerDamage = player[now_player].getAtk();
+            monsterDamage = monster[monsterIndex].stat[4];
+            if(playerSpeed >= monsterSpeed){
+                fightTurn = 0;
+                critP = rand() % 100 + 1;
+                if(critP <= player[now_player].getLuk() * 3)playerDamage *= 1.5;
+            }
+            else{
+                fightTurn = 1;
+                critP = rand() % 100 + 1;
+                if(critP <= monster[monsterIndex].stat[2] * 3)monsterDamage *= 2;
+            }
+            dunStates = 0;
+            break;
         case 0:
-            this->gameWindow->draw(D_selectR);
-            this->gameWindow->draw(D_selectP);
-            this->gameWindow->draw(D_selectS);
-            if(D_selectR.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
-                D_selectR.setScale(1.05,1.05);
-                if(checkMouseClick()){
-                    D_playerRPS.setTexture(D_rockT);
-                    dunStates = 1;
+            if(fightTurn == 0){
+                this->gameWindow->draw(D_selectR);
+                this->gameWindow->draw(D_selectP);
+                this->gameWindow->draw(D_selectS);
+                if(D_selectR.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+                    D_selectR.setScale(1.05,1.05);
+                    if(checkMouseClick()){
+                        D_playerRPS.setTexture(D_rockT);
+                        dunStates = 1;
+                    }
                 }
-            }
-            else D_selectR.setScale(1,1);
-            if(D_selectP.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
-                D_selectP.setScale(1.05,1.05);
-                if(checkMouseClick()){
-                    D_playerRPS.setTexture(D_paperT);
-                    dunStates = 1;
+                else D_selectR.setScale(1,1);
+                if(D_selectP.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+                    D_selectP.setScale(1.05,1.05);
+                    if(checkMouseClick()){
+                        D_playerRPS.setTexture(D_paperT);
+                        dunStates = 1;
+                    }
                 }
-            }
-            else D_selectP.setScale(1,1);
-            if(D_selectS.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
-                D_selectS.setScale(1.05,1.05);
-                if(checkMouseClick()){
-                    D_playerRPS.setTexture(D_scissorsT);
-                    dunStates = 1;
+                else D_selectP.setScale(1,1);
+                if(D_selectS.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
+                    D_selectS.setScale(1.05,1.05);
+                    if(checkMouseClick()){
+                        D_playerRPS.setTexture(D_scissorsT);
+                        dunStates = 1;
+                    }
                 }
+                else D_selectS.setScale(1,1);
             }
-            else D_selectS.setScale(1,1);
+            else dunStates = 4;
             break;
         case 1:
             randomRPS();
@@ -2186,29 +2276,30 @@ void Game::updateDungeon(){
             waitRPSAni(15);
             break;
         case 3:
-            if(playerDes == enemyDes){}
-            else if(playerDes == 0 && enemyDes == 1)isPlayerWin = false;//enemy win
-            else if(playerDes == 1 && enemyDes == 2)isPlayerWin = false;//enemy win
-            else if(playerDes == 2 && enemyDes == 0)isPlayerWin = false;//enemy win
-            else isPlayerWin = true;//player win
+            if(playerDes == enemyDes)isPlayerWin = 3;//draw
+            else if(playerDes == 0 && enemyDes == 1)isPlayerWin = 0;//enemy win
+            else if(playerDes == 1 && enemyDes == 2)isPlayerWin = 0;//enemy win
+            else if(playerDes == 2 && enemyDes == 0)isPlayerWin = 0;//enemy win
+            else isPlayerWin = 1;//player win
             dunStates = 4;
             break;
         case 4:
-            if(isPlayerWin){
-                if(fightTurn % 2 == 0){
-
-                }
-                else{
-                    player[now_player].hp -= 10;
-                }
+            if(fightTurn == 0){
+                if(isPlayerWin == 1)playerDamage *= 1.25;
+                else if(isPlayerWin == 0)playerDamage *= 0.75;
+                playerDamage -= monster[monsterIndex].stat[6];
+                if(playerDamage > 0)monster[monsterIndex].stat[5] -= playerDamage;
+                cout << "pd " << playerDamage << "\n";
+                if(monster[monsterIndex].stat[5] < 0)monster[monsterIndex].stat[5] = 0;
+                playerSpeed /= 2;
+                monsterSpeed += monster[monsterIndex].stat[1];
             }
-            else{
-                if(fightTurn % 2 == 0){
-
-                }
-                else{
-                    player[now_player].hp -= 20;
-                }
+            else if(fightTurn == 1){
+                monsterDamage -= player[now_player].getDef();
+                if(monsterDamage > 0)player[now_player].hp -= monsterDamage;
+                if(player[now_player].hp < 0)player[now_player].hp = 0;
+                monsterSpeed /= 2;
+                playerSpeed += player[now_player].getAgi();
             }
             dunStates = 5;
             break;
@@ -2216,8 +2307,7 @@ void Game::updateDungeon(){
             checkDeath();
             break;
         case 6:
-            dunStates = 0;
-            fightTurn++;
+            dunStates = 7;
             break;
     };
     if(D_monsterFaceS.getGlobalBounds().contains(mousePos)){
@@ -2239,7 +2329,8 @@ void Game::checkDeath(){
         resetMonster();
         death();
     }
-    else if(1){
+    else if(monster[monsterIndex].stat[5] == 0){
+        //upstat();
         resetMonster();
         getItem();
         if(monsterIndex == 3)upgradeBoss();
@@ -2272,6 +2363,8 @@ void Game::updateGetItem(){
     if(D_getOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
         D_getOk.setScale(1.05,1.05);
         if(checkMouseClick()){
+            player[now_player].exp += getExp();
+            player[now_player].money += getMoney();
             isDun = false;
             isGetItem = false;
             gameStates = 7;
@@ -2289,23 +2382,23 @@ void Game::upgradeBoss(){
 }
 
 int Game::loseMoney(){
-    player[now_player].money -= 100;
+    //player[now_player].money -= 100;
     return 100;
 }
 
 int Game::getMoney(){
-    player[now_player].money += 100;
+    //player[now_player].money += 100;
     return 100;
 }
 
 int Game::loseExp(){
-    player[now_player].exp -= 50;
+    //player[now_player].exp -= 50;
     return 50;
 }
 
 int Game::getExp(){
-    player[now_player].exp += 50;
-    return 50;
+    //player[now_player].exp += 50;
+    return 1000;
 }
 
 void Game::death(){
@@ -2331,6 +2424,8 @@ void Game::updateDeath(){
     if(D_deathOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
         D_deathOk.setScale(1.05,1.05);
         if(checkMouseClick()){
+            player[now_player].exp -= loseExp();
+            player[now_player].money -= loseMoney();
             isDun = false;
             isDeathOpen = false;
             canUsePotion = true;
@@ -2407,7 +2502,7 @@ void Game::updateAskBuy(int index){
         kind = 1;
         innerIndex = index - 8;
     }
-    else if(index < 24){
+    else if(index < 23){
         kind = 2;
         innerIndex = index - 16;
     }
@@ -2416,10 +2511,15 @@ void Game::updateAskBuy(int index){
         if(checkMouseClick()){
             if(player[now_player].money >= shopPriceValue[index]){
                isAskBuyOpen = false;
-               gameStates = 6;
-               if(index > 1){
+               if(index > 1 && index != 23){
                    player[now_player].money -= shopPriceValue[index];
+                   isShopOpen = false;
+                   gameStates = 8;
                    ask(kind,innerIndex);
+               }
+               else if(index == 23){
+                    player[now_player].money -= shopPriceValue[index];
+                    player[now_player].star++;
                }
                else{
                    player[now_player].money -= shopPriceValue[index]*buyNum;
@@ -2488,10 +2588,15 @@ void Game::updateShop(){
                 UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 80);
                 UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
             }
-            else if(i < 24){
+            else if(i < 23){
                 UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 142);
                 UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 112);
                 UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 32);
+            }
+            else if(i == 23){
+                UI_shopName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 80);
+                UI_shopDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 50);
+                UI_shopPrice[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
             }
             if(checkMouseClick()){
                     askBuy(i);
@@ -2552,10 +2657,11 @@ void Game::updateDunAsk(int kind){
     if(UI_dunYes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
         UI_dunYes.setScale(1.1,1.1);
         if(checkMouseClick()){
-            askKind = kind;
-            dunStates = 0;
-            if(player[now_player].getAgi() > 0)fightTurn = 0;
-            else fightTurn = 1;
+            if(kind == 3)askKind = player[now_player].bossIndex;
+            else askKind = kind;
+            playerSpeed = player[now_player].getAgi();
+            monsterSpeed = monster[askKind].stat[1];
+            dunStates = 7;
             isDunAskOpen = false;
             gameStates = 5;
         }
@@ -2604,7 +2710,16 @@ void Game::updateAsk(){
     if(UI_yes.getGlobalBounds().contains(mousePos) && !isMenuOpen){
         UI_yes.setScale(1.1,1.1);
         if(checkMouseClick()){
-            equip = true;
+            switch(askKind){
+                case 0:
+                    player[now_player].weaponIndex = askIndex;
+            break;
+                case 1:
+                    player[now_player].shieldIndex = askIndex;
+            break;
+                case 2:
+                    player[now_player].accessoryIndex = askIndex;
+    };
             isAskOpen = false;
             gameStates = 7;
         }
@@ -2613,32 +2728,12 @@ void Game::updateAsk(){
     if(UI_no.getGlobalBounds().contains(mousePos) &&!isMenuOpen){
         UI_no.setScale(1.1,1.1);
         if(checkMouseClick()){
-            equip = false;
             isAskOpen = false;
             gameStates = 7;
         }
     }
     else UI_no.setScale(1,1);
-    switch(askKind){
-        case 0:
-            if(equip){
-                player[now_player].weaponIndex = askIndex;
-            }
-            equip = false;
-            break;
-        case 1:
-            if(equip){
-                player[now_player].shieldIndex = askIndex;
-            }
-            equip = false;
-            break;
-        case 2:
-            if(equip){
-                player[now_player].accessoryIndex = askIndex;
-            }
-            equip = false;
-            break;
-    };
+
 }
 
 void Game::RandomMoney(){
@@ -2646,6 +2741,9 @@ void Game::RandomMoney(){
 }
 
 void Game::updatePlayingState(){
+    /*cout << player[now_player].NestZ_nowPath << " " << player[now_player].allPath.size() << " " << player[now_player].allPath[player[now_player].allPath.size() - 2] << "\n";
+    for(int i = 0;i < player[now_player].allPath.size();i++)cout << player[now_player].allPath[i] << " ";
+    cout << "\n";*/
     if(gameStates == 1){ //randomDice
         if(!randomStart)diceState();
         else if(randomStart){
@@ -2658,44 +2756,43 @@ void Game::updatePlayingState(){
         player[now_player].moveNum = diceTemp.back();
         while(diceTemp.size() != 1)diceTemp.pop_back();
         randomStart = false;
+        moveTemp = diceNum;
         waitDiceAni(15);
     }
     else if(gameStates == 3){ //Move
-            find_path(diceNum,player[now_player].now_path);
-            Player_choose_path();
-            ablePath.clear();
-            TextGo.clear();
-            gameStates = 4;
+        if(diceNum > 0){
+            NestZwalk(diceNum);
+        }
     }
     else if(gameStates == 4){ //checkPath
-        //if(1)ask(0,4);
-        //if(1)dunAsk(3);
-        int check_path_is = player[now_player].now_player_path_is;//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 : dum3 6 : boos 7;
-        if(check_path_is == 0){
-            shopAsk();
-        }
-        if(check_path_is == 1){
-            RandomMoney();
-        }
-        if(check_path_is == 2){
-            useThisItem(false);
-        }
-        if(check_path_is == 3){
-            Get_Heal(player[now_player]);
-        }
-        if(check_path_is == 4){
-            dunAsk(0);
-        }
-        if(check_path_is == 5){
-            dunAsk(1);
-        }
-        if(check_path_is == 6){
-            dunAsk(2);
-        }
-        if(check_path_is == 7){
-            dunAsk(3);
-        }
-        //if(1)shopAsk();
+        switch(Path[player[now_player].NestZ_nowPath].pathEf){
+            case 0:
+                shopAsk();
+                break;
+            case 1:
+                RandomMoney();
+                gameStates = 7;
+                break;
+            case 2:
+                useThisItem(false);
+                gameStates = 7;
+                break;
+            case 3:
+                //heal
+                gameStates = 7;
+                break;
+            case 4:
+                dunAsk(0);
+                break;
+            case 5:
+                dunAsk(1);
+                break;
+            case 6:
+                dunAsk(2);
+                break;
+            case 7:
+                dunAsk(3);
+        };
     }
     else if(gameStates == 5){ //dungeon
         isDun = true;
@@ -2709,39 +2806,411 @@ void Game::updatePlayingState(){
         gameStates = 1;
         turn++;
     }
+    else if(gameStates == 8){}
 }
 
-void Game::Player_choose_path(){
-    if(ablePath.size() == 1){
-        willGOPath = ablePath.begin();
-    }else if(ablePath.size() > 1){
-        askGo();
+void Game::NestZwalk(int &diceMove){
+    if(player[now_player].NestZ_nowPath == 0)nextPath = Path[player[now_player].NestZ_nowPath].nextPath(-1);
+    else nextPath = Path[player[now_player].NestZ_nowPath].nextPath(player[now_player].allPath[player[now_player].allPath.size() - 2]);
+    if(nextPath.size() == 1){
+        moveDelay(diceMove);
     }
-    path_st path_a;
-    for(int i = 0 ; i < num_allpath ; i++){
-        if(allpath[i].number == willGOPath){
-            path_a = allpath[i];
+    else{
+        moveDelayJunction(diceMove);
+    }
+}
+
+void Game::moveDelay(int &diceMove){
+    totalTime += deltaTime;
+    if(totalTime >= 0.8f){
+        totalTime -= 0.8f;
+        timeTemp.push_back(1);
+        if(player[now_player].NestZ_nowPath == 0)nextPath = Path[player[now_player].NestZ_nowPath].nextPath(-1);
+        else nextPath = Path[player[now_player].NestZ_nowPath].nextPath(player[now_player].allPath[player[now_player].allPath.size() - 2]);
+        player[now_player].NestZ_nowPath = nextPath.back();
+        diceMove--;
+        player[now_player].allPath.push_back(player[now_player].NestZ_nowPath);
+    }
+    if(timeTemp.size() == moveTemp){
+        while(timeTemp.size() != 0)timeTemp.pop_back();
+        totalTime = 0.0f;
+        gameStates = 4;
+    }
+}
+
+void Game::moveDelayJunction(int &diceMove){
+    if(askTemp){
+        isAskGo = true;
+        askTemp = false;
+    }
+    if(!isAskGo){
+        totalTime += deltaTime;
+        if(totalTime >= 0.8f){
+            totalTime -= 0.8f;
+            timeTemp.push_back(1);
+            player[now_player].NestZ_nowPath = playerChoosedPath;
+            diceMove--;
+            player[now_player].allPath.push_back(player[now_player].NestZ_nowPath);
+            askTemp = true;
+        }
+        if(timeTemp.size() == moveTemp){
+            while(timeTemp.size() != 0)timeTemp.pop_back();
+            totalTime = 0.0f;
+            gameStates = 4;
         }
     }
-    player[now_player].now_path = path_a.number;
-    player[now_player].now_player_path_is = path_a.this_path_is;
-
-}
-
-void Game::askGo(){
-    isAskGO = true;
 }
 
 void Game::updateAskGo(){
-    for(int i = 0;i < ablePath.size();i++){
-        this->gameWindow->draw(charSprite[0]);
-        if(TextGo[i].getGlobalBounds().contains(mousePos)){
-            if(checkMouseClick()){
-                willGOPath = ablePath[0].number;
-                isAskGO = false;
-            }
+    if(player[now_player].NestZ_nowPath == 0)nextPath = Path[player[now_player].NestZ_nowPath].nextPath(-1);
+    else nextPath = Path[player[now_player].NestZ_nowPath].nextPath(player[now_player].allPath[player[now_player].allPath.size() - 2]);
+    UI_askGoText.setOrigin(getObjWidth(UI_askGoText) / 2,getObjHeight(UI_askGoText) / 2);
+    UI_askGoText.setPosition(windowMidWidth(),windowMidHeight() - 50);
+    UI_askGoPath[0].setString("Path  " + to_string(nextPath.front()));
+    UI_askGoPath[0].setOrigin(getObjWidth(UI_askGoPath[0]) / 2,getObjHeight(UI_askGoPath[0]) / 2);
+    UI_askGoPath[0].setPosition(windowMidWidth() + 200,windowMidHeight() + 50);
+    UI_askGoPath[1].setString("Path  " + to_string(nextPath.back()));
+    UI_askGoPath[1].setOrigin(getObjWidth(UI_askGoPath[1]) / 2,getObjHeight(UI_askGoPath[1]) / 2);
+    UI_askGoPath[1].setPosition(windowMidWidth() - 200,windowMidHeight() + 50);
+    if(UI_askGoPath[0].getGlobalBounds().contains(mousePos)){
+        UI_askGoPath[0].setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isAskGo = false;
+            playerChoosedPath = nextPath.front();
         }
     }
+    else UI_askGoPath[0].setScale(1,1);
+    if(UI_askGoPath[1].getGlobalBounds().contains(mousePos)){
+        UI_askGoPath[1].setScale(1.05,1.05);
+        if(checkMouseClick()){
+            isAskGo = false;
+            playerChoosedPath = nextPath.back();
+        }
+    }
+    else UI_askGoPath[1].setScale(1,1);
+}
+
+void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 : dum3 6 : boos 7;
+    Path[0] = {-1,1143,1806,-1,-1};
+    Path[0].nextPathNum_1.push_back(1);
+    Path[0].nextPathNum_2.push_back(1);
+
+    Path[1] = {1,988,1806,0,2};
+    Path[1].nextPathNum_1.push_back(2);
+    Path[1].nextPathNum_1.push_back(52);
+    Path[1].nextPathNum_2.push_back(52);
+
+    Path[2] = {4,822,1806,1,3};
+    Path[2].nextPathNum_1.push_back(3);
+    Path[2].nextPathNum_2.push_back(1);
+
+    Path[3] = {4,659,1806,2,4};
+    Path[3].nextPathNum_1.push_back(4);
+    Path[3].nextPathNum_2.push_back(2);
+
+    Path[4] = {1,502,1806,3,5};
+    Path[4].nextPathNum_1.push_back(5);
+    Path[4].nextPathNum_2.push_back(3);
+
+    Path[5] = {4,392,1697,4,6};
+    Path[5].nextPathNum_1.push_back(6);
+    Path[5].nextPathNum_2.push_back(4);
+
+    Path[6] = {5,381,1556,5,7};
+    Path[6].nextPathNum_1.push_back(7);
+    Path[6].nextPathNum_2.push_back(5);
+
+    Path[7] = {0,387,1410,6,8};
+    Path[7].nextPathNum_1.push_back(8);
+    Path[7].nextPathNum_2.push_back(6);
+
+    Path[8] = {0,388,1265,7,9};
+    Path[8].nextPathNum_1.push_back(9);
+    Path[8].nextPathNum_2.push_back(7);
+
+    Path[9] = {3,386,1120,8,10};
+    Path[9].nextPathNum_1.push_back(10);
+    Path[9].nextPathNum_2.push_back(8);
+
+    Path[10] = {6,390,976,9,11};
+    Path[10].nextPathNum_1.push_back(11);
+    Path[10].nextPathNum_2.push_back(9);
+
+    Path[11] = {4,391,829,10,12,53};
+    Path[11].nextPathNum_1.push_back(12);
+    Path[11].nextPathNum_1.push_back(53);
+    Path[11].nextPathNum_2.push_back(10);
+
+    Path[12] = {5,397,690,13,11,53};
+    Path[12].nextPathNum_1.push_back(11);
+    Path[12].nextPathNum_1.push_back(53);
+    Path[12].nextPathNum_2.push_back(13);
+
+    Path[13] = {5,398,549,12,14};
+    Path[13].nextPathNum_1.push_back(14);
+    Path[13].nextPathNum_2.push_back(12);
+
+    Path[14] = {3,400,409,13,15};
+    Path[14].nextPathNum_1.push_back(15);
+    Path[14].nextPathNum_2.push_back(13);
+
+    Path[15] = {0,530,324,14,16};
+    Path[15].nextPathNum_1.push_back(16);
+    Path[15].nextPathNum_2.push_back(14);
+
+    Path[16] = {0,657,246,15,17};
+    Path[16].nextPathNum_1.push_back(17);
+    Path[16].nextPathNum_2.push_back(15);
+
+    Path[17] = {0,788,314,16,18};
+    Path[17].nextPathNum_1.push_back(18);
+    Path[17].nextPathNum_2.push_back(16);
+
+    Path[18] = {6,921,243,17,19};
+    Path[18].nextPathNum_1.push_back(19);
+    Path[18].nextPathNum_2.push_back(17);
+
+    Path[19] = {5,1055,306,18,20};
+    Path[19].nextPathNum_1.push_back(20);
+    Path[19].nextPathNum_2.push_back(18);
+
+    Path[20] = {6,1182,239,19,21};
+    Path[20].nextPathNum_1.push_back(21);
+    Path[20].nextPathNum_2.push_back(19);
+
+    Path[21] = {3,1310,307,20,22};
+    Path[21].nextPathNum_1.push_back(22);
+    Path[21].nextPathNum_2.push_back(20);
+
+    Path[22] = {1,1440,232,21,23};
+    Path[22].nextPathNum_1.push_back(23);
+    Path[22].nextPathNum_2.push_back(21);
+
+    Path[23] = {6,1564,305,22,24};
+    Path[23].nextPathNum_1.push_back(24);
+    Path[23].nextPathNum_2.push_back(22);
+
+    Path[24] = {4,1701,233,23,25};
+    Path[24].nextPathNum_1.push_back(25);
+    Path[24].nextPathNum_2.push_back(23);
+
+    Path[25] = {4,1830,304,24,26};
+    Path[25].nextPathNum_1.push_back(26);
+    Path[25].nextPathNum_2.push_back(24);
+
+    Path[26] = {5,1962,226,25,27};
+    Path[26].nextPathNum_1.push_back(27);
+    Path[26].nextPathNum_2.push_back(25);
+
+    Path[27] = {3,2094,310,26,28};
+    Path[27].nextPathNum_1.push_back(28);
+    Path[27].nextPathNum_2.push_back(26);
+
+    Path[28] = {3,2223,400,27,29,70};
+    Path[28].nextPathNum_1.push_back(29);
+    Path[28].nextPathNum_1.push_back(70);
+    Path[28].nextPathNum_2.push_back(27);
+
+    Path[29] = {1,2377,400,30,28,70};
+    Path[29].nextPathNum_1.push_back(28);
+    Path[29].nextPathNum_1.push_back(70);
+    Path[29].nextPathNum_2.push_back(30);
+
+    Path[30] = {1,2502,378,29,31};
+    Path[30].nextPathNum_1.push_back(31);
+    Path[30].nextPathNum_2.push_back(29);
+
+    Path[31] = {1,2616,464,30,32};
+    Path[31].nextPathNum_1.push_back(32);
+    Path[31].nextPathNum_2.push_back(30);
+
+    Path[32] = {0,2733,452,31,33};
+    Path[32].nextPathNum_1.push_back(33);
+    Path[32].nextPathNum_2.push_back(31);
+
+    Path[33] = {0,2769,700,32,34};
+    Path[33].nextPathNum_1.push_back(34);
+    Path[33].nextPathNum_2.push_back(32);
+
+    Path[34] = {4,2733,847,33,35};
+    Path[34].nextPathNum_1.push_back(35);
+    Path[34].nextPathNum_2.push_back(33);
+
+    Path[35] = {6,2775,997,34,36};
+    Path[35].nextPathNum_1.push_back(36);
+    Path[35].nextPathNum_2.push_back(34);
+
+    Path[36] = {6,2778,1145,35,37};
+    Path[36].nextPathNum_1.push_back(37);
+    Path[36].nextPathNum_2.push_back(35);
+
+    Path[37] = {5,2781,1308,36,38};
+    Path[37].nextPathNum_1.push_back(38);
+    Path[37].nextPathNum_2.push_back(36);
+
+    Path[38] = {4,2664,1394,37,39};
+    Path[38].nextPathNum_1.push_back(39);
+    Path[38].nextPathNum_2.push_back(37);
+
+    Path[39] = {3,2533,1460,38,40};
+    Path[39].nextPathNum_1.push_back(40);
+    Path[39].nextPathNum_2.push_back(38);
+
+    Path[40] = {3,2404,1526,39,41,75};
+    Path[40].nextPathNum_1.push_back(41);
+    Path[40].nextPathNum_1.push_back(75);
+    Path[40].nextPathNum_2.push_back(39);
+
+    Path[41] = {3,2263,1590,42,40,75};
+    Path[41].nextPathNum_1.push_back(40);
+    Path[41].nextPathNum_1.push_back(75);
+    Path[41].nextPathNum_2.push_back(42);
+
+    Path[42] = {4,2154,1713,41,43};
+    Path[42].nextPathNum_1.push_back(43);
+    Path[42].nextPathNum_2.push_back(41);
+
+    Path[43] = {5,1995,1712,42,44};
+    Path[43].nextPathNum_1.push_back(44);
+    Path[43].nextPathNum_2.push_back(42);
+
+    Path[44] = {3,1833,1712,43,45};
+    Path[44].nextPathNum_1.push_back(45);
+    Path[44].nextPathNum_2.push_back(43);
+
+    Path[45] = {0,1704,1635,44,46};
+    Path[45].nextPathNum_1.push_back(46);
+    Path[45].nextPathNum_2.push_back(44);
+
+    Path[46] = {0,1576,1560,45,47};
+    Path[46].nextPathNum_1.push_back(47);
+    Path[46].nextPathNum_2.push_back(45);
+
+    Path[47] = {0,1456,1478,46,48,69};
+    Path[47].nextPathNum_1.push_back(48);
+    Path[47].nextPathNum_1.push_back(69);
+    Path[47].nextPathNum_2.push_back(46);
+
+    Path[48] = {1,1332,1398,49,47,69};
+    Path[48].nextPathNum_1.push_back(69);
+    Path[48].nextPathNum_1.push_back(47);
+    Path[48].nextPathNum_2.push_back(49);
+
+    Path[49] = {1,1206,1328,48,50};
+    Path[49].nextPathNum_1.push_back(50);
+    Path[49].nextPathNum_2.push_back(48);
+
+    Path[50] = {1,1077,1401,49,51};
+    Path[50].nextPathNum_1.push_back(51);
+    Path[50].nextPathNum_2.push_back(49);
+
+    Path[51] = {5,1053,1544,50,52};
+    Path[51].nextPathNum_1.push_back(52);
+    Path[51].nextPathNum_2.push_back(50);
+
+    Path[52] = {5,991,1670,1,51};
+    Path[52].nextPathNum_1.push_back(51);
+    Path[52].nextPathNum_2.push_back(1);
+
+    Path[53] = {1,526,763,54,11,12};
+    Path[53].nextPathNum_1.push_back(11);
+    Path[53].nextPathNum_1.push_back(12);
+    Path[53].nextPathNum_2.push_back(54);
+
+    Path[54] = {4,651,829,53,55};
+    Path[54].nextPathNum_1.push_back(55);
+    Path[54].nextPathNum_2.push_back(53);
+
+    Path[55] = {5,786,755,54,56};
+    Path[55].nextPathNum_1.push_back(56);
+    Path[55].nextPathNum_2.push_back(54);
+
+    Path[56] = {3,906,827,55,57};
+    Path[56].nextPathNum_1.push_back(57);
+    Path[56].nextPathNum_2.push_back(55);
+
+    Path[57] = {3,1032,752,56,58};
+    Path[57].nextPathNum_1.push_back(58);
+    Path[57].nextPathNum_2.push_back(56);
+
+    Path[58] = {7,1197,782,57,59};
+    Path[58].nextPathNum_1.push_back(59);
+    Path[58].nextPathNum_2.push_back(57);
+
+    Path[59] = {7,1374,782,58,60};
+    Path[59].nextPathNum_1.push_back(60);
+    Path[59].nextPathNum_2.push_back(58);
+
+    Path[60] = {7,1545,782,59,61};
+    Path[60].nextPathNum_1.push_back(61);
+    Path[60].nextPathNum_2.push_back(59);
+
+    Path[61] = {7,1717,784,60,62};
+    Path[61].nextPathNum_1.push_back(62);
+    Path[61].nextPathNum_2.push_back(60);
+
+    Path[62] = {7,1893,784,61,63};
+    Path[62].nextPathNum_1.push_back(63);
+    Path[62].nextPathNum_2.push_back(61);
+
+    Path[63] = {3,2058,778,62,64,71};
+    Path[63].nextPathNum_1.push_back(64);
+    Path[63].nextPathNum_1.push_back(71);
+    Path[63].nextPathNum_2.push_back(62);
+
+    Path[64] = {3,2062,928,63,65,72};
+    Path[64].nextPathNum_1.push_back(65);
+    Path[64].nextPathNum_1.push_back(72);
+    Path[64].nextPathNum_2.push_back(63);
+
+    Path[65] = {5,1944,1015,66,64,72};
+    Path[65].nextPathNum_1.push_back(64);
+    Path[65].nextPathNum_1.push_back(72);
+    Path[65].nextPathNum_2.push_back(66);
+
+    Path[66] = {6,1802,1069,65,67};
+    Path[66].nextPathNum_1.push_back(67);
+    Path[66].nextPathNum_2.push_back(65);
+
+    Path[67] = {1,1677,1136,66,68};
+    Path[67].nextPathNum_1.push_back(68);
+    Path[67].nextPathNum_2.push_back(66);
+
+    Path[68] = {3,1558,1220,67,69};
+    Path[68].nextPathNum_1.push_back(69);
+    Path[68].nextPathNum_2.push_back(67);
+
+    Path[69] = {4,1462,1332,68,47,48};
+    Path[69].nextPathNum_1.push_back(47);
+    Path[69].nextPathNum_1.push_back(48);
+    Path[69].nextPathNum_2.push_back(68);
+
+    Path[70] = {5,2259,548,71,28,29};
+    Path[70].nextPathNum_1.push_back(28);
+    Path[70].nextPathNum_1.push_back(29);
+    Path[70].nextPathNum_2.push_back(71);
+
+    Path[71] = {5,2187,700,63,70};
+    Path[71].nextPathNum_1.push_back(70);
+    Path[71].nextPathNum_2.push_back(63);
+
+    Path[72] = {4,2093,1066,73,64,65};
+    Path[72].nextPathNum_1.push_back(64);
+    Path[72].nextPathNum_1.push_back(65);
+    Path[72].nextPathNum_2.push_back(73);
+
+    Path[73] = {4,2215,1155,72,74};
+    Path[73].nextPathNum_1.push_back(74);
+    Path[73].nextPathNum_2.push_back(72);
+
+    Path[74] = {6,2256,1298,73,75};
+    Path[74].nextPathNum_1.push_back(75);
+    Path[74].nextPathNum_2.push_back(73);
+
+    Path[75] = {1,2260,1442,74,40,41};
+    Path[75].nextPathNum_1.push_back(40);
+    Path[75].nextPathNum_1.push_back(41);
+    Path[75].nextPathNum_2.push_back(74);
 }
 
 void Game::waitDiceAni(unsigned int time){
@@ -2785,7 +3254,7 @@ void Game::randomDice(){
     }
 }
 
-void Game::updateLevel(){
+/*void Game::updateLevel(){
     if(player[now_player].level < 30){
         for(int i = 0;i < 29;i++){
             if(player[now_player].exp >= expMax[i]){
@@ -2795,7 +3264,7 @@ void Game::updateLevel(){
         }
     }
     else player[now_player].exp = expMax.back();
-}
+}*/
 
 void Game::updateView(){
     if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3 && camera.getCenter().x < 2040){
@@ -2857,7 +3326,7 @@ void Game::drawUI(){
     UI_name.setOrigin(getObjWidth(UI_name) / 2,getObjHeight(UI_name) / 2);
     UI_charFaceS.setTexture(UI_charFaceT[player[now_player].character_number]);
     UI_charFaceS.setOrigin(getObjWidth(UI_charFaceS) / 2,getObjHeight(UI_charFaceS) / 2);
-    UI_expBarS.setScale((double)player[now_player].exp / expMax[player[now_player].level - 1],1);
+    UI_expBarS.setScale((double)player[now_player].exp / needexp[player[now_player].level - 1],1);
     UI_hpBarS.setScale((double)player[now_player].hp / player[now_player].HpMax(),1);
     UI_hpText.setPosition(UI_hpBorderS.getPosition().x - 130,UI_hpBorderS.getPosition().y);
     UI_hpValue.setPosition(UI_hpBorderS.getPosition().x + ((getObjWidth(UI_hpBorderS) / 2) - getObjWidth(UI_hpValue) / 2),UI_hpBorderS.getPosition().y + ((getObjHeight(UI_hpBorderS) / 2) - getObjHeight(UI_hpValue) / 2) - 17);
@@ -2877,7 +3346,7 @@ void Game::drawUI(){
         UI_playerNameDes.setOrigin(getObjWidth(UI_playerNameDes) / 2,getObjHeight(UI_playerNameDes) / 2);
         UI_playerNameDes.setPosition(UI_playerDesBGS.getPosition().x + 5,UI_playerDesBGS.getPosition().y - 70);
         UI_statDes.setString("Level  :     " + to_string(player[now_player].level) + '\n' +
-                             "Class  :     " + '\n' +
+                             "Class  :     " + characters[player[now_player].character_number].clas + '\n' +
                              "ATK  :     " + to_string(player[now_player].getAtk()) + '\n' +
                              "Max HP  :     " + to_string(player[now_player].HpMax()) + '\n' +
                              "STR  :     " + to_string(player[now_player].std_str) + "  +  " + to_string((player[now_player].accessoryIndex > -1 ? accessory[player[now_player].accessoryIndex].extra_str:0) +
@@ -2943,15 +3412,15 @@ void Game::drawUI(){
         this->gameWindow->draw(UI_hpSValue);
         this->gameWindow->draw(UI_hpLValue);
         this->gameWindow->draw(UI_swordS);
-        this->gameWindow->draw(UI_shieldS);
-        this->gameWindow->draw(UI_accS);
+        if(player[now_player].shieldIndex != -1)this->gameWindow->draw(UI_shieldS);
+        if(player[now_player].accessoryIndex != -1)this->gameWindow->draw(UI_accS);
     }
     if(!isMenuOpen)updateUI();
 }
 
 void Game::updateUI(){
     UI_hpValue.setString(to_string(player[now_player].hp) + "/" + to_string(player[now_player].HpMax()));
-    UI_expValue.setString(to_string(player[now_player].exp) + "/" + to_string(expMax[player[now_player].level]));
+    UI_expValue.setString(to_string(player[now_player].exp) + "/" + to_string(needexp[player[now_player].level - 1]));
     for(int i = 0;i < 10;i++){
         if(player[now_player].weaponIndex != -1){
             UI_swordName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 90);
@@ -2962,8 +3431,8 @@ void Game::updateUI(){
             UI_shieldDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 60);
         }
         if(player[now_player].accessoryIndex != -1){
-        UI_accDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 92);
-        UI_accName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 122);
+            UI_accDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 92);
+            UI_accName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 122);
         }
         if(i < 2){
             UI_potionName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 60);
@@ -3052,49 +3521,6 @@ void Game::updateTurn(){
     now_player = turn % players;
 }
 
-void Game::cal_path(path_st now_path, int can_walk){
-    path_st next_path;
-    if(can_walk == 0){
-        int temp = ablePath.size();
-        cout << now_path.number << " ";
-        ablePath.insert(now_path);
-        if(temp < ablePath.size()){
-            UI_t1.setString(to_string(now_path.number) + "kuyuyuyuyuyu");
-            UI_t1.setFillColor(Color::Black);
-            UI_t1.setOutlineColor(Color::White);
-            UI_t1.setOutlineThickness(2.5);
-            UI_t1.setFont(menuFont);
-            UI_t1.setCharacterSize(UIFontSize - 5);
-            UI_t1.setPosition(500,500);
-            TextGo.push_back(UI_t1);
-            cout << TextGo.size() << "\n";
-        }
-
-    }else{
-        for(int i = 0 ; i < now_path.nextpath.size() ; i++){
-            for(int j = 0 ; j < num_allpath ;j++){
-                if(now_path.nextpath[i] == allpath[j].number){
-                    next_path = allpath[j];
-                    cal_path(next_path,can_walk-1);
-                }
-            }
-
-        }
-    }
-}
-
-void Game::find_path(int can_walk,int nowpath_of_player){
-    path_st now_path;
-    for(int i = 0 ; i < num_allpath ; i++){
-        if(allpath[i].number == nowpath_of_player){
-            now_path = allpath[i];
-            break;
-        }
-    }
-    //cout << now_path.number << endl;
-    cal_path(now_path,can_walk);
-}
-
 void Game::setItemStat(){
     sword[0].name_object = "Fist";                                   sword[0].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[0].sword_stat[0] = 0;sword[0].sword_stat[1] = 0;sword[0].sword_stat[2] = 0;
     sword[1].name_object = "Durandal";     sword[1].price = 10;      sword[1].Des = "STR + 0\nAGI + 0\nLUK + 0";       sword[1].sword_stat[0] = 2;sword[1].sword_stat[1] = 0;sword[1].sword_stat[2] = 1;
@@ -3128,9 +3554,33 @@ void Game::setItemStat(){
     accessory[4].name = "LUCKY";          accessory[4].price = 10;  accessory[4].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[4].extra_agi = 1;accessory[4].extra_atk = 0;accessory[4].extra_luck = 10;accessory[4].extra_str = 0;accessory[4].extra_vit = 1;
     accessory[5].name = "Power stone";     accessory[5].price = 10;  accessory[5].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 7"; accessory[5].extra_agi = -5;accessory[5].extra_atk = 14;accessory[5].extra_luck = -2;accessory[5].extra_str = 5;accessory[5].extra_vit = 7;
     accessory[6].name = "Mystery";        accessory[6].price = 10;   accessory[6].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 6"; accessory[6].extra_agi = 6;accessory[6].extra_atk =6;accessory[6].extra_luck = 6;accessory[6].extra_str = 6;accessory[6].extra_vit = 6;
-    accessory[7].name = "Blood crystal";  accessory[7].price = 10;   accessory[7].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 15"; accessory[7].extra_agi = 10;accessory[7].extra_atk = 0;accessory[7].extra_luck = 5;accessory[7].extra_str = -2;accessory[7].extra_vit = -15;
+    accessory[7].name = "Blood crystal";                               accessory[7].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 15"; accessory[7].extra_agi = 10;accessory[7].extra_atk = 0;accessory[7].extra_luck = 5;accessory[7].extra_str = -2;accessory[7].extra_vit = -15;
     accessory[8].name = "Darkness totem";                            accessory[8].Des = "AGI + 7\nATK + 15\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[8].extra_agi = 7;accessory[8].extra_atk = 15;accessory[8].extra_luck = 7;accessory[8].extra_str = 7;accessory[8].extra_vit = 1;
     accessory[9].name = "WHOSYOURDADDY";                             accessory[9].Des = "AGI + 17\nATK + 20\nLUK + 15\nSTR + 10\nVIT + 10";accessory[9].extra_agi = 17;accessory[9].extra_atk = 20;accessory[9].extra_luck = 15;accessory[9].extra_str = 10;accessory[9].extra_vit = 10;
+}
+
+void Game::initMob(){
+	characters[0].clas="Berserker";characters[0].stat[0]=15;characters[0].stat[1]=5;characters[0].stat[2]=3;
+	characters[0].stat[3]=7;characters[0].stat[4]=5;characters[0].stat[5]=75;
+	characters[1].clas="HolyKnight";characters[1].stat[0]=8;characters[1].stat[1]=7;characters[1].stat[2]=3;
+	characters[1].stat[3]=13;characters[1].stat[4]=5;characters[1].stat[5]=40;
+	characters[2].clas="Thief";characters[2].stat[0]=5;characters[2].stat[1]=10;characters[2].stat[2]=14;
+	characters[2].stat[3]=5;characters[2].stat[4]=5;characters[2].stat[5]=25;
+	characters[3].clas="B";characters[3].stat[0]=7;characters[3].stat[1]=3;characters[3].stat[2]=10;
+	characters[3].stat[3]=10;characters[3].stat[4]=5;characters[3].stat[5]=35;
+	characters[4].clas="B1";characters[4].stat[0]=10;characters[4].stat[1]=10;characters[4].stat[2]=3;
+	characters[4].stat[3]=7;characters[4].stat[4]=5;characters[4].stat[5]=50;
+	characters[5].clas="B2";characters[5].stat[0]=6;characters[5].stat[1]=6;characters[5].stat[2]=6;
+	characters[5].stat[3]=6;characters[5].stat[4]=6;characters[5].stat[5]=30;
+
+	//atk hp agi luk def
+    monster[0].name = "m1";monster[0].stat[0]=3;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=15;monster[0].stat[5]=1;monster[0].stat[6]=6;monster[0].lv=5;
+	monster[1].name = "m1";monster[1].stat[0]=6;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=30;monster[1].stat[5]=1;monster[1].stat[6]=12;monster[1].lv=15;
+	monster[2].name = "m1";monster[2].stat[0]=10;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=50;monster[2].stat[5]=1200;monster[2].stat[6]=18;monster[2].lv=20;
+	monster[3].name = "m1";monster[3].stat[0]=16;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=80;monster[3].stat[5]=3000;monster[3].stat[6]=22;monster[3].lv=30;
+	monster[4].name = "m1";monster[4].stat[0]=20;monster[4].stat[1]=29;monster[3].stat[2]=25;monster[3].stat[3]=350;monster[3].stat[4]=100;monster[3].stat[5]=3500;monster[3].stat[6]=24;monster[4].lv=35;
+	monster[5].name = "m1";monster[5].stat[0]=24;monster[5].stat[1]=31;monster[3].stat[2]=27;monster[3].stat[3]=400;monster[3].stat[4]=120;monster[3].stat[5]=4000;monster[3].stat[6]=26;monster[5].lv=40;
+	monster[0].name = "m1";monster[0].maxhp = 400;monster[1].maxhp = 800;monster[2].maxhp = 1200;monster[3].maxhp = 3000;monster[4].maxhp = 3500;monster[5].maxhp=4000;
 }
 
 void Game::get_item_boss(){
@@ -3244,4 +3694,116 @@ void Game::Get_Heal(Player & that_player){
         }
     }
 }
+
+
+void Game::upstat(){
+	//0 lv 1nowexp 2needexp
+			int x=0;
+			if(player[now_player].exp>=(needexp[player[now_player].level-1])){
+				player[now_player].level++;
+				player[now_player].exp=player[now_player].exp-(needexp[player[now_player].level-1]);
+				needexp[player[now_player].level-1]=(player[now_player].level-1)*50+100;
+				x++;
+			}
+			if(player[now_player].exp<0){
+				if(player[now_player].level==1){
+					player[now_player].exp==0;
+				}
+				player[now_player].level--;
+				player[now_player].exp+=(needexp[player[now_player].level-1]);
+				x--;
+			}
+        if(x>1){
+	 	if(player[now_player].character_number==0){
+			player[now_player].std_str+=3;
+			player[now_player].std_vit+=2;
+			player[now_player].std_agi+=2;
+			player[now_player].std_luk+=1;
+			player[now_player].std_atk+=15;
+		}
+	else if(player[now_player].character_number==1){
+			player[now_player].std_str+=2;
+			player[now_player].std_vit+=3;
+			player[now_player].std_agi+=2;
+			player[now_player].std_luk+=1;
+			player[now_player].std_atk+=10;
+		}
+	else if(player[now_player].character_number==2){
+            cout<<"luy";
+			player[now_player].std_str+=2;
+			player[now_player].std_vit+=1;
+			player[now_player].std_agi+=3;
+			player[now_player].std_luk+=2;
+			player[now_player].std_atk+=10;
+		}
+	else if(player[now_player].character_number==3){
+			player[now_player].std_str+=1;
+			player[now_player].std_vit+=3;
+			player[now_player].std_agi+=3;
+			player[now_player].std_luk+=1;
+			player[now_player].std_atk+=5;
+		}
+	else if(player[now_player].character_number==4){
+			player[now_player].std_str+=3;
+			player[now_player].std_vit+=1;
+			player[now_player].std_agi+=1;
+			player[now_player].std_luk+=3;
+			player[now_player].std_atk+=15;
+		}
+	else if(player[now_player].character_number==5){
+			player[now_player].std_str+=2;
+			player[now_player].std_vit+=2;
+			player[now_player].std_agi+=2;
+			player[now_player].std_luk+=2;
+			player[now_player].std_atk+=10;
+		}
+		x=x-1;
+	}
+		if(x<0){
+	 	if(player[now_player].character_number==0){
+			player[now_player].std_str-=3;
+			player[now_player].std_vit-=2;
+			player[now_player].std_agi-=2;
+			player[now_player].std_luk-=1;
+			player[now_player].std_atk-=15;
+		}
+        else if(player[now_player].character_number==1){
+			player[now_player].std_str-=2;
+			player[now_player].std_vit-=3;
+			player[now_player].std_agi-=2;
+			player[now_player].std_luk-=1;
+			player[now_player].std_atk-=10;
+		}
+	else if(player[now_player].character_number==2){
+			player[now_player].std_str-=2;
+			player[now_player].std_vit-=1;
+			player[now_player].std_agi-=3;
+			player[now_player].std_luk-=2;
+			player[now_player].std_atk-=10;
+		}
+	else if(player[now_player].character_number==3){
+			player[now_player].std_str-=1;
+			player[now_player].std_vit-=3;
+			player[now_player].std_agi-=3;
+			player[now_player].std_luk-=1;
+			player[now_player].std_atk-=5;
+		}
+	else if(player[now_player].character_number==4){
+			player[now_player].std_str-=3;
+			player[now_player].std_vit-=1;
+			player[now_player].std_agi-=1;
+			player[now_player].std_luk-=3;
+			player[now_player].std_atk-=15;
+		}
+	else if(player[now_player].character_number==5){
+			player[now_player].std_str-=2;
+			player[now_player].std_vit-=2;
+			player[now_player].std_agi-=2;
+			player[now_player].std_luk-=2;
+			player[now_player].std_atk-=10;
+		}
+		x=x+1;
+	}
+}
+
 #endif
