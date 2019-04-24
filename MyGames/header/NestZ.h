@@ -374,6 +374,7 @@ class Game{
         int playerDamage;
         int monsterDamage;
         int critP;
+        int defhp;
         bool randomStart;
         bool isBagOpen;
         bool isDesOpen;
@@ -415,6 +416,7 @@ class Game{
         int askIndex;
         int buyNum;
         int playerChoosedPath;
+        int x=0;
         unsigned int moveTemp;
         Text UI_name;
         Text UI_hpText;
@@ -1999,7 +2001,6 @@ void Game::initPlayingVariables(){
 void Game::drawPlaying(){
     updateTurn();
     upstat();
-    cout<<player[now_player].std_str;
     this->gameWindow->setView(camera);
     if(!isDun){
         this->gameWindow->draw(mapSprite);
@@ -2326,14 +2327,10 @@ void Game::updateDungeon(){
 void Game::checkDeath(){
     if(player[now_player].hp == 0){
         canUsePotion = false;
-        resetMonster();
         death();
     }
     else if(monster[monsterIndex].stat[5] == 0){
-        //upstat();
-        resetMonster();
         getItem();
-        if(monsterIndex == 3)upgradeBoss();
     }
     else{
         dunStates = 6;
@@ -2373,13 +2370,7 @@ void Game::updateGetItem(){
     else D_getOk.setScale(1,1);
 }
 
-void Game::resetMonster(){
 
-}
-
-void Game::upgradeBoss(){
-
-}
 
 int Game::loseMoney(){
     //player[now_player].money -= 100;
@@ -2393,12 +2384,12 @@ int Game::getMoney(){
 
 int Game::loseExp(){
     //player[now_player].exp -= 50;
-    return 50;
+    return 1000;
 }
 
 int Game::getExp(){
     //player[now_player].exp += 50;
-    return 1000;
+    return 100000;
 }
 
 void Game::death(){
@@ -2661,9 +2652,13 @@ void Game::updateDunAsk(int kind){
             else askKind = kind;
             playerSpeed = player[now_player].getAgi();
             monsterSpeed = monster[askKind].stat[1];
+            for(int i=0;i<6;i++){
+                 monster[i].stat[5]=monster[i].maxhp;
+            }
             dunStates = 7;
             isDunAskOpen = false;
             gameStates = 5;
+
         }
     }
     else UI_dunYes.setScale(1,1);
@@ -3254,18 +3249,6 @@ void Game::randomDice(){
     }
 }
 
-/*void Game::updateLevel(){
-    if(player[now_player].level < 30){
-        for(int i = 0;i < 29;i++){
-            if(player[now_player].exp >= expMax[i]){
-                player[now_player].exp -= expMax[i];
-                player[now_player].level = i + 1;
-            }
-        }
-    }
-    else player[now_player].exp = expMax.back();
-}*/
-
 void Game::updateView(){
     if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3 && camera.getCenter().x < 2040){
         camera.move(horizontalScrollSpeed,0);
@@ -3574,9 +3557,9 @@ void Game::initMob(){
 	characters[5].stat[3]=6;characters[5].stat[4]=6;characters[5].stat[5]=30;
 
 	//atk hp agi luk def
-    monster[0].name = "m1";monster[0].stat[0]=3;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=15;monster[0].stat[5]=1;monster[0].stat[6]=6;monster[0].lv=5;
-	monster[1].name = "m1";monster[1].stat[0]=6;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=30;monster[1].stat[5]=1;monster[1].stat[6]=12;monster[1].lv=15;
-	monster[2].name = "m1";monster[2].stat[0]=10;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=50;monster[2].stat[5]=1200;monster[2].stat[6]=18;monster[2].lv=20;
+    monster[0].name = "m1";monster[0].stat[0]=3;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=15;monster[0].stat[5]=150;monster[0].stat[6]=6;monster[0].lv=5;
+	monster[1].name = "m1";monster[1].stat[0]=6;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=300;monster[1].stat[5]=1000;monster[1].stat[6]=12;monster[1].lv=15;
+	monster[2].name = "m1";monster[2].stat[0]=10;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=500;monster[2].stat[5]=1200;monster[2].stat[6]=18;monster[2].lv=20;
 	monster[3].name = "m1";monster[3].stat[0]=16;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=80;monster[3].stat[5]=3000;monster[3].stat[6]=22;monster[3].lv=30;
 	monster[4].name = "m1";monster[4].stat[0]=20;monster[4].stat[1]=29;monster[3].stat[2]=25;monster[3].stat[3]=350;monster[3].stat[4]=100;monster[3].stat[5]=3500;monster[3].stat[6]=24;monster[4].lv=35;
 	monster[5].name = "m1";monster[5].stat[0]=24;monster[5].stat[1]=31;monster[3].stat[2]=27;monster[3].stat[3]=400;monster[3].stat[4]=120;monster[3].stat[5]=4000;monster[3].stat[6]=26;monster[5].lv=40;
@@ -3698,28 +3681,38 @@ void Game::Get_Heal(Player & that_player){
 
 void Game::upstat(){
 	//0 lv 1nowexp 2needexp
-			int x=0;
-			if(player[now_player].exp>=(needexp[player[now_player].level-1])){
+            if(player[now_player].level<30){
+                if(player[now_player].exp>=(needexp[player[now_player].level-1])){
 				player[now_player].level++;
 				player[now_player].exp=player[now_player].exp-(needexp[player[now_player].level-1]);
 				needexp[player[now_player].level-1]=(player[now_player].level-1)*50+100;
-				x++;
+				defhp=player[now_player].HpMax();
+                x++;
 			}
-			if(player[now_player].exp<0){
+        }
+        else{ player[now_player].exp=1550;
+
+        }
+            if(player[now_player].exp<0){
 				if(player[now_player].level==1){
-					player[now_player].exp==0;
+					player[now_player].exp=0;
+					player[now_player].hp=player[now_player].HpMax()/2;
 				}
-				player[now_player].level--;
+            else{player[now_player].level--;
 				player[now_player].exp+=(needexp[player[now_player].level-1]);
+				player[now_player].hp=player[now_player].HpMax()/2;
 				x--;
+				}
 			}
-        if(x>1){
+        if(x>=1){
 	 	if(player[now_player].character_number==0){
 			player[now_player].std_str+=3;
 			player[now_player].std_vit+=2;
 			player[now_player].std_agi+=2;
 			player[now_player].std_luk+=1;
 			player[now_player].std_atk+=15;
+            player[now_player].hp+=(player[now_player].HpMax()-defhp);
+
 		}
 	else if(player[now_player].character_number==1){
 			player[now_player].std_str+=2;
@@ -3727,14 +3720,15 @@ void Game::upstat(){
 			player[now_player].std_agi+=2;
 			player[now_player].std_luk+=1;
 			player[now_player].std_atk+=10;
+            player[now_player].hp+=(player[now_player].HpMax()-defhp);
 		}
 	else if(player[now_player].character_number==2){
-            cout<<"luy";
 			player[now_player].std_str+=2;
 			player[now_player].std_vit+=1;
 			player[now_player].std_agi+=3;
 			player[now_player].std_luk+=2;
 			player[now_player].std_atk+=10;
+            player[now_player].hp+=(player[now_player].HpMax()-defhp);
 		}
 	else if(player[now_player].character_number==3){
 			player[now_player].std_str+=1;
@@ -3742,6 +3736,7 @@ void Game::upstat(){
 			player[now_player].std_agi+=3;
 			player[now_player].std_luk+=1;
 			player[now_player].std_atk+=5;
+            player[now_player].hp+=(player[now_player].HpMax()-defhp);
 		}
 	else if(player[now_player].character_number==4){
 			player[now_player].std_str+=3;
@@ -3749,6 +3744,7 @@ void Game::upstat(){
 			player[now_player].std_agi+=1;
 			player[now_player].std_luk+=3;
 			player[now_player].std_atk+=15;
+            player[now_player].hp+=(player[now_player].HpMax()-defhp);
 		}
 	else if(player[now_player].character_number==5){
 			player[now_player].std_str+=2;
@@ -3756,6 +3752,7 @@ void Game::upstat(){
 			player[now_player].std_agi+=2;
 			player[now_player].std_luk+=2;
 			player[now_player].std_atk+=10;
+            player[now_player].hp+=(player[now_player].HpMax()-defhp);
 		}
 		x=x-1;
 	}
