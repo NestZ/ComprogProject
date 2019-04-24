@@ -69,13 +69,16 @@ void upstat(){
 	//0 lv 1nowexp 2needexp
 			int x=0;
 			characterss[now_player].lv[2]=(characterss[now_player].lv[0]-1)*50+100;
-			while(characterss[now_player].lv[1]>=chara[now_player].lv[2]){
+			if(characterss[now_player].lv[1]>=chara[now_player].lv[2]){
 			characters[now_player].lv[0]++;
 			characters[now_player].lv[1]=characters[now_player].lv[1]-characters[now_players].lv[2];
 			characters[now_player].lv[2]=(characters[now_player].lv[0]-1)*50+100;
 			x++;
 			}
-			while(chara[now_player].lv[1]<0){
+			if(characters[now_player].lv[1]<0){
+				if(chacracters[now_player].lv[0]==1){
+					character[now_player].lv[1]==0;
+				}
 				characters[now_player].lv[0]--;
 				characters[now_player].lv[2]=(characters[now_player].lv[0]-1)*50+100;
 				characters[nowplayer].lv[1]+=characters[now_player].lv[2];
