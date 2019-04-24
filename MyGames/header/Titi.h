@@ -117,4 +117,270 @@ void get_item_boss(){
     }
 }
 
+int Game::loseMoney(int x_case){
+    int luckyy = player[now_player].getLuk();
+    int x_lucky = rand()%10+15;
+    int x_luckyplayer;
+    x_luckyplayer = (luckyy*0.2)/10;
+    x_lucky += x_luckyplayer;
+    switch (x_case){
+
+        case 0 :
+            if(player[now_player].level >=20 ){
+                return (player[now_player].money*0.3)-x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (player[now_player].money*0.2)-x_lucky;
+            }
+            else{
+                return (player[now_player].money*0.1)-x_lucky;
+            }
+            break;
+
+        case 1 :
+            if(player[now_player].level >=20 ){
+                return (player[now_player].money*0.5)-x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (player[now_player].money*0.3)-x_lucky;
+            }
+            else{
+                return (player[now_player].money*0.2)-x_lucky;
+            }
+            break;
+
+        case 2 :
+            if(player[now_player].level >=20 ){
+                return (player[now_player].money*0.7)-x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (player[now_player].money*0.5)-x_lucky;
+            }
+            else{
+                return (player[now_player].money*0.2)-x_lucky;
+            }
+            break;
+
+        default:
+            if(player[now_player].level >=20 ){
+                return (player[now_player].money*0.8)-x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (player[now_player].money*0.7)-x_lucky;
+            }
+            else{
+                return (player[now_player].money*0.5)-x_lucky;
+            }
+            break;
+
+
+
+    }
+
+    //player[now_player].money -= 100;
+}
+
+int Game::getMoney(int x_case){
+    int luckyy = player[now_player].getLuk();
+    int x_lucky = rand()%10+15;
+    int x_luckyplayer;
+    x_luckyplayer = (luckyy*0.2)/10;
+    x_lucky += x_luckyplayer;
+    switch (x_case){
+
+        case 0 :
+            if(player[now_player].level >=20 ){
+                return (rand()%10+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%15+1)+x_lucky;
+            }
+            else{
+                return (rand()%20+1)+x_lucky;
+            }
+            break;
+
+        case 1 :
+            if(player[now_player].level >=20 ){
+                return (rand()%30+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%40+1)+x_lucky;
+            }
+            else{
+                return (rand()%45+1)+x_lucky;
+            }
+            break;
+
+        case 2 :
+            if(player[now_player].level >=20 ){
+                return (rand()%20+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%30+1)+x_lucky;
+            }
+            else{
+                return (rand()%50+1)+x_lucky;
+            }
+            break;
+
+        case 3:
+            if(player[now_player].level >=20 ){
+                return (rand()%200+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%300+1)+x_lucky;
+            }
+            else{
+                return (rand()%350+1)+x_lucky;
+            }
+            break;
+
+        case 4:
+            if(player[now_player].level >=20 ){
+                return (rand()%300+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%350+1)+x_lucky;
+            }
+            else{
+                return (rand()%400+1)+x_lucky;
+            }
+            break;
+
+
+    }
+    //player[now_player].money += 100;
+
+}
+
+int Game::loseExp(){
+        //i-1 * 50 +100
+  switch (x_case){
+
+        case 0 :
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*100)+800;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*100)+600;
+            }
+            else{
+                return ((player[now_player].level-1)*100)+400;
+            }
+            break;
+
+        case 1 :
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*100)+1200;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*100)+1000;
+            }
+            else{
+                return ((player[now_player].level-1)*100)+600;
+            }
+            break;
+
+        case 2 :
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*100)+1400;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*100)+1200;
+            }
+            else{
+                return ((player[now_player].level-1)*100)+1100;
+            }
+            break;
+
+        case 3:
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*100)+1600;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*100)+1400;
+            }
+            else{
+                return ((player[now_player].level-1)*100)+1100;
+            }
+            break;
+
+        case 4:
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*50)+2200;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*50)+2000;
+            }
+            else{
+                return ((player[now_player].level-1)*50)+1800;
+            }
+            break;
+}
+
+int Game::getExp(){
+    switch (x_case){
+
+        case 0 :
+            if(player[now_player].level >=20 ){
+                return 1400;
+            }
+            else if(player[now_player].level >= 10){
+                return 1000;
+            }
+            else{
+                return 600;
+            }
+            break;
+
+        case 1 :
+            if(player[now_player].level >=20 ){
+                return 1600;
+            }
+            else if(player[now_player].level >= 10){
+                return 1200;
+            }
+            else{
+                return 800;
+            }
+            break;
+
+        case 2 :
+            if(player[now_player].level >=20 ){
+                return 1800;
+            }
+            else if(player[now_player].level >= 10){
+                return 1400;
+            }
+            else{
+                return 1000;
+            }
+            break;
+
+        case 3:
+            if(player[now_player].level >=20 ){
+                return 2600;
+            }
+            else if(player[now_player].level >= 10){
+                return 2200;
+            }
+            else{
+                return 1800;
+            }
+            break;
+
+        case 4:
+            if(player[now_player].level >=20 ){
+                return 2900;
+            }
+            else if(player[now_player].level >= 10){
+                return 2500;
+            }
+            else{
+                return 2100;
+            }
+            break;
+}
+
 #endif // TITI_H
