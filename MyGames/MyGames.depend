@@ -452,12 +452,9 @@
 1552637205 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\source\game.cpp
 	"Game.h"
 
-1554022242 source:c:\users\user\desktop\engineer\comprog project\mygames\main.cpp
-	"header/James.h"
-	"header/NestZ.h"
+1556122018 source:c:\users\user\desktop\engineer\comprog project\mygames\main.cpp
 	"header/Pound.h"
-	"header/Billy.h"
-	"header/Titi.h"
+	"header/NestZ.h"
 	<cstdlib>
 	<ctime>
 
@@ -469,12 +466,14 @@
 	<string>
 	<ctime>
 
-1554011806 c:\users\user\desktop\engineer\comprog project\mygames\header\nestz.h
+1556126018 c:\users\user\desktop\engineer\comprog project\mygames\header\nestz.h
 	<SFML/Graphics.hpp>
 	<string>
 	<iostream>
 	<stack>
 	<vector>
+	<fstream>
+	<cmath>
 
 1552901267 c:\users\user\desktop\engineer\comprog project\mygames\header\pound.h
 
