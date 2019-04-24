@@ -127,18 +127,18 @@ Player::Player(){
     shieldIndex = -1;
     accessoryIndex = -1;
     NestZ_nowPath = 0;
-    bossIndex = 0;
+    bossIndex = 3;
     allPath.push_back(0);
 }
 
 int Player::getAtk(){
-    return std_atk + getStr() * 5 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_atk:0);
+    return std_atk + getStr() * 500 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_atk:0);
 }
 int Player::getDef(){
     return std_def + getVit() + (shieldIndex > -1 ? shield[shieldIndex].shield_stat[1]:0);
 }
 int Player::getAgi(){
-    return std_agi + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_agi:0) + sword[weaponIndex].sword_stat[1];
+    return std_agi*200 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_agi:0) + sword[weaponIndex].sword_stat[1];
 }
 int Player::getStr(){
     return  std_str + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_str:0) + sword[weaponIndex].sword_stat[0];
@@ -2154,21 +2154,29 @@ void Game::drawPlaying(){
 }
 
 void Game::updateMonDes(){//str agi luk vit atk hp def
-        D_monDesCharS.setTexture(D_monChar[monsterIndex]);
+    int monIndex;
+    if(monsterIndex<3){
+        monIndex=monsterIndex;
+    }
+    else {
+        monIndex=player[now_player].bossIndex;
+
+    }
+        D_monDesCharS.setTexture(D_monChar[monIndex]);
         D_monDesCharS.setOrigin(getObjWidth(D_monDesCharS) / 2,getObjHeight(D_monDesCharS) / 2);
         D_monDesCharS.setPosition(D_monDesBGS.getPosition().x,D_monDesBGS.getPosition().y - 140);
-        D_monNameDes.setString(monster[monsterIndex].name);
+        D_monNameDes.setString(monster[monIndex].name);
         D_monNameDes.setOrigin(getObjWidth(D_monNameDes) / 2,getObjHeight(D_monNameDes) / 2);
         D_monNameDes.setPosition(D_monDesBGS.getPosition().x + 5,D_monDesBGS.getPosition().y - 50);
-        D_monStatDes.setString("Level  :     " + to_string(player[now_player].level) + '\n' +
-                             "ATK  :     " + to_string(monster[monsterIndex].stat[4]) + '\n' +
-                             "Max HP  :     " + to_string(monster[monsterIndex].maxhp) + '\n' +
-                             "STR  :     " + to_string(monster[monsterIndex].stat[0]) + '\n' +
-                             "VIT  :     " + to_string(monster[monsterIndex].stat[3])
+        D_monStatDes.setString("Level  :     " + to_string(monster[monIndex].level) + '\n' +
+                             "ATK  :     " + to_string(monster[monIndex].stat[4]) + '\n' +
+                             "Max HP  :     " + to_string(monster[monIndex].maxhp) + '\n' +
+                             "STR  :     " + to_string(monster[monIndex].stat[0]) + '\n' +
+                             "VIT  :     " + to_string(monster[monIndex].stat[3])
                              );
-        D_monStatDesR.setString("DEF  :     " + to_string(monster[monsterIndex].stat[6]) + "\n\n" +
-                              "AGI  :     " + to_string(monster[monsterIndex].stat[1]) + '\n' +
-                              "LUK  :     " + to_string(monster[monsterIndex].stat[2])
+        D_monStatDesR.setString("DEF  :     " + to_string(monster[monIndex].stat[6]) + "\n\n" +
+                              "AGI  :     " + to_string(monster[monIndex].stat[1]) + '\n' +
+                              "LUK  :     " + to_string(monster[monIndex].stat[2])
                               );
         D_monStatDes.setPosition(D_monDesBGS.getPosition().x - 210,D_monDesBGS.getPosition().y);
         D_monStatDesR.setPosition(D_monDesBGS.getPosition().x + 35,D_monDesBGS.getPosition().y + 37);
@@ -2179,7 +2187,6 @@ void Game::dungeon(int monster){
 }
 
 void Game::updateDungeon(){
-    cout << "turn : " << fightTurn << " dun state : " << dunStates << "\n";
     D_monName.setString(monster[monsterIndex].name);
     D_monName.setOrigin(getObjWidth(D_monName) / 2,getObjHeight(D_monName) / 2);
     D_monName.setPosition(D_monsterFaceS.getPosition().x,UI_name.getPosition().y);
@@ -2330,6 +2337,7 @@ void Game::checkDeath(){
         death();
     }
     else if(monster[monsterIndex].stat[5] == 0){
+
         getItem();
     }
     else{
@@ -2362,6 +2370,9 @@ void Game::updateGetItem(){
         if(checkMouseClick()){
             player[now_player].exp += getExp();
             player[now_player].money += getMoney();
+            if(monsterIndex<=5&&monsterIndex>=3){
+                player[now_player].bossIndex++;
+            }
             isDun = false;
             isGetItem = false;
             gameStates = 7;
@@ -2736,9 +2747,6 @@ void Game::RandomMoney(){
 }
 
 void Game::updatePlayingState(){
-    /*cout << player[now_player].NestZ_nowPath << " " << player[now_player].allPath.size() << " " << player[now_player].allPath[player[now_player].allPath.size() - 2] << "\n";
-    for(int i = 0;i < player[now_player].allPath.size();i++)cout << player[now_player].allPath[i] << " ";
-    cout << "\n";*/
     if(gameStates == 1){ //randomDice
         if(!randomStart)diceState();
         else if(randomStart){
@@ -2752,7 +2760,7 @@ void Game::updatePlayingState(){
         while(diceTemp.size() != 1)diceTemp.pop_back();
         randomStart = false;
         moveTemp = diceNum;
-        waitDiceAni(15);
+        waitDiceAni(2);
     }
     else if(gameStates == 3){ //Move
         if(diceNum > 0){
@@ -2780,13 +2788,13 @@ void Game::updatePlayingState(){
                 dunAsk(0);
                 break;
             case 5:
-                dunAsk(1);
+                dunAsk(player[now_player].bossIndex);
                 break;
             case 6:
-                dunAsk(2);
+                dunAsk(player[now_player].bossIndex);
                 break;
             case 7:
-                dunAsk(3);
+                dunAsk(player[now_player].bossIndex);
         };
     }
     else if(gameStates == 5){ //dungeon
@@ -3243,7 +3251,7 @@ void Game::randomDice(){
         this->gameWindow->draw(UI_diceValue);
         diceTemp.push_back(diceNum);
     }
-    if(diceTemp.size() == 26){
+    if(diceTemp.size() == 5){
         gameStates = 2;
         totalTime = 0.0f;
     }
@@ -3561,8 +3569,8 @@ void Game::initMob(){
 	monster[1].name = "m1";monster[1].stat[0]=6;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=300;monster[1].stat[5]=1000;monster[1].stat[6]=12;monster[1].lv=15;
 	monster[2].name = "m1";monster[2].stat[0]=10;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=500;monster[2].stat[5]=1200;monster[2].stat[6]=18;monster[2].lv=20;
 	monster[3].name = "m1";monster[3].stat[0]=16;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=80;monster[3].stat[5]=3000;monster[3].stat[6]=22;monster[3].lv=30;
-	monster[4].name = "m1";monster[4].stat[0]=20;monster[4].stat[1]=29;monster[3].stat[2]=25;monster[3].stat[3]=350;monster[3].stat[4]=100;monster[3].stat[5]=3500;monster[3].stat[6]=24;monster[4].lv=35;
-	monster[5].name = "m1";monster[5].stat[0]=24;monster[5].stat[1]=31;monster[3].stat[2]=27;monster[3].stat[3]=400;monster[3].stat[4]=120;monster[3].stat[5]=4000;monster[3].stat[6]=26;monster[5].lv=40;
+	monster[4].name = "m1";monster[4].stat[0]=20;monster[4].stat[1]=29;monster[4].stat[2]=25;monster[4].stat[3]=350;monster[4].stat[4]=100;monster[4].stat[5]=3500;monster[4].stat[6]=24;monster[4].lv=35;
+	monster[5].name = "m1";monster[5].stat[0]=24;monster[5].stat[1]=31;monster[5].stat[2]=27;monster[5].stat[3]=400;monster[5].stat[4]=120;monster[5].stat[5]=4000;monster[5].stat[6]=26;monster[5].lv=40;
 	monster[0].name = "m1";monster[0].maxhp = 400;monster[1].maxhp = 800;monster[2].maxhp = 1200;monster[3].maxhp = 3000;monster[4].maxhp = 3500;monster[5].maxhp=4000;
 }
 
