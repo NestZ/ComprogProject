@@ -38,13 +38,13 @@ void init (){
 	chara[5].stat[3]=6;chara[5].stat[4]=60;chara[5].stat[5]=30;chara[5].stat[6]=6;
 	
 	str agi luk  vit atk hp def
-	monster[0].stat[0]=3;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=15;monster[0].stat[5]=400;monster[0].stat[6]=6;
-	monster[1].stat[0]=6;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=30;monster[1].stat[5]=800;monster[1].stat[6]=12;
-	monster[2].stat[0]=10;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=50;monster[2].stat[5]=1200;monster[2].stat[6]=18;
-	monster[3].stat[0]=16;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=80;monster[3].stat[5]=3000;monster[3].stat[6]=22;
-	monster[4].stat[0]=20;monster[4].stat[1]=29;monster[3].stat[2]=25;monster[3].stat[3]=350;monster[3].stat[4]=100;monster[3].stat[5]=3500;monster[3].stat[6]=24;
-	monster[5].stat[0]=24;monster[5].stat[1]=31;monster[3].stat[2]=27;monster[3].stat[3]=400;monster[3].stat[4]=120;monster[3].stat[5]=4000;monster[3].stat[6]=26;
-	
+	monster[0].stat[0]=3;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=15;monster[0].stat[5]=400;monster[0].stat[6]=6;monster[0].lv=5;
+	monster[1].stat[0]=6;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=30;monster[1].stat[5]=800;monster[1].stat[6]=12;monster[1].lv=15;
+	monster[2].stat[0]=10;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=50;monster[2].stat[5]=1200;monster[2].stat[6]=18;monster[2].lv=20;
+	monster[3].stat[0]=16;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=80;monster[3].stat[5]=3000;monster[3].stat[6]=22;monster[3].lv=30;
+	monster[4].stat[0]=20;monster[4].stat[1]=29;monster[3].stat[2]=25;monster[3].stat[3]=350;monster[3].stat[4]=100;monster[3].stat[5]=3500;monster[3].stat[6]=24;monster[4].lv=35;
+	monster[5].stat[0]=24;monster[5].stat[1]=31;monster[3].stat[2]=27;monster[3].stat[3]=400;monster[3].stat[4]=120;monster[3].stat[5]=4000;monster[3].stat[6]=26;monster[5].lv=40;
+	monster[0].maxhp=300;monster[1].maxhp=800;monster[2].maxhp=1200;monster[3]=3000;.maxhpmonster[4].maxhp=3500;monster[5].maxhp=4000;
 	
 	character[0].std_str=15; character[0].std_luk=5; character[0].std_agi=3; character[0].std_vit=7; 
 	character[0].std_HP=70; character[0].std_ATK=75; character[0].std_Defense=5;
