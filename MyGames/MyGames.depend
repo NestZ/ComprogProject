@@ -1,12 +1,11 @@
 # depslib dependency file v1.0
-1554715960 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\main.cpp
+1555832978 source:d:\project\cmu cpe\comprog 261102\project\games\mygames\main.cpp
 	"header/Pound.h"
-	"header/Billy.h"
 	"header/NestZ.h"
 	<cstdlib>
 	<ctime>
 
-1555785327 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
+1555849087 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\nestz.h
 	<SFML/Graphics.hpp>
 	<string>
 	<iostream>
@@ -14,6 +13,7 @@
 	<vector>
 	<fstream>
 	<cmath>
+	<set>
 
 1525812018 d:\project\cmu cpe\comprog 261102\project\games\sfml-2.5.1\include\sfml\graphics.hpp
 	<SFML/Window.hpp>
@@ -428,7 +428,7 @@
 
 1554017738 D
 
-1554284892 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\billy.h
+1555830994 d:\project\cmu cpe\comprog 261102\project\games\mygames\header\billy.h
 	<iostream>
 	<vector>
 	<cmath>
