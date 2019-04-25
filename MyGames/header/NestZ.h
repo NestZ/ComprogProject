@@ -129,17 +129,16 @@ Player::Player(){
     NestZ_nowPath = 0;
     bossIndex = 3;
     allPath.push_back(0);
-    hp = 20;
 }
 
 int Player::getAtk(){
-    return std_atk + getStr() *500+ (accessoryIndex > -1 ? accessory[accessoryIndex].extra_atk:0);
+    return std_atk + getStr() * 500 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_atk:0);
 }
 int Player::getDef(){
     return std_def + getVit() + (shieldIndex > -1 ? shield[shieldIndex].shield_stat[1]:0);
 }
 int Player::getAgi(){
-    return std_agi*200 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_agi:0) + sword[weaponIndex].sword_stat[1];
+    return std_agi * 200 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_agi:0) + sword[weaponIndex].sword_stat[1];
 }
 int Player::getStr(){
     return  std_str + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_str:0) + sword[weaponIndex].sword_stat[0];
@@ -151,7 +150,7 @@ int Player::getVit(){
     return std_vit + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_vit:0) + (shieldIndex > -1 ? shield[shieldIndex].shield_stat[0]:0);
 }
 int Player::HpMax(){
-    return getVit()*10;
+    return getVit() * 10;
 }
 
 class Game{
@@ -266,7 +265,7 @@ class Game{
         void setItemStat();
         void RandomMoney();
         void useThisItem(bool);
-        void Get_Heal(Player &);
+        int Get_Heal(Player &);
         void updateAskGo();
         void NestZwalk(int &);
         void setPath();
@@ -275,6 +274,8 @@ class Game{
         void upstat();
         void checkwin();
         void get_item_boss();
+        void Heal();
+        int ranMoney();
     private:
         //Menu
         Vector2i mousePosView;
@@ -381,6 +382,8 @@ class Game{
         int loseE;
         int getm;
         int gete;
+        int healValue;
+        int getMonValue;
         bool randomStart;
         bool isBagOpen;
         bool isDesOpen;
@@ -395,6 +398,8 @@ class Game{
         bool isMonDes;
         bool isGetItem;
         bool isAskGo;
+        bool isHealOpen;
+        bool isGetMonOpen;
         bool canUsePotion;
         bool askTemp;
         bool issetstat=true;
@@ -423,7 +428,7 @@ class Game{
         int askIndex;
         int buyNum;
         int playerChoosedPath;
-        int x=0;
+        int x = 0;
         unsigned int moveTemp;
         Text UI_name;
         Text UI_hpText;
@@ -573,6 +578,13 @@ class Game{
         Text UI_askGoPath[2];
         Text UI_askGoText;
         Texture UI_shopStarT;
+        Text nameOnMap[4];
+        Sprite healWin;
+        Text healText;
+        Text healOk;
+        Sprite getMonWin;
+        Text getMonText;
+        Text getMonOk;
 };
 
 Game::Game(){
@@ -1356,17 +1368,14 @@ void Game::initPlayingVariables(){
     isDeathOpen = false;
     isGetItem = false;
     isAskGo = false;
+    isHealOpen = false;
+    isGetMonOpen = false;
     canUsePotion = true;
     askTemp = true;
     gameStates = 1;
     buyNum = 1;
     diceTemp.push_back(-1);
     RPStempMon.push_back(-1);
-    //expMax.push_back(0);
-    //expMax.push_back(startExp);
-    /*while(expMax.size() != 30){
-        expMax.push_back(expMax.back() * 1.2);
-    }*/
     int sum;
     int n;
     for(int i=0;i<29;i++){
@@ -1415,7 +1424,7 @@ void Game::initPlayingVariables(){
     UI_name.setOutlineThickness(3.5);
     UI_name.setFont(menuFont);
     UI_name.setCharacterSize(UIFontSize);
-    UI_name.setPosition(UI_charFaceS.getPosition().x,UI_charFaceS.getPosition().y + 110);
+    UI_name.setPosition(UI_charFaceS.getPosition().x,UI_charFaceS.getPosition().y + 130);
     UI_level.setFillColor(Color::Black);
     UI_level.setOutlineColor(Color::White);
     UI_level.setOutlineThickness(3.5);
@@ -2003,6 +2012,43 @@ void Game::initPlayingVariables(){
     UI_askGoPath[1].setOutlineThickness(2.5);
     UI_askGoPath[1].setFont(menuFont);
     UI_askGoPath[1].setCharacterSize(UIFontSize - 5);
+    for(int i = 0;i < 4;i++){
+        nameOnMap[i].setFillColor(Color::Black);
+        nameOnMap[i].setOutlineColor(Color::White);
+        nameOnMap[i].setOutlineThickness(2);
+        nameOnMap[i].setFont(menuFont);
+        nameOnMap[i].setCharacterSize(UIFontSize - 10);
+    }
+    healWin.setTexture(miniMenuT);
+    healWin.setOrigin(getObjWidth(healWin) / 2,getObjHeight(healWin) / 2);
+    healWin.setPosition(windowMidWidth(),windowMidHeight());
+    healWin.setScale(1.1,0.4);
+    healWin.setColor(Color(255,255,255,210));
+    healText.setFillColor(Color(0,160,0,255));
+    healText.setOutlineColor(Color::White);
+    healText.setOutlineThickness(2.5);
+    healText.setFont(menuFont);
+    healText.setCharacterSize(UIFontSize - 5);
+    healOk.setFillColor(Color::Black);
+    healOk.setOutlineColor(Color::White);
+    healOk.setOutlineThickness(3);
+    healOk.setFont(menuFont);
+    healOk.setCharacterSize(UIFontSize - 5);
+    getMonWin.setTexture(miniMenuT);
+    getMonWin.setOrigin(getObjWidth(getMonWin) / 2,getObjHeight(getMonWin) / 2);
+    getMonWin.setPosition(windowMidWidth(),windowMidHeight());
+    getMonWin.setScale(1.1,0.4);
+    getMonWin.setColor(Color(255,255,255,210));
+    getMonText.setFillColor(Color(230,230,0,255));
+    getMonText.setOutlineColor(Color::White);
+    getMonText.setOutlineThickness(3.2);
+    getMonText.setFont(menuFont);
+    getMonText.setCharacterSize(UIFontSize - 5);
+    getMonOk.setFillColor(Color::Black);
+    getMonOk.setOutlineColor(Color::White);
+    getMonOk.setOutlineThickness(2.5);
+    getMonOk.setFont(menuFont);
+    getMonOk.setCharacterSize(UIFontSize - 5);
 }
 
 void Game::drawPlaying(){
@@ -2013,13 +2059,45 @@ void Game::drawPlaying(){
     if(!isDun){
         this->gameWindow->draw(mapSprite);
         for(int i = 0;i < players;i++){
+            nameOnMap[i].setString(playerName[i]);
+            nameOnMap[i].setOrigin(getObjWidth(nameOnMap[i]) / 2,getObjHeight(nameOnMap[i]) / 2);
             charOnMap[player[i].character_number].setPosition(Path[player[i].NestZ_nowPath].X,Path[player[i].NestZ_nowPath].Y);
+            nameOnMap[i].setPosition(charOnMap[player[i].character_number].getPosition().x,charOnMap[player[i].character_number].getPosition().y - 170);
             this->gameWindow->draw(charOnMap[player[i].character_number]);
+            this->gameWindow->draw(nameOnMap[i]);
         }
     }
     this->gameWindow->setView(this->gameWindow->RenderTarget::getDefaultView());
     updateEscape();
     updatePlayingState();
+    if(isHealOpen){
+        this->gameWindow->draw(healWin);
+        this->gameWindow->draw(healOk);
+        this->gameWindow->draw(healText);
+        if(healOk.getGlobalBounds().contains(mousePos)){
+            healOk.setScale(1.05,1.05);
+            if(checkMouseClick()){
+                player[now_player].hp += healValue;
+                isHealOpen = false;
+                gameStates = 7;
+            }
+        }
+        else healOk.setScale(1,1);
+    }
+    if(isGetMonOpen){
+        this->gameWindow->draw(getMonWin);
+        this->gameWindow->draw(getMonOk);
+        this->gameWindow->draw(getMonText);
+        if(getMonOk.getGlobalBounds().contains(mousePos)){
+            getMonOk.setScale(1.05,1.05);
+            if(checkMouseClick()){
+                player[now_player].money += getMonValue;
+                isGetMonOpen = false;
+                gameStates = 7;
+            }
+        }
+        else getMonOk.setScale(1,1);
+    }
     if(isDun){
         this->gameWindow->draw(D_bgS);
         this->gameWindow->draw(D_monsterFaceS);
@@ -2209,9 +2287,9 @@ void Game::updateMonDes(){//str agi luk vit atk hp def
 }
 
 void Game::checkwin(){
-if(player[now_player].star>2){
-    while(state.top() != Menu)state.pop();
-}
+    if(player[now_player].star > 2){
+        while(state.top() != Menu)state.pop();
+    }
 }
 
 void Game::dungeon(int monster){
@@ -2408,7 +2486,6 @@ void Game::updateGetItem(){
     D_getMoneyValue.setOrigin(getObjWidth(D_getMoneyValue) / 2,getObjHeight(D_getMoneyValue) / 2);
     D_getMoneyValue.setPosition(windowMidWidth() + 150,D_getMoney.getPosition().y);
     D_getCoin.setPosition(D_getMoneyValue.getPosition().x + 110,D_getMoneyValue.getPosition().y + 3);
-    cout << monsterIndex << " ";
     if(D_getOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
         D_getOk.setScale(1.05,1.05);
         if(checkMouseClick()){
@@ -2423,132 +2500,125 @@ void Game::updateGetItem(){
 
 int Game::loseMoney(int x_case){
     int luckyy = player[now_player].getLuk();
-    int x_lucky = rand()%10+15;
+    int x_lucky = rand() % 10 + 15;
     int x_luckyplayer;
-    x_luckyplayer = (luckyy*0.2)/10;
+    x_luckyplayer = (luckyy * 0.2) / 10;
     x_lucky += x_luckyplayer;
     switch (x_case){
-
         case 0 :
-            if(player[now_player].level >=20 ){
-                return (player[now_player].money*0.3)-x_lucky;
+            if(player[now_player].level >= 20){
+                return (player[now_player].money * 0.3) - x_lucky;
             }
             else if(player[now_player].level >= 10){
-                return (player[now_player].money*0.2)-x_lucky;
+                return (player[now_player].money * 0.2) -x_lucky;
             }
             else{
-                return (player[now_player].money*0.1)-x_lucky;
+                return (player[now_player].money * 0.1) - x_lucky;
             }
             break;
 
         case 1 :
-            if(player[now_player].level >=20 ){
-                return (player[now_player].money*0.5)-x_lucky;
+            if(player[now_player].level >= 20){
+                return (player[now_player].money * 0.5) - x_lucky;
             }
             else if(player[now_player].level >= 10){
-                return (player[now_player].money*0.3)-x_lucky;
+                return (player[now_player].money * 0.3) - x_lucky;
             }
             else{
-                return (player[now_player].money*0.2)-x_lucky;
+                return (player[now_player].money * 0.2) -x_lucky;
             }
             break;
 
         case 2 :
-            if(player[now_player].level >=20 ){
-                return (player[now_player].money*0.7)-x_lucky;
+            if(player[now_player].level >= 20){
+                return (player[now_player].money * 0.7) - x_lucky;
             }
             else if(player[now_player].level >= 10){
-                return (player[now_player].money*0.5)-x_lucky;
+                return (player[now_player].money * 0.5) - x_lucky;
             }
             else{
-                return (player[now_player].money*0.2)-x_lucky;
+                return (player[now_player].money * 0.2) - x_lucky;
             }
             break;
 
         default:
-            if(player[now_player].level >=20 ){
-                return (player[now_player].money*0.8)-x_lucky;
+            if(player[now_player].level >= 20){
+                return (player[now_player].money * 0.8) - x_lucky;
             }
             else if(player[now_player].level >= 10){
-                return (player[now_player].money*0.7)-x_lucky;
+                return (player[now_player].money * 0.7) - x_lucky;
             }
             else{
-                return (player[now_player].money*0.5)-x_lucky;
+                return (player[now_player].money * 0.5) - x_lucky;
             }
             break;
-
-
-
     }
-
-    //player[now_player].money -= 100;
 }
 
 int Game::getMoney(int x_case){
     int luckyy = player[now_player].getLuk();
-    int x_lucky = rand()%10+15;
+    int x_lucky = rand() % 10 + 15;
     int x_luckyplayer;
-    x_luckyplayer = (luckyy*0.2)/10;
+    x_luckyplayer = (luckyy * 0.2) / 10;
     x_lucky += x_luckyplayer;
     switch (x_case){
-
         case 0 :
-            if(player[now_player].level >=20 ){
-                return (rand()%10+1)+x_lucky;
+            if(player[now_player].level >= 20){
+                return (rand() % 10 + 1) + x_lucky;
             }
             else if(player[now_player].level >= 10){
-                return (rand()%15+1)+x_lucky;
+                return (rand() % 15 + 1)+ x_lucky;
             }
             else{
-                return (rand()%20+1)+x_lucky;
+                return (rand() % 20 + 1) + x_lucky;
             }
             break;
 
         case 1 :
-            if(player[now_player].level >=20 ){
-                return (rand()%30+1)+x_lucky;
+            if(player[now_player].level >= 20){
+                return (rand() % 30 + 1) + x_lucky;
             }
             else if(player[now_player].level >= 10){
-                return (rand()%40+1)+x_lucky;
+                return (rand() % 40 + 1) + x_lucky;
             }
             else{
-                return (rand()%45+1)+x_lucky;
+                return (rand() % 45 + 1) + x_lucky;
             }
             break;
 
         case 2 :
-            if(player[now_player].level >=20 ){
-                return (rand()%20+1)+x_lucky;
+            if(player[now_player].level >= 20 ){
+                return (rand() % 20 + 1) + x_lucky;
             }
             else if(player[now_player].level >= 10){
-                return (rand()%30+1)+x_lucky;
+                return (rand() % 30 + 1) + x_lucky;
             }
             else{
-                return (rand()%50+1)+x_lucky;
+                return (rand() % 50 + 1)+ x_lucky;
             }
             break;
 
         case 3:
-            if(player[now_player].level >=20 ){
-                return (rand()%200+1)+x_lucky;
+            if(player[now_player].level >= 20){
+                return (rand() % 200 + 1) + x_lucky;
             }
             else if(player[now_player].level >= 10){
-                return (rand()%300+1)+x_lucky;
+                return (rand() % 300 + 1) + x_lucky;
             }
             else{
-                return (rand()%350+1)+x_lucky;
+                return (rand() % 350 + 1) + x_lucky;
             }
             break;
 
         case 4:
-            if(player[now_player].level >=20 ){
-                return (rand()%300+1)+x_lucky;
+            if(player[now_player].level >= 20){
+                return (rand() % 300 + 1) + x_lucky;
             }
             else if(player[now_player].level >= 10){
-                return (rand()%350+1)+x_lucky;
+                return (rand() % 350 + 1) + x_lucky;
             }
             else{
-                return (rand()%400+1)+x_lucky;
+                return (rand() % 400 + 1) + x_lucky;
             }
             break;
     }
@@ -2558,67 +2628,68 @@ int Game::getMoney(int x_case){
 int Game::loseExp(int x_case){
     switch (x_case){
         case 0 :
-            if(player[now_player].level >=20 ){
-                return ((player[now_player].level-1)*100)+800;
+            if(player[now_player].level >= 20){
+                return ((player[now_player].level - 1) * 100) + 800;
             }
             else if(player[now_player].level >= 10){
-                return ((player[now_player].level-1)*100)+600;
+                return ((player[now_player].level - 1) * 100) + 600;
             }
             else{
-                return ((player[now_player].level-1)*100)+400;
+                return ((player[now_player].level - 1) * 100) + 400;
             }
             break;
         case 1 :
-            if(player[now_player].level >=20 ){
-                return ((player[now_player].level-1)*100)+1200;
+            if(player[now_player].level >= 20){
+                return ((player[now_player].level - 1) * 100) + 1200;
             }
             else if(player[now_player].level >= 10){
-                return ((player[now_player].level-1)*100)+1000;
+                return ((player[now_player].level - 1) * 100) + 1000;
             }
             else{
-                return ((player[now_player].level-1)*100)+600;
+                return ((player[now_player].level -1 ) * 100) + 600;
             }
             break;
         case 2 :
-            if(player[now_player].level >=20 ){
-                return ((player[now_player].level-1)*100)+1400;
+            if(player[now_player].level >= 20){
+                return ((player[now_player].level - 1) * 100) + 1400;
             }
             else if(player[now_player].level >= 10){
-                return ((player[now_player].level-1)*100)+1200;
+                return ((player[now_player].level - 1) * 100) + 1200;
             }
             else{
-                return ((player[now_player].level-1)*100)+1100;
+                return ((player[now_player].level - 1) * 100) +  1100;
             }
             break;
         case 3:
-            if(player[now_player].level >=20 ){
-                return ((player[now_player].level-1)*100)+1600;
+            if(player[now_player].level >= 20){
+                return ((player[now_player].level - 1) * 100) + 1600;
             }
             else if(player[now_player].level >= 10){
-                return ((player[now_player].level-1)*100)+1400;
+                return ((player[now_player].level - 1) * 100) + 1400;
             }
             else{
-                return ((player[now_player].level-1)*100)+1100;
+                return ((player[now_player].level - 1) * 100) + 1100;
             }
             break;
         case 4:
             if(player[now_player].level >=20 ){
-                return ((player[now_player].level-1)*50)+2200;
+                return ((player[now_player].level - 1) * 50) + 2200;
             }
             else if(player[now_player].level >= 10){
-                return ((player[now_player].level-1)*50)+2000;
+                return ((player[now_player].level - 1) * 50) + 2000;
             }
             else{
-                return ((player[now_player].level-1)*50)+1800;
+                return ((player[now_player].level - 1) * 50) + 1800;
             }
             break;
     };
     return 0;
 }
+
 int Game::getExp(int x_case){
     switch (x_case){
         case 0 :
-            if(player[now_player].level >=20 ){
+            if(player[now_player].level >= 20 ){
                 return 1400;
             }
             else if(player[now_player].level >= 10){
@@ -2629,7 +2700,7 @@ int Game::getExp(int x_case){
             }
             break;
         case 1 :
-            if(player[now_player].level >=20 ){
+            if(player[now_player].level >= 20){
                 return 1600;
             }
             else if(player[now_player].level >= 10){
@@ -2640,7 +2711,7 @@ int Game::getExp(int x_case){
             }
             break;
         case 2 :
-            if(player[now_player].level >=20 ){
+            if(player[now_player].level >= 20){
                 return 1800;
             }
             else if(player[now_player].level >= 10){
@@ -2651,7 +2722,7 @@ int Game::getExp(int x_case){
             }
             break;
         case 3:
-            if(player[now_player].level >=20 ){
+            if(player[now_player].level >= 20){
                 return 2600;
             }
             else if(player[now_player].level >= 10){
@@ -2662,7 +2733,7 @@ int Game::getExp(int x_case){
             }
             break;
         case 4:
-            if(player[now_player].level >=20 ){
+            if(player[now_player].level >=20){
                 return 2900;
             }
             else if(player[now_player].level >= 10){
@@ -2704,6 +2775,8 @@ void Game::updateDeath(){
             isDun = false;
             isDeathOpen = false;
             canUsePotion = true;
+            player[now_player].allPath.push_back(-1);
+            player[now_player].NestZ_nowPath = 0;
             gameStates = 7;
         }
     }
@@ -2937,7 +3010,7 @@ void Game::updateDunAsk(int kind){
             playerSpeed = player[now_player].getAgi();
             monsterSpeed = monster[askKind].stat[1];
             for(int i=0;i<6;i++){
-                 monster[i].stat[5]=monster[i].maxhp;
+                 monster[i].stat[5] = monster[i].maxhp;
             }
             dunStates = 7;
             isDunAskOpen = false;
@@ -3020,7 +3093,33 @@ void Game::updateAsk(){
 }
 
 void Game::RandomMoney(){
-    player[now_player].money += 10 + (rand() % player[now_player].getLuk() * 1.2);
+    getMonValue = ranMoney();
+    gameStates = 8;
+    isGetMonOpen = true;
+    getMonOk.setString("OK");
+    getMonOk.setOrigin(getObjWidth(getMonOk) / 2,getObjHeight(getMonOk) / 2);
+    getMonOk.setPosition(windowMidWidth(),windowMidHeight() + 50);
+    getMonText.setString("You  get   " + to_string(getMonValue) + "   Coins");
+    getMonText.setOrigin(getObjWidth(getMonText) / 2,getObjHeight(getMonText) / 2);
+    getMonText.setPosition(windowMidWidth(),windowMidHeight() - 50);
+}
+
+int Game::ranMoney(){
+    int money = 10 + (rand() % player[now_player].getLuk() * 1.2);
+    //player[now_player].money += money;
+    return money;
+}
+
+void Game::Heal(){
+    healValue = Get_Heal(player[now_player]);
+    gameStates = 8;
+    isHealOpen = true;
+    healOk.setString("OK");
+    healOk.setOrigin(getObjWidth(healOk) / 2,getObjHeight(healOk) / 2);
+    healOk.setPosition(windowMidWidth(),windowMidHeight() + 50);
+    healText.setString("Healed   " + to_string(healValue) + "   HP");
+    healText.setOrigin(getObjWidth(healText) / 2,getObjHeight(healText) / 2);
+    healText.setPosition(windowMidWidth(),windowMidHeight() - 50);
 }
 
 void Game::updatePlayingState(){
@@ -3051,15 +3150,13 @@ void Game::updatePlayingState(){
                 break;
             case 1:
                 RandomMoney();
-                gameStates = 7;
                 break;
             case 2:
                 useThisItem(false);
                 gameStates = 7;
                 break;
             case 3:
-                //heal
-                gameStates = 7;
+                Heal();
                 break;
             case 4:
                 dunAsk(0);
@@ -3291,7 +3388,7 @@ void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 :
     Path[28].nextPathNum_1.push_back(70);
     Path[28].nextPathNum_2.push_back(27);
 
-    Path[29] = {1,2377,400,30,28,70};
+    Path[29] = {1,2377,452,30,28,70};
     Path[29].nextPathNum_1.push_back(28);
     Path[29].nextPathNum_1.push_back(70);
     Path[29].nextPathNum_2.push_back(30);
@@ -3312,7 +3409,7 @@ void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 :
     Path[33].nextPathNum_1.push_back(34);
     Path[33].nextPathNum_2.push_back(32);
 
-    Path[34] = {4,2733,847,33,35};
+    Path[34] = {4,2773,847,33,35};
     Path[34].nextPathNum_1.push_back(35);
     Path[34].nextPathNum_2.push_back(33);
 
@@ -3836,7 +3933,7 @@ void Game::initMob(){
 	characters[2].stat[3]=5;characters[2].stat[4]=5;characters[2].stat[5]=25;
 	characters[3].clas="B";characters[3].stat[0]=7;characters[3].stat[1]=3;characters[3].stat[2]=10;
 	characters[3].stat[3]=10;characters[3].stat[4]=5;characters[3].stat[5]=35;
-	characters[4].clas="B1";characters[4].stat[0]=10;characters[4].stat[1]=10;characters[4].stat[2]=3;
+	characters[4].clas="Merchant";characters[4].stat[0]=10;characters[4].stat[1]=10;characters[4].stat[2]=3;
 	characters[4].stat[3]=7;characters[4].stat[4]=5;characters[4].stat[5]=50;
 	characters[5].clas="B2";characters[5].stat[0]=6;characters[5].stat[1]=6;characters[5].stat[2]=6;
 	characters[5].stat[3]=6;characters[5].stat[4]=6;characters[5].stat[5]=30;
@@ -3879,25 +3976,24 @@ void Game::useThisItem(bool high_grade){
         }
     }
 }
-void Game::Get_Heal(Player & that_player){
+int Game::Get_Heal(Player & that_player){
     int x;
     if(that_player.character_number == 1){
         x = (rand()%20)+1;
         if(that_player.hp + x >  that_player.HpMax()){
-            that_player.hp = that_player.HpMax();
+            return that_player.HpMax() - that_player.hp;
         }else{
-            that_player.hp += x;
+            return x;
         }
     }else{
         x = (rand()%10)+1;
         if(that_player.hp + x > that_player.HpMax()){
-            that_player.hp = that_player.HpMax();
+            return that_player.HpMax() - that_player.hp;
         }else{
-            that_player.hp += x;
+            return x;
         }
     }
 }
-
 
 void Game::upstat(){
 	//0 lv 1nowexp 2needexp
