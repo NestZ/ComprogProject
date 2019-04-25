@@ -2056,7 +2056,7 @@ void Game::initPlayingVariables(){
 void Game::drawPlaying(){
     updateTurn();
     upstat();
-    checkwin();
+    //checkwin();
     this->gameWindow->setView(camera);
     if(!isDun){
         this->gameWindow->draw(mapSprite);
