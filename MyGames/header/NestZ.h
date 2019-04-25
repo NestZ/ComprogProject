@@ -2458,6 +2458,7 @@ void Game::checkDeath(){
         else{
             player[now_player].bossIndex++;
             player[now_player].star++;
+            getItem();
             get_item_boss();
         }
     }
@@ -2492,7 +2493,7 @@ void Game::updateGetItem(){
             player[now_player].exp += gete;
             player[now_player].money += getm;
             isGetItem = false;
-            gameStates = 7;
+            if(monsterIndex < 3)gameStates = 7;
         }
     }
     else D_getOk.setScale(1,1);
