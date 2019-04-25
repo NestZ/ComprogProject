@@ -119,7 +119,7 @@ class Player{
 Player::Player(){
     level = 1;
     exp = 0;
-    money = 0;
+    money = 1000;
     red_potion = 10;
     green_potion = 10;
     star = 0;
@@ -129,10 +129,11 @@ Player::Player(){
     NestZ_nowPath = 0;
     bossIndex = 3;
     allPath.push_back(0);
+    hp = 20;
 }
 
 int Player::getAtk(){
-    return std_atk + getStr() * 500 + (accessoryIndex > -1 ? accessory[accessoryIndex].extra_atk:0);
+    return std_atk + getStr() *500+ (accessoryIndex > -1 ? accessory[accessoryIndex].extra_atk:0);
 }
 int Player::getDef(){
     return std_def + getVit() + (shieldIndex > -1 ? shield[shieldIndex].shield_stat[1]:0);
@@ -222,8 +223,8 @@ class Game{
         bool checkUsedName(string);
         void initMob();
         //Playing
-        int loseExp();
-        int loseMoney();
+        int loseExp(int);
+        int loseMoney(int);
         void drawPlaying();
         void initPlayingVariables();
         void updateView();
@@ -238,7 +239,7 @@ class Game{
         void updatePlayingState();
         void usePotion(int);
         void waitDiceAni(unsigned int);
-        void ask(int,int);
+        void ask(int,int,bool = true);
         void updateAsk();
         void dunAsk(int);
         void updateDunAsk(int);
@@ -259,11 +260,10 @@ class Game{
         void updateMonDes();
         void getItem();
         void updateGetItem();
-        int getMoney();
-        int getExp();
+        int getMoney(int);
+        int getExp(int);
         void initStat();
         void setItemStat();
-        void get_item_boss();
         void RandomMoney();
         void useThisItem(bool);
         void Get_Heal(Player &);
@@ -273,6 +273,8 @@ class Game{
         void moveDelay(int &);
         void moveDelayJunction(int &);
         void upstat();
+        void checkwin();
+        void get_item_boss();
     private:
         //Menu
         Vector2i mousePosView;
@@ -375,6 +377,10 @@ class Game{
         int monsterDamage;
         int critP;
         int defhp;
+        int loseMon;
+        int loseE;
+        int getm;
+        int gete;
         bool randomStart;
         bool isBagOpen;
         bool isDesOpen;
@@ -392,6 +398,7 @@ class Game{
         bool canUsePotion;
         bool askTemp;
         bool issetstat=true;
+        bool stateChange;
         Font cordiaFont;
         //vector<int> expMax;
         vector<int> needexp;
@@ -2001,6 +2008,7 @@ void Game::initPlayingVariables(){
 void Game::drawPlaying(){
     updateTurn();
     upstat();
+    checkwin();
     this->gameWindow->setView(camera);
     if(!isDun){
         this->gameWindow->draw(mapSprite);
@@ -2094,6 +2102,24 @@ void Game::drawPlaying(){
         this->gameWindow->draw(D_monStatDesR);
     }
     if(isAskOpen){
+        for(int i = 0;i < 10;i++){
+            if(player[now_player].weaponIndex != -1){
+                UI_swordName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 90);
+                UI_swordDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 60);
+            }
+            if(player[now_player].shieldIndex != -1){
+                UI_shieldName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 90);
+                UI_shieldDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 60);
+            }
+            if(player[now_player].accessoryIndex != -1){
+                UI_accDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 92);
+                UI_accName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 122);
+            }
+            if(i < 2){
+                UI_potionName[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 60);
+                UI_potionDes[i].setPosition(mouseIconSprite.getPosition().x,mouseIconSprite.getPosition().y - 30);
+            }
+        }
         updateAsk();
         this->gameWindow->draw(UI_askWin);
         this->gameWindow->draw(UI_ask);
@@ -2168,7 +2194,7 @@ void Game::updateMonDes(){//str agi luk vit atk hp def
         D_monNameDes.setString(monster[monIndex].name);
         D_monNameDes.setOrigin(getObjWidth(D_monNameDes) / 2,getObjHeight(D_monNameDes) / 2);
         D_monNameDes.setPosition(D_monDesBGS.getPosition().x + 5,D_monDesBGS.getPosition().y - 50);
-        D_monStatDes.setString("Level  :     " + to_string(monster[monIndex].level) + '\n' +
+        D_monStatDes.setString("Level  :     " + to_string(monster[monIndex].lv) + '\n' +
                              "ATK  :     " + to_string(monster[monIndex].stat[4]) + '\n' +
                              "Max HP  :     " + to_string(monster[monIndex].maxhp) + '\n' +
                              "STR  :     " + to_string(monster[monIndex].stat[0]) + '\n' +
@@ -2180,6 +2206,12 @@ void Game::updateMonDes(){//str agi luk vit atk hp def
                               );
         D_monStatDes.setPosition(D_monDesBGS.getPosition().x - 210,D_monDesBGS.getPosition().y);
         D_monStatDesR.setPosition(D_monDesBGS.getPosition().x + 35,D_monDesBGS.getPosition().y + 37);
+}
+
+void Game::checkwin(){
+if(player[now_player].star>2){
+    while(state.top() != Menu)state.pop();
+}
 }
 
 void Game::dungeon(int monster){
@@ -2239,6 +2271,10 @@ void Game::updateDungeon(){
                 critP = rand() % 100 + 1;
                 if(critP <= monster[monsterIndex].stat[2] * 3)monsterDamage *= 2;
             }
+            loseE = loseExp(monsterIndex);
+            loseMon = loseMoney(monsterIndex);
+            getm=getMoney(monsterIndex);
+            gete=getExp(monsterIndex);
             dunStates = 0;
             break;
         case 0:
@@ -2337,8 +2373,15 @@ void Game::checkDeath(){
         death();
     }
     else if(monster[monsterIndex].stat[5] == 0){
-
-        getItem();
+        dunStates = 8;
+        gameStates = 8;
+        isDun = false;
+        if(monsterIndex < 3)getItem();
+        else{
+            player[now_player].bossIndex++;
+            player[now_player].star++;
+            get_item_boss();
+        }
     }
     else{
         dunStates = 6;
@@ -2356,24 +2399,21 @@ void Game::updateGetItem(){
     D_getOk.setPosition(windowMidWidth(),windowMidHeight() + 110);
     D_getExp.setOrigin(getObjWidth(D_getExp) / 2,getObjHeight(D_getExp) / 2);
     D_getExp.setPosition(windowMidWidth() - 150,windowMidHeight() - 20);
-    D_getExpValue.setString(to_string(getExp()));
+    D_getExpValue.setString(to_string(gete));
     D_getExpValue.setOrigin(getObjWidth(D_getExpValue) / 2,getObjHeight(D_getExpValue) / 2);
     D_getExpValue.setPosition(windowMidWidth() + 150,D_getExp.getPosition().y);
     D_getMoney.setOrigin(getObjWidth(D_getMoney) / 2,getObjHeight(D_getMoney) / 2);
     D_getMoney.setPosition(windowMidWidth() - 150,windowMidHeight() + 30);
-    D_getMoneyValue.setString(to_string(getMoney()));
+    D_getMoneyValue.setString(to_string(getm));
     D_getMoneyValue.setOrigin(getObjWidth(D_getMoneyValue) / 2,getObjHeight(D_getMoneyValue) / 2);
     D_getMoneyValue.setPosition(windowMidWidth() + 150,D_getMoney.getPosition().y);
     D_getCoin.setPosition(D_getMoneyValue.getPosition().x + 110,D_getMoneyValue.getPosition().y + 3);
+    cout << monsterIndex << " ";
     if(D_getOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
         D_getOk.setScale(1.05,1.05);
         if(checkMouseClick()){
-            player[now_player].exp += getExp();
-            player[now_player].money += getMoney();
-            if(monsterIndex<=5&&monsterIndex>=3){
-                player[now_player].bossIndex++;
-            }
-            isDun = false;
+            player[now_player].exp += gete;
+            player[now_player].money += getm;
             isGetItem = false;
             gameStates = 7;
         }
@@ -2381,26 +2421,259 @@ void Game::updateGetItem(){
     else D_getOk.setScale(1,1);
 }
 
+int Game::loseMoney(int x_case){
+    int luckyy = player[now_player].getLuk();
+    int x_lucky = rand()%10+15;
+    int x_luckyplayer;
+    x_luckyplayer = (luckyy*0.2)/10;
+    x_lucky += x_luckyplayer;
+    switch (x_case){
+
+        case 0 :
+            if(player[now_player].level >=20 ){
+                return (player[now_player].money*0.3)-x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (player[now_player].money*0.2)-x_lucky;
+            }
+            else{
+                return (player[now_player].money*0.1)-x_lucky;
+            }
+            break;
+
+        case 1 :
+            if(player[now_player].level >=20 ){
+                return (player[now_player].money*0.5)-x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (player[now_player].money*0.3)-x_lucky;
+            }
+            else{
+                return (player[now_player].money*0.2)-x_lucky;
+            }
+            break;
+
+        case 2 :
+            if(player[now_player].level >=20 ){
+                return (player[now_player].money*0.7)-x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (player[now_player].money*0.5)-x_lucky;
+            }
+            else{
+                return (player[now_player].money*0.2)-x_lucky;
+            }
+            break;
+
+        default:
+            if(player[now_player].level >=20 ){
+                return (player[now_player].money*0.8)-x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (player[now_player].money*0.7)-x_lucky;
+            }
+            else{
+                return (player[now_player].money*0.5)-x_lucky;
+            }
+            break;
 
 
-int Game::loseMoney(){
+
+    }
+
     //player[now_player].money -= 100;
-    return 100;
 }
 
-int Game::getMoney(){
-    //player[now_player].money += 100;
-    return 100;
+int Game::getMoney(int x_case){
+    int luckyy = player[now_player].getLuk();
+    int x_lucky = rand()%10+15;
+    int x_luckyplayer;
+    x_luckyplayer = (luckyy*0.2)/10;
+    x_lucky += x_luckyplayer;
+    switch (x_case){
+
+        case 0 :
+            if(player[now_player].level >=20 ){
+                return (rand()%10+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%15+1)+x_lucky;
+            }
+            else{
+                return (rand()%20+1)+x_lucky;
+            }
+            break;
+
+        case 1 :
+            if(player[now_player].level >=20 ){
+                return (rand()%30+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%40+1)+x_lucky;
+            }
+            else{
+                return (rand()%45+1)+x_lucky;
+            }
+            break;
+
+        case 2 :
+            if(player[now_player].level >=20 ){
+                return (rand()%20+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%30+1)+x_lucky;
+            }
+            else{
+                return (rand()%50+1)+x_lucky;
+            }
+            break;
+
+        case 3:
+            if(player[now_player].level >=20 ){
+                return (rand()%200+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%300+1)+x_lucky;
+            }
+            else{
+                return (rand()%350+1)+x_lucky;
+            }
+            break;
+
+        case 4:
+            if(player[now_player].level >=20 ){
+                return (rand()%300+1)+x_lucky;
+            }
+            else if(player[now_player].level >= 10){
+                return (rand()%350+1)+x_lucky;
+            }
+            else{
+                return (rand()%400+1)+x_lucky;
+            }
+            break;
+    }
+    return 0;
 }
 
-int Game::loseExp(){
-    //player[now_player].exp -= 50;
-    return 1000;
+int Game::loseExp(int x_case){
+    switch (x_case){
+        case 0 :
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*100)+800;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*100)+600;
+            }
+            else{
+                return ((player[now_player].level-1)*100)+400;
+            }
+            break;
+        case 1 :
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*100)+1200;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*100)+1000;
+            }
+            else{
+                return ((player[now_player].level-1)*100)+600;
+            }
+            break;
+        case 2 :
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*100)+1400;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*100)+1200;
+            }
+            else{
+                return ((player[now_player].level-1)*100)+1100;
+            }
+            break;
+        case 3:
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*100)+1600;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*100)+1400;
+            }
+            else{
+                return ((player[now_player].level-1)*100)+1100;
+            }
+            break;
+        case 4:
+            if(player[now_player].level >=20 ){
+                return ((player[now_player].level-1)*50)+2200;
+            }
+            else if(player[now_player].level >= 10){
+                return ((player[now_player].level-1)*50)+2000;
+            }
+            else{
+                return ((player[now_player].level-1)*50)+1800;
+            }
+            break;
+    };
+    return 0;
 }
-
-int Game::getExp(){
-    //player[now_player].exp += 50;
-    return 100000;
+int Game::getExp(int x_case){
+    switch (x_case){
+        case 0 :
+            if(player[now_player].level >=20 ){
+                return 1400;
+            }
+            else if(player[now_player].level >= 10){
+                return 1000;
+            }
+            else{
+                return 600;
+            }
+            break;
+        case 1 :
+            if(player[now_player].level >=20 ){
+                return 1600;
+            }
+            else if(player[now_player].level >= 10){
+                return 1200;
+            }
+            else{
+                return 800;
+            }
+            break;
+        case 2 :
+            if(player[now_player].level >=20 ){
+                return 1800;
+            }
+            else if(player[now_player].level >= 10){
+                return 1400;
+            }
+            else{
+                return 1000;
+            }
+            break;
+        case 3:
+            if(player[now_player].level >=20 ){
+                return 2600;
+            }
+            else if(player[now_player].level >= 10){
+                return 2200;
+            }
+            else{
+                return 1800;
+            }
+            break;
+        case 4:
+            if(player[now_player].level >=20 ){
+                return 2900;
+            }
+            else if(player[now_player].level >= 10){
+                return 2500;
+            }
+            else{
+                return 2100;
+            }
+            break;
+    };
+    return 0;
 }
 
 void Game::death(){
@@ -2414,20 +2687,20 @@ void Game::updateDeath(){
     D_deathOk.setPosition(windowMidWidth(),windowMidHeight() + 110);
     D_deathExp.setOrigin(getObjWidth(D_deathExp) / 2,getObjHeight(D_deathExp) / 2);
     D_deathExp.setPosition(windowMidWidth() - 150,windowMidHeight() - 20);
-    D_deathExpValue.setString("-" + to_string(loseExp()));
+    D_deathExpValue.setString("-" + to_string(loseE));
     D_deathExpValue.setOrigin(getObjWidth(D_deathExpValue) / 2,getObjHeight(D_deathExpValue) / 2);
     D_deathExpValue.setPosition(windowMidWidth() + 150,D_deathExp.getPosition().y);
     D_deathMoney.setOrigin(getObjWidth(D_deathMoney) / 2,getObjHeight(D_deathMoney) / 2);
     D_deathMoney.setPosition(windowMidWidth() - 150,windowMidHeight() + 30);
-    D_deathMoneyValue.setString("-" + to_string(loseMoney()));
+    D_deathMoneyValue.setString("-" + to_string(loseMon));
     D_deathMoneyValue.setOrigin(getObjWidth(D_deathMoneyValue) / 2,getObjHeight(D_deathMoneyValue) / 2);
     D_deathMoneyValue.setPosition(windowMidWidth() + 150,D_deathMoney.getPosition().y);
     D_coinS.setPosition(D_deathMoneyValue.getPosition().x + 110,D_deathMoneyValue.getPosition().y + 3);
     if(D_deathOk.getGlobalBounds().contains(mousePos) && !isMenuOpen && !isDesOpen && !isMonDes){
         D_deathOk.setScale(1.05,1.05);
         if(checkMouseClick()){
-            player[now_player].exp -= loseExp();
-            player[now_player].money -= loseMoney();
+            player[now_player].exp -= loseE;
+            player[now_player].money -= loseMon;
             isDun = false;
             isDeathOpen = false;
             canUsePotion = true;
@@ -2669,7 +2942,6 @@ void Game::updateDunAsk(int kind){
             dunStates = 7;
             isDunAskOpen = false;
             gameStates = 5;
-
         }
     }
     else UI_dunYes.setScale(1,1);
@@ -2683,10 +2955,11 @@ void Game::updateDunAsk(int kind){
     else UI_dunNo.setScale(1,1);
 }
 
-void Game::ask(int kind,int index){
+void Game::ask(int kind,int index,bool stateC){
     askKind = kind;
     askIndex = index;
     isAskOpen = true;
+    stateChange = stateC;
 }
 
 void Game::updateAsk(){
@@ -2722,12 +2995,16 @@ void Game::updateAsk(){
             break;
                 case 1:
                     player[now_player].shieldIndex = askIndex;
+                    player[now_player].hp+=shield[player[now_player].shieldIndex].shield_stat[0] * 10;
+                    if(player[now_player].hp > player[now_player].HpMax())player[now_player].hp = player[now_player].HpMax();
             break;
                 case 2:
                     player[now_player].accessoryIndex = askIndex;
-    };
+                    player[now_player].hp+=player[now_player].getVit()+ player[now_player].std_vit*10-(player[now_player].hp-player[now_player].HpMax());
+                    if(player[now_player].hp > player[now_player].HpMax())player[now_player].hp = player[now_player].HpMax();
+            };
             isAskOpen = false;
-            gameStates = 7;
+            if(stateChange)gameStates = 7;
         }
     }
     else UI_yes.setScale(1,1);
@@ -2735,7 +3012,7 @@ void Game::updateAsk(){
         UI_no.setScale(1.1,1.1);
         if(checkMouseClick()){
             isAskOpen = false;
-            gameStates = 7;
+            if(stateChange)gameStates = 7;
         }
     }
     else UI_no.setScale(1,1);
@@ -3541,11 +3818,11 @@ void Game::setItemStat(){
     accessory[0].name = "The balance";   accessory[0].price = 10;    accessory[0].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 2"; accessory[0].extra_agi = 2;accessory[0].extra_atk = 0;accessory[0].extra_luck = 2;accessory[0].extra_str = 2;accessory[0].extra_vit = 2;
     accessory[1].name = "Golden x";       accessory[1].price = 10;   accessory[1].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[1].extra_agi = 0;accessory[1].extra_atk = 5;accessory[1].extra_luck = 3;accessory[1].extra_str = 2;accessory[1].extra_vit = 1;
     accessory[2].name = "Warrior necklace"; accessory[2].price = 10; accessory[2].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 5"; accessory[2].extra_agi = 0;accessory[2].extra_atk = 10;accessory[2].extra_luck = 0;accessory[2].extra_str = 5;accessory[2].extra_vit = 5;
-    accessory[3].name = "Ninja necklace";  accessory[3].price = 10; accessory[3].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 2"; accessory[3].extra_agi = 7;accessory[3].extra_atk = 10;accessory[3].extra_luck = 3;accessory[3].extra_str = -2;accessory[3].extra_vit = -2;
+    accessory[3].name = "Ninja necklace";  accessory[3].price = 10; accessory[3].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 0"; accessory[3].extra_agi = 7;accessory[3].extra_atk = 10;accessory[3].extra_luck = 3;accessory[3].extra_str = -4;accessory[3].extra_vit = 0;
     accessory[4].name = "LUCKY";          accessory[4].price = 10;  accessory[4].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[4].extra_agi = 1;accessory[4].extra_atk = 0;accessory[4].extra_luck = 10;accessory[4].extra_str = 0;accessory[4].extra_vit = 1;
     accessory[5].name = "Power stone";     accessory[5].price = 10;  accessory[5].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 7"; accessory[5].extra_agi = -5;accessory[5].extra_atk = 14;accessory[5].extra_luck = -2;accessory[5].extra_str = 5;accessory[5].extra_vit = 7;
     accessory[6].name = "Mystery";        accessory[6].price = 10;   accessory[6].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 6"; accessory[6].extra_agi = 6;accessory[6].extra_atk =6;accessory[6].extra_luck = 6;accessory[6].extra_str = 6;accessory[6].extra_vit = 6;
-    accessory[7].name = "Blood crystal";                               accessory[7].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT - 15"; accessory[7].extra_agi = 10;accessory[7].extra_atk = 0;accessory[7].extra_luck = 5;accessory[7].extra_str = -2;accessory[7].extra_vit = -15;
+    accessory[7].name = "Blood crystal";                               accessory[7].Des = "AGI + 2\nATK + 0\nLUK + 2\nSTR + 2\nVIT + 0"; accessory[7].extra_agi = 10;accessory[7].extra_atk = - 5;accessory[7].extra_luck = 5;accessory[7].extra_str = -2;accessory[7].extra_vit = 0;
     accessory[8].name = "Darkness totem";                            accessory[8].Des = "AGI + 7\nATK + 15\nLUK + 2\nSTR + 2\nVIT + 1"; accessory[8].extra_agi = 7;accessory[8].extra_atk = 15;accessory[8].extra_luck = 7;accessory[8].extra_str = 7;accessory[8].extra_vit = 1;
     accessory[9].name = "WHOSYOURDADDY";                             accessory[9].Des = "AGI + 17\nATK + 20\nLUK + 15\nSTR + 10\nVIT + 10";accessory[9].extra_agi = 17;accessory[9].extra_atk = 20;accessory[9].extra_luck = 15;accessory[9].extra_str = 10;accessory[9].extra_vit = 10;
 }
@@ -3574,71 +3851,6 @@ void Game::initMob(){
 	monster[0].name = "m1";monster[0].maxhp = 400;monster[1].maxhp = 800;monster[2].maxhp = 1200;monster[3].maxhp = 3000;monster[4].maxhp = 3500;monster[5].maxhp=4000;
 }
 
-void Game::get_item_boss(){
-    int b = player[now_player].getLuk()*0.7;
-    int a = rand()%100+1;
-    int c = a+b;
-    int d;
-    int ea;
-    string e[3] = {"sword","potion","shield"};
-    int i = rand()%3;
-    int command_item_boss;
-    int potion_random = rand()%2;
-
-    if(potion_random == 0){
-         ea = rand()%3+1;
-    }
-    if(potion_random == 1){
-         ea = rand()%6+1;
-    }
-
-    if(c >95){     //5
-        d = 9;
-        i = 0;
-    }
-    if(c > 85 && c <= 95){  //10
-        d = 8;
-        i = 0;
-    }
-    if(c > 70 && c <= 85){ //15
-        d = 7;
-        i = 0;    }
-    if(c > 50 && c <= 70){ //20
-        d = rand()%3+4;
-        i = 0;
-    }
-    if(c > 0 && c <= 50){ // 50
-        d = rand()%3+1;
-        i = 2;
-    }
-    if(e[i] == "sword"){
-        cout << "You get the " << sword[d].name_object << "Stat : STR = " << sword[d].sword_stat[0] << "  AGI = " << sword[d].sword_stat[1] << "  Luk = " << sword[d].sword_stat[2] << endl;
-        cout << "Choose (1):OK (2):Cancel " ;
-        cin >> command_item_boss;
-        if(command_item_boss == 1){
-        player[now_player].weaponIndex = d;
-        }
-        else player[now_player].weaponIndex = player[now_player].weaponIndex;
-    }
-    if(e[i] == "potion"){
-        cout << "You get a " << potion[potion_random].name_object << "  " << ea << " EA"<< endl;
-        if(potion_random == 0){
-        player[now_player].green_potion += ea;
-        }
-        if(potion_random == 1){
-        player[now_player].red_potion += ea;
-        }
-    }
-    if(e[i] == "shield"){
-        cout << "You get the " << shield[d].name_object << "Stat : VIT = " << shield[d].shield_stat[0] << "  DEF = " << shield[d].shield_stat[1] << "  HP = " << shield[d].shield_stat[2] << endl;
-        cout << "Choose (1):OK (2):Cancel " ;
-        cin >> command_item_boss;
-        if(command_item_boss == 1){
-        player[now_player].shieldIndex = d;
-        }
-        else player[now_player].shieldIndex = player[now_player].shieldIndex;
-    }
-}
 void Game::useThisItem(bool high_grade){
     int x = rand()%100+1;
     if(high_grade == false){
@@ -3809,6 +4021,63 @@ void Game::upstat(){
 		}
 		x=x+1;
 	}
+}
+void Game::get_item_boss(){
+    int b = player[now_player].getLuk()*0.3;
+    int a = rand()%100+1;
+    int c = a+b;
+    int d;
+    int ea;
+    string e[4] = {"sword","potion","shield","accessory"};
+    int i = rand()%3;
+    //int command_item_boss;
+    int potion_random = rand()%2;
+
+    if(potion_random == 0){
+         ea = rand()%3+1;
+    }
+    if(potion_random == 1){
+         ea = rand()%6+1;
+    }
+
+
+    if(c >95){     //5
+        d = 9;
+        i = 3;
+    }
+    if(c > 85 && c <= 95){  //10
+        d = 8;
+        i =3;
+    }
+    if(c > 70 && c <= 85){ //15
+        d = 7;
+        i = 2;    }
+    if(c > 50 && c <= 70){ //20
+        d = rand()%3+4;
+        i = 2;
+    }
+    if(c > 0 && c <= 50){ // 50
+        d = rand()%3+1;
+        i = 0;
+    }
+    if(e[i] == "sword"){
+        ask(0,d);
+    }
+    if(e[i] == "potion"){
+        cout << "You get a " << potion[potion_random].name_object << "  " << ea << " EA"<< endl;
+        if(potion_random == 0){
+        player[now_player].green_potion += ea;
+        }
+        if(potion_random == 1){
+        player[now_player].red_potion += ea;
+        }
+    }
+    if(e[i] == "shield"){
+      ask(1,d);
+    }
+    if(e[i] == "accessory"){
+      ask(2,d);
+    }
 }
 
 #endif

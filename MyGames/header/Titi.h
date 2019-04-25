@@ -254,7 +254,7 @@ int Game::getMoney(int x_case){
 
 }
 
-int Game::loseExp(){
+int Game::loseExp(int x_case){
         //i-1 * 50 +100
   switch (x_case){
 
