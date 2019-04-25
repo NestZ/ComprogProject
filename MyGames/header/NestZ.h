@@ -3078,6 +3078,7 @@ void Game::updateAsk(){
                     if(player[now_player].hp > player[now_player].HpMax())player[now_player].hp = player[now_player].HpMax();
             };
             isAskOpen = false;
+            cout << gameStates << "\n";
             if(stateChange)gameStates = 7;
         }
     }
