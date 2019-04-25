@@ -482,7 +482,7 @@ class Game{
         Sprite UI_shopAskWin;
         Texture UI_shopIconT;
         Sprite UI_shopIconS;
-        Texture UI_dunAskMonT[4];
+        Texture UI_dunAskMonT[6];
         Sprite UI_dunAskMonS;
         Sprite UI_dunAskWin;
         Sprite UI_askWeaponS;
@@ -1674,6 +1674,8 @@ void Game::initPlayingVariables(){
     UI_dunAskMonT[1].loadFromFile("img/Yellow Circle.png");
     UI_dunAskMonT[2].loadFromFile("img/Red Circle.png");
     UI_dunAskMonT[3].loadFromFile("img/Boss Circle.png");
+    UI_dunAskMonT[4].loadFromFile("img/Boss Circle.png");
+    UI_dunAskMonT[5].loadFromFile("img/Boss Circle.png");
     UI_shopIconT.loadFromFile("img/Shop Icon.png");
     UI_shopIconS.setTexture(UI_shopIconT);
     UI_shopIconS.setOrigin(getObjWidth(UI_shopIconS) / 2,getObjHeight(UI_shopIconS) / 2);
@@ -2493,7 +2495,7 @@ void Game::updateGetItem(){
             player[now_player].exp += gete;
             player[now_player].money += getm;
             isGetItem = false;
-            if(monsterIndex < 3)gameStates = 7;
+            gameStates = 7;
         }
     }
     else D_getOk.setScale(1,1);
@@ -4159,7 +4161,7 @@ void Game::get_item_boss(){
         i = 0;
     }
     if(e[i] == "sword"){
-        ask(0,d);
+        ask(0,d,false);
     }
     if(e[i] == "potion"){
         cout << "You get a " << potion[potion_random].name_object << "  " << ea << " EA"<< endl;
@@ -4171,10 +4173,10 @@ void Game::get_item_boss(){
         }
     }
     if(e[i] == "shield"){
-      ask(1,d);
+      ask(1,d,false);
     }
     if(e[i] == "accessory"){
-      ask(2,d);
+      ask(2,d,false);
     }
 }
 
