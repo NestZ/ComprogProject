@@ -118,7 +118,7 @@ class Player{
 
 Player::Player(){
     level = 1;
-    exp = 600;
+    exp = 0;
     money = 10;
     red_potion = 5;
     green_potion = 0;
@@ -1398,7 +1398,7 @@ void Game::initPlayingVariables(){
     miniMenuS.setOrigin(getObjWidth(miniMenuS) / 2,getObjHeight(miniMenuS) / 2);
     miniMenuS.setScale(0.9,0.7);
     miniMenuS.setColor(Color(255,255,255,140));
-    camera.setCenter(Vector2f(windowMidWidth(),windowMidHeight()));
+    camera.setCenter(Vector2f(windowMidWidth() + 200,windowMidHeight() + 820));
     camera.setSize(Vector2f(1920,1080));
     camera.setViewport(FloatRect(0,0,1,1));
     miniMenuText[0].setString("Reseum");
@@ -1799,7 +1799,7 @@ void Game::initPlayingVariables(){
     UI_askBuyCancle.setOutlineThickness(2.5);
     UI_askBuyCancle.setFont(menuFont);
     UI_askBuyCancle.setCharacterSize(UIFontSize - 5);
-    shopPriceValue[0] = 10; shopPriceValue[1] = 50; shopPriceValue[2] = 100; shopPriceValue[3] = 120; shopPriceValue[4] = 120; shopPriceValue[5] = 200;
+    shopPriceValue[0] = 2; shopPriceValue[1] = 50; shopPriceValue[2] = 100; shopPriceValue[3] = 120; shopPriceValue[4] = 120; shopPriceValue[5] = 200;
     shopPriceValue[6] = 300; shopPriceValue[7] = 450; shopPriceValue[8] = 10; shopPriceValue[9] = 70; shopPriceValue[10] = 100;shopPriceValue[11] = 120;
     shopPriceValue[12] = 270;shopPriceValue[13] = 300;shopPriceValue[14] = 350;shopPriceValue[15] = 500;shopPriceValue[16] = 50;shopPriceValue[17] = 70;
     shopPriceValue[18] = 100;shopPriceValue[19] = 130;shopPriceValue[20] = 130;shopPriceValue[21] = 300;shopPriceValue[22] = 500;shopPriceValue[23] = 1500;
@@ -2749,59 +2749,19 @@ int Game::loseExp(int x_case){
 int Game::getExp(int x_case){
     switch (x_case){
         case 0 :
-            if(player[now_player].level >= 20 ){
-                return 1400;
-            }
-            else if(player[now_player].level >= 10){
-                return 1000;
-            }
-            else{
-                return 600;
-            }
+            return 600;
             break;
         case 1 :
-            if(player[now_player].level >= 20){
-                return 1600;
-            }
-            else if(player[now_player].level >= 10){
-                return 1200;
-            }
-            else{
-                return 800;
-            }
+            return 1200;
             break;
         case 2 :
-            if(player[now_player].level >= 20){
-                return 1800;
-            }
-            else if(player[now_player].level >= 10){
-                return 1400;
-            }
-            else{
-                return 1000;
-            }
+            return 1500;
             break;
         case 3:
-            if(player[now_player].level >= 20){
-                return 2600;
-            }
-            else if(player[now_player].level >= 10){
-                return 2200;
-            }
-            else{
-                return 1800;
-            }
+            return 2000;
             break;
         case 4:
-            if(player[now_player].level >=20){
-                return 2900;
-            }
-            else if(player[now_player].level >= 10){
-                return 2500;
-            }
-            else{
-                return 2100;
-            }
+            return 2500;
             break;
     };
     return 0;
@@ -3563,7 +3523,7 @@ void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 :
     Path[53].nextPathNum_1.push_back(12);
     Path[53].nextPathNum_2.push_back(54);
 
-    Path[54] = {4,651,829,53,55};
+    Path[54] = {6,651,829,53,55};
     Path[54].nextPathNum_1.push_back(55);
     Path[54].nextPathNum_2.push_back(53);
 
@@ -3701,16 +3661,16 @@ void Game::randomDice(){
 }
 
 void Game::updateView(){
-    if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3 && camera.getCenter().x < 2040){
+    if(Mouse::getPosition(*this->gameWindow).x > windowWidth - 3 && camera.getCenter().x < 2040 - horizontalScrollSpeed){
         camera.move(horizontalScrollSpeed,0);
     }
-    else if(Mouse::getPosition(*this->gameWindow).x < 3 && camera.getCenter().x > windowMidWidth()){
+    else if(Mouse::getPosition(*this->gameWindow).x < 3 && camera.getCenter().x > windowMidWidth() + horizontalScrollSpeed){
         camera.move(-horizontalScrollSpeed,0);
     }
-    if(Mouse::getPosition(*this->gameWindow).y > windowHeight - 3 && camera.getCenter().y < 1460){
+    if(Mouse::getPosition(*this->gameWindow).y > windowHeight - 3 && camera.getCenter().y < 1460 - verticalScrollSpeed){
         camera.move(0,verticalScrollSpeed);
     }
-    else if(Mouse::getPosition(*this->gameWindow).y < 3 && camera.getCenter().y > windowMidHeight()){
+    else if(Mouse::getPosition(*this->gameWindow).y < 3 && camera.getCenter().y > windowMidHeight() + verticalScrollSpeed){
         camera.move(0,-verticalScrollSpeed);
     }
 }
@@ -3967,8 +3927,8 @@ void Game::setItemStat(){
     sword[8].name_object = "Wado Ichimonji";                         sword[8].Des = "STR + 10\nAGI + 3\nLUK + 5";       sword[8].sword_stat[0] = 10;sword[8].sword_stat[1] = 3;sword[8].sword_stat[2] = 5;
     sword[9].name_object = "Excalibur";                              sword[9].Des = "STR + 30\nAGI + -5\nLUK + 3";       sword[9].sword_stat[0] = 30;sword[9].sword_stat[1] = -5;sword[9].sword_stat[2] = 3;
 
-    potion[0].name_object ="Potion S" ;    potion[0].price = 20;      potion[0].Des = "HP + 10";                        potion[0].potion_effect = 10;
-    potion[1].name_object ="Potion L";     potion[1].price = 50;      potion[1].Des = "HP + 30";                        potion[1].potion_effect = 30;
+    potion[0].name_object ="Potion S" ;    potion[0].price = 2;      potion[0].Des = "HP + 15";                        potion[0].potion_effect = 15;
+    potion[1].name_object ="Potion L";     potion[1].price = 50;      potion[1].Des = "HP + 200";                        potion[1].potion_effect = 200;
 
     shield[0].name_object = "Hand Shield";    shield[0].price = 10;    shield[0].Des = "VIT + 0\nDEF + 0\nMAX HP + 0";  shield[0].shield_stat[0] = 0;shield[0].shield_stat[1]= 0;shield[0].shield_stat[2]= 0;
     shield[1].name_object = "Aegis Shield ";  shield[1].price = 70;    shield[1].Des = "VIT + 2\nDEF + 3\nMAX HP + 30";  shield[1].shield_stat[0] = 2;shield[1].shield_stat[1]= 3;shield[1].shield_stat[2]= 30;
@@ -4002,19 +3962,19 @@ void Game::initMob(){
 	characters[2].stat[3]=5;characters[2].stat[4]=8;characters[2].stat[5]=35;
 	characters[3].clas="Valkyrie";characters[3].stat[0]=7;characters[3].stat[1]=3;characters[3].stat[2]=10;
 	characters[3].stat[3]=12;characters[3].stat[4]=5;characters[3].stat[5]=35;
-	characters[4].clas="Merchant";characters[4].stat[0]=10;characters[4].stat[1]=10;characters[4].stat[2]=3;
+	characters[4].clas="Merchant";characters[4].stat[0]=7;characters[4].stat[1]=10;characters[4].stat[2]=3;
 	characters[4].stat[3]=7;characters[4].stat[4]=5;characters[4].stat[5]=50;
 	characters[5].clas="Cheat Man";characters[5].stat[0]=8;characters[5].stat[1]=8;characters[5].stat[2]=15;
 	characters[5].stat[3]=8;characters[5].stat[4]=9;characters[5].stat[5]=40;
 
 	//atk hp agi luk def
-    monster[0].name = "m1";monster[0].stat[0]=5;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=25;monster[0].stat[5]=150;monster[0].stat[6]=6;monster[0].lv=5;
-	monster[1].name = "m1";monster[1].stat[0]=10;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=45;monster[1].stat[5]=1000;monster[1].stat[6]=12;monster[1].lv=15;
-	monster[2].name = "m1";monster[2].stat[0]=14;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=65;monster[2].stat[5]=1200;monster[2].stat[6]=18;monster[2].lv=20;
-	monster[3].name = "m1";monster[3].stat[0]=20;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=90;monster[3].stat[5]=3000;monster[3].stat[6]=22;monster[3].lv=30;
-	monster[4].name = "m1";monster[4].stat[0]=30;monster[4].stat[1]=29;monster[4].stat[2]=25;monster[4].stat[3]=350;monster[4].stat[4]=130;monster[4].stat[5]=3500;monster[4].stat[6]=24;monster[4].lv=35;
-	monster[5].name = "m1";monster[5].stat[0]=40;monster[5].stat[1]=31;monster[5].stat[2]=27;monster[5].stat[3]=400;monster[5].stat[4]=175;monster[5].stat[5]=4000;monster[5].stat[6]=26;monster[5].lv=40;
-	monster[0].name = "m1";monster[0].maxhp = 400;monster[1].maxhp = 900;monster[2].maxhp = 1400;monster[3].maxhp = 2600;monster[4].maxhp = 3100;monster[5].maxhp=3600;
+   monster[0].name = "Dwarf";monster[0].stat[0]=5;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=25;monster[0].stat[5]=400;monster[0].stat[6]=6;monster[0].lv=5;
+	monster[1].name = "Ignis";monster[1].stat[0]=10;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=60;monster[1].stat[5]=1200;monster[1].stat[6]=12;monster[1].lv=15;
+	monster[2].name = "Grim";monster[2].stat[0]=14;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=100;monster[2].stat[5]=2000;monster[2].stat[6]=18;monster[2].lv=20;
+	monster[3].name = "Vampire";monster[3].stat[0]=20;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=120;monster[3].stat[5]=3000;monster[3].stat[6]=22;monster[3].lv=30;
+	monster[4].name = "Cerberus";monster[4].stat[0]=30;monster[4].stat[1]=29;monster[4].stat[2]=25;monster[4].stat[3]=350;monster[4].stat[4]=160;monster[4].stat[5]=3500;monster[4].stat[6]=24;monster[4].lv=35;
+	monster[5].name = "Dark Lord";monster[5].stat[0]=40;monster[5].stat[1]=31;monster[5].stat[2]=27;monster[5].stat[3]=400;monster[5].stat[4]=250;monster[5].stat[5]=4000;monster[5].stat[6]=26;monster[5].lv=40;
+	monster[0].maxhp = 400;monster[1].maxhp = 900;monster[2].maxhp = 1400;monster[3].maxhp = 2600;monster[4].maxhp = 3100;monster[5].maxhp=3600;
 }
 
 void Game::useThisItem(bool high_grade){
@@ -4048,14 +4008,14 @@ void Game::useThisItem(bool high_grade){
 int Game::Get_Heal(Player & that_player){
     int x;
     if(that_player.character_number == 1){
-        x = (rand()%20)+1;
+        x = that_player.HpMax()*(((rand()%40)+10)/100);
         if(that_player.hp + x >  that_player.HpMax()){
             return that_player.HpMax() - that_player.hp;
         }else{
             return x;
         }
     }else{
-        x = (rand()%10)+1;
+         x = that_player.HpMax()*(((rand()%30)+10)/100);
         if(that_player.hp + x > that_player.HpMax()){
             return that_player.HpMax() - that_player.hp;
         }else{
