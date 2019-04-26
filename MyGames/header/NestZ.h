@@ -118,10 +118,10 @@ class Player{
 
 Player::Player(){
     level = 1;
-    exp = 0;
-    money = 1000;
-    red_potion = 10;
-    green_potion = 10;
+    exp = 600;
+    money = 10;
+    red_potion = 5;
+    green_potion = 0;
     star = 0;
     weaponIndex = 0;
     shieldIndex = -1;
@@ -313,7 +313,7 @@ class Game{
         bool keyReleased;
         int windowWidth;
         int windowHeight;
-        const string GameName = "MyGame";
+        const string GameName = "Adventure Endgame";
         RenderWindow *gameWindow;
         Event sfEvent;
         stack<States> state;
@@ -363,7 +363,7 @@ class Game{
         float totalTime;
         float animationSpeed;
         int diceNum;
-        int shopPriceValue[24];
+        short int shopPriceValue[24];
         int itemBuyIndex;
         int dunStates;
         int playerRPS;
@@ -547,7 +547,7 @@ class Game{
         Text D_getMoney;
         Text D_getMoneyValue;
         Sprite D_playerChar;
-        Texture D_bgT;
+        Texture D_bgT[4];
         Sprite D_bgS;
         Sprite D_selectR;
         Sprite D_selectP;
@@ -587,6 +587,9 @@ class Game{
         Text getMonText;
         Text getMonOk;
         Text damageText;
+        Sprite playerWin;
+        Text playerOk;
+        Text playerText;
 };
 
 Game::Game(){
@@ -660,7 +663,7 @@ void Game::initGlobalVariables(){
     mouseIconSprite.setTexture(mouseIconTexture);
     mouseIconSprite.setOrigin(10,10);
     mouseIconSprite.setScale(0.6,0.6);
-    animationSpeed = 0.2f;
+    animationSpeed = 0.13f;
     startExp = 100;
     now_player = 0;
     turn = 0;
@@ -1796,10 +1799,10 @@ void Game::initPlayingVariables(){
     UI_askBuyCancle.setOutlineThickness(2.5);
     UI_askBuyCancle.setFont(menuFont);
     UI_askBuyCancle.setCharacterSize(UIFontSize - 5);
-    shopPriceValue[0] = 10; shopPriceValue[1] = 10; shopPriceValue[2] = 10; shopPriceValue[3] = 10; shopPriceValue[4] = 10; shopPriceValue[5] = 10;
-    shopPriceValue[6] = 10; shopPriceValue[7] = 10; shopPriceValue[8] = 10; shopPriceValue[9] = 10; shopPriceValue[10] = 10;shopPriceValue[11] = 10;
-    shopPriceValue[12] = 10;shopPriceValue[13] = 10;shopPriceValue[14] = 10;shopPriceValue[15] = 10;shopPriceValue[16] = 10;shopPriceValue[17] = 10;
-    shopPriceValue[18] = 10;shopPriceValue[19] = 10;shopPriceValue[20] = 10;shopPriceValue[21] = 10;shopPriceValue[22] = 10;shopPriceValue[23] = 10;
+    shopPriceValue[0] = 10; shopPriceValue[1] = 50; shopPriceValue[2] = 100; shopPriceValue[3] = 120; shopPriceValue[4] = 120; shopPriceValue[5] = 200;
+    shopPriceValue[6] = 300; shopPriceValue[7] = 450; shopPriceValue[8] = 10; shopPriceValue[9] = 70; shopPriceValue[10] = 100;shopPriceValue[11] = 120;
+    shopPriceValue[12] = 270;shopPriceValue[13] = 300;shopPriceValue[14] = 350;shopPriceValue[15] = 500;shopPriceValue[16] = 50;shopPriceValue[17] = 70;
+    shopPriceValue[18] = 100;shopPriceValue[19] = 130;shopPriceValue[20] = 130;shopPriceValue[21] = 300;shopPriceValue[22] = 500;shopPriceValue[23] = 1500;
     UI_UArrowT.loadFromFile("img/UArrow.png");
     UI_UArrowS.setTexture(UI_UArrowT);
     UI_UArrowS.setOrigin(getObjWidth(UI_UArrowS) / 2,getObjHeight(UI_UArrowS) / 2);
@@ -1821,13 +1824,13 @@ void Game::initPlayingVariables(){
     D_monScissorsT.loadFromFile("img/MonScissors.png");
     D_selectR.setTexture(D_rockT);
     D_selectR.setOrigin(getObjWidth(D_selectR) / 2,getObjHeight(D_selectR) / 2);
-    D_selectR.setPosition(windowMidWidth() - 300,windowMidHeight());
+    D_selectR.setPosition(windowMidWidth() - 300,windowMidHeight() + 300);
     D_selectP.setTexture(D_paperT);
     D_selectP.setOrigin(getObjWidth(D_selectP) / 2,getObjHeight(D_selectP) / 2);
-    D_selectP.setPosition(windowMidWidth(),windowMidHeight());
+    D_selectP.setPosition(windowMidWidth(),windowMidHeight() + 300);
     D_selectS.setTexture(D_scissorsT);
     D_selectS.setOrigin(getObjWidth(D_selectS) / 2,getObjHeight(D_selectS) / 2);
-    D_selectS.setPosition(windowMidWidth() + 300,windowMidHeight());
+    D_selectS.setPosition(windowMidWidth() + 300,windowMidHeight() + 300);
     D_Turn.setFillColor(Color::Black);
     D_Turn.setOutlineColor(Color::White);
     D_Turn.setOutlineThickness(3.5);
@@ -1867,8 +1870,10 @@ void Game::initPlayingVariables(){
     D_monName.setOutlineThickness(3.5);
     D_monName.setFont(menuFont);
     D_monName.setCharacterSize(UIFontSize);
-    D_bgT.loadFromFile("img/DungeonBG.jpg");
-    D_bgS.setTexture(D_bgT);
+    D_bgT[0].loadFromFile("img/DungeonBG.jpg");
+    D_bgT[1].loadFromFile("img/DungeonBG2.jpg");
+    D_bgT[2].loadFromFile("img/DungeonBG3.jpg");
+    D_bgT[3].loadFromFile("img/DungeonBG4.jpg");
     D_playerRPS.setTexture(D_rockT);
     D_monsterRPS.setTexture(D_rockT);
     D_monLevel.setFillColor(Color::Black);
@@ -2058,12 +2063,27 @@ void Game::initPlayingVariables(){
     damageText.setOutlineThickness(2.5);
     damageText.setFont(menuFont);
     damageText.setCharacterSize(UIFontSize - 5);
+    playerWin.setTexture(miniMenuT);
+    playerWin.setOrigin(getObjWidth(playerWin) / 2,getObjHeight(playerWin) / 2);
+    playerWin.setPosition(windowMidWidth(),windowMidHeight());
+    playerWin.setScale(1.1,0.4);
+    playerWin.setColor(Color(255,255,255,210));
+    playerText.setFillColor(Color(0,160,0,255));
+    playerText.setOutlineColor(Color::White);
+    playerText.setOutlineThickness(2.5);
+    playerText.setFont(menuFont);
+    playerText.setCharacterSize(UIFontSize - 5);
+    playerOk.setFillColor(Color::Black);
+    playerOk.setOutlineColor(Color::White);
+    playerOk.setOutlineThickness(3);
+    playerOk.setFont(menuFont);
+    playerOk.setCharacterSize(UIFontSize - 5);
 }
 
 void Game::drawPlaying(){
     updateTurn();
     upstat();
-    //checkwin();
+    checkwin();
     this->gameWindow->setView(camera);
     if(!isDun){
         this->gameWindow->draw(mapSprite);
@@ -2108,6 +2128,8 @@ void Game::drawPlaying(){
         else getMonOk.setScale(1,1);
     }
     if(isDun){
+        if(monsterIndex < 4)D_bgS.setTexture(D_bgT[monsterIndex]);
+        else D_bgS.setTexture(D_bgT[4]);
         this->gameWindow->draw(D_bgS);
         this->gameWindow->draw(D_monsterFaceS);
         this->gameWindow->draw(D_monCharS);
@@ -2258,38 +2280,48 @@ void Game::drawPlaying(){
     this->gameWindow->draw(mouseIconSprite);
 }
 
-void Game::updateMonDes(){//str agi luk vit atk hp def
+void Game::updateMonDes(){
     int monIndex;
-    if(monsterIndex<3){
-        monIndex=monsterIndex;
-    }
-    else {
-        monIndex=player[now_player].bossIndex;
-
-    }
-        D_monDesCharS.setTexture(D_monChar[monIndex]);
-        D_monDesCharS.setOrigin(getObjWidth(D_monDesCharS) / 2,getObjHeight(D_monDesCharS) / 2);
-        D_monDesCharS.setPosition(D_monDesBGS.getPosition().x,D_monDesBGS.getPosition().y - 140);
-        D_monNameDes.setString(monster[monIndex].name);
-        D_monNameDes.setOrigin(getObjWidth(D_monNameDes) / 2,getObjHeight(D_monNameDes) / 2);
-        D_monNameDes.setPosition(D_monDesBGS.getPosition().x + 5,D_monDesBGS.getPosition().y - 50);
-        D_monStatDes.setString("Level  :     " + to_string(monster[monIndex].lv) + '\n' +
-                             "ATK  :     " + to_string(monster[monIndex].stat[4]) + '\n' +
-                             "Max HP  :     " + to_string(monster[monIndex].maxhp) + '\n' +
-                             "STR  :     " + to_string(monster[monIndex].stat[0]) + '\n' +
-                             "VIT  :     " + to_string(monster[monIndex].stat[3])
-                             );
-        D_monStatDesR.setString("DEF  :     " + to_string(monster[monIndex].stat[6]) + "\n\n" +
-                              "AGI  :     " + to_string(monster[monIndex].stat[1]) + '\n' +
-                              "LUK  :     " + to_string(monster[monIndex].stat[2])
-                              );
-        D_monStatDes.setPosition(D_monDesBGS.getPosition().x - 210,D_monDesBGS.getPosition().y);
-        D_monStatDesR.setPosition(D_monDesBGS.getPosition().x + 35,D_monDesBGS.getPosition().y + 37);
+    if(monsterIndex<3)monIndex = monsterIndex;
+    else monIndex=player[now_player].bossIndex;
+    D_monDesCharS.setTexture(D_monChar[monIndex]);
+    D_monDesCharS.setOrigin(getObjWidth(D_monDesCharS) / 2,getObjHeight(D_monDesCharS) / 2);
+    D_monDesCharS.setPosition(D_monDesBGS.getPosition().x,D_monDesBGS.getPosition().y - 140);
+    D_monNameDes.setString(monster[monIndex].name);
+    D_monNameDes.setOrigin(getObjWidth(D_monNameDes) / 2,getObjHeight(D_monNameDes) / 2);
+    D_monNameDes.setPosition(D_monDesBGS.getPosition().x + 5,D_monDesBGS.getPosition().y - 50);
+    D_monStatDes.setString("Level  :     " + to_string(monster[monIndex].lv) + '\n' +
+                            "ATK  :     " + to_string(monster[monIndex].stat[4]) + '\n' +
+                            "Max HP  :     " + to_string(monster[monIndex].maxhp) + '\n' +
+                            "STR  :     " + to_string(monster[monIndex].stat[0]) + '\n' +
+                            "VIT  :     " + to_string(monster[monIndex].stat[3])
+                          );
+    D_monStatDesR.setString("DEF  :     " + to_string(monster[monIndex].stat[6]) + "\n\n" +
+                            "AGI  :     " + to_string(monster[monIndex].stat[1]) + '\n' +
+                            "LUK  :     " + to_string(monster[monIndex].stat[2])
+                           );
+    D_monStatDes.setPosition(D_monDesBGS.getPosition().x - 210,D_monDesBGS.getPosition().y);
+    D_monStatDesR.setPosition(D_monDesBGS.getPosition().x + 35,D_monDesBGS.getPosition().y + 37);
 }
 
 void Game::checkwin(){
     if(player[now_player].star > 2){
-        while(state.top() != Menu)state.pop();
+        playerText.setString(playerName[now_player] + "   WIN");
+        playerText.setOrigin(getObjWidth(playerText) / 2,getObjHeight(playerText) / 2);
+        playerText.setPosition(windowMidWidth(),windowMidHeight() - 50);
+        playerOk.setString("OK");
+        playerOk.setOrigin(getObjWidth(playerOk) / 2,getObjHeight(playerOk) / 2);
+        playerOk.setPosition(windowMidWidth(),windowMidHeight() + 50);
+        this->gameWindow->draw(playerWin);
+        this->gameWindow->draw(playerText);
+        this->gameWindow->draw(playerOk);
+        if(playerOk.getGlobalBounds().contains(mousePos)){
+            playerOk.setScale(1.05,1.05);
+            if(checkMouseClick()){
+                while(state.top() != Menu)state.pop();
+            }
+        }
+        else playerOk.setScale(1,1);
     }
 }
 
@@ -2331,7 +2363,7 @@ void Game::updateDungeon(){
     if(fightTurn == 0)D_Turn.setString("Your Turn");
     else D_Turn.setString("Enemy Turn");
     D_Turn.setOrigin(getObjWidth(D_Turn) / 2,getObjHeight(D_Turn) / 2);
-    D_Turn.setPosition(windowMidWidth(),windowMidHeight() - 400);
+    D_Turn.setPosition(windowMidWidth(),windowMidHeight());
     this->gameWindow->draw(D_Turn);
     if(D_monMaxHp.getGlobalBounds().contains(mousePos)){
         this->gameWindow->draw(D_monHpValue);
@@ -2365,6 +2397,7 @@ void Game::updateDungeon(){
                     D_selectR.setScale(1.05,1.05);
                     if(checkMouseClick()){
                         D_playerRPS.setTexture(D_rockT);
+                        playerDes = 1;
                         dunStates = 1;
                     }
                 }
@@ -2373,6 +2406,7 @@ void Game::updateDungeon(){
                     D_selectP.setScale(1.05,1.05);
                     if(checkMouseClick()){
                         D_playerRPS.setTexture(D_paperT);
+                        playerDes = 2;
                         dunStates = 1;
                     }
                 }
@@ -2381,6 +2415,7 @@ void Game::updateDungeon(){
                     D_selectS.setScale(1.05,1.05);
                     if(checkMouseClick()){
                         D_playerRPS.setTexture(D_scissorsT);
+                        playerDes = 3;
                         dunStates = 1;
                     }
                 }
@@ -2404,6 +2439,7 @@ void Game::updateDungeon(){
             else if(playerDes == 1 && enemyDes == 2)isPlayerWin = 0;//enemy win
             else if(playerDes == 2 && enemyDes == 0)isPlayerWin = 0;//enemy win
             else isPlayerWin = 1;//player win
+            cout << isPlayerWin << "\n";
             dunStates = 4;
             break;
         case 4:
@@ -2787,7 +2823,7 @@ void Game::updateDeath(){
     D_deathExpValue.setPosition(windowMidWidth() + 150,D_deathExp.getPosition().y);
     D_deathMoney.setOrigin(getObjWidth(D_deathMoney) / 2,getObjHeight(D_deathMoney) / 2);
     D_deathMoney.setPosition(windowMidWidth() - 150,windowMidHeight() + 30);
-    D_deathMoneyValue.setString("-" + to_string(loseMon));
+    D_deathMoneyValue.setString(  to_string(loseMon));
     D_deathMoneyValue.setOrigin(getObjWidth(D_deathMoneyValue) / 2,getObjHeight(D_deathMoneyValue) / 2);
     D_deathMoneyValue.setPosition(windowMidWidth() + 150,D_deathMoney.getPosition().y);
     D_coinS.setPosition(D_deathMoneyValue.getPosition().x + 110,D_deathMoneyValue.getPosition().y + 3);
@@ -2795,7 +2831,11 @@ void Game::updateDeath(){
         D_deathOk.setScale(1.05,1.05);
         if(checkMouseClick()){
             player[now_player].exp -= loseE;
-            player[now_player].money -= loseMon;
+            player[now_player].money += loseMon;
+            if(player[now_player].money-loseE<0){
+                player[now_player].money=0;
+            }
+
             isDun = false;
             isDeathOpen = false;
             canUsePotion = true;
@@ -2831,16 +2871,19 @@ void Game::randomRPS(){
         switch(RPStempMon.back()){
             case 0:
                 D_monsterRPS.setTexture(D_monRockT);
+                enemyDes = 1;
                 break;
             case 1:
                 D_monsterRPS.setTexture(D_monPaperT);
+                enemyDes = 2;
                 break;
             case 2:
                 D_monsterRPS.setTexture(D_monScissorsT);
+                enemyDes = 3;
                 break;
         };
     }
-    if(RPStempMon.size() == 21){
+    if(RPStempMon.size() == 11){
         dunStates = 2;
         totalTime = 0.0f;
         while(RPStempMon.size() != 1)RPStempMon.pop_back();
@@ -2881,25 +2924,25 @@ void Game::updateAskBuy(int index){
     if(UI_askBuyOk.getGlobalBounds().contains(mousePos)){
         UI_askBuyOk.setScale(1.05,1.05);
         if(checkMouseClick()){
-            if(player[now_player].money >= shopPriceValue[index]){
                isAskBuyOpen = false;
-               if(index > 1 && index != 23){
-                   player[now_player].money -= shopPriceValue[index];
-                   isShopOpen = false;
-                   gameStates = 8;
-                   ask(kind,innerIndex);
+               if(index > 1 && index < 23){
+                    if(player[now_player].money >= shopPriceValue[index]){
+                       player[now_player].money -= shopPriceValue[index];
+                       isShopOpen = false;
+                       gameStates = 8;
+                       ask(kind,innerIndex);
+                    }
                }
-               else if(index == 23){
+               else if(index == 23 && player[now_player].money >= shopPriceValue[index]){
                     player[now_player].money -= shopPriceValue[index];
                     player[now_player].star++;
                }
-               else{
+               else if(player[now_player].money >= shopPriceValue[index]*buyNum){
                    player[now_player].money -= shopPriceValue[index]*buyNum;
                    if(index == 0)player[now_player].red_potion += buyNum;
                    else player[now_player].green_potion += buyNum;
                }
                buyNum = 1;
-            }
         }
     }
     else UI_askBuyOk.setScale(1,1);
@@ -3160,7 +3203,7 @@ void Game::updatePlayingState(){
         while(diceTemp.size() != 1)diceTemp.pop_back();
         randomStart = false;
         moveTemp = diceNum;
-        waitDiceAni(2);
+        waitDiceAni(5);
     }
     else if(gameStates == 3){ //Move
         if(diceNum > 0){
@@ -3173,11 +3216,13 @@ void Game::updatePlayingState(){
                 shopAsk();
                 break;
             case 1:
+
                 RandomMoney();
                 break;
             case 2:
                 useThisItem(false);
                 gameStates = 7;
+
                 break;
             case 3:
                 Heal();
@@ -3186,10 +3231,10 @@ void Game::updatePlayingState(){
                 dunAsk(0);
                 break;
             case 5:
-                dunAsk(player[now_player].bossIndex);
+                dunAsk(1);
                 break;
             case 6:
-                dunAsk(player[now_player].bossIndex);
+                dunAsk(2);
                 break;
             case 7:
                 dunAsk(player[now_player].bossIndex);
@@ -3421,11 +3466,11 @@ void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 :
     Path[30].nextPathNum_1.push_back(31);
     Path[30].nextPathNum_2.push_back(29);
 
-    Path[31] = {1,2616,464,30,32};
+    Path[31] = {5,2616,464,30,32};
     Path[31].nextPathNum_1.push_back(32);
     Path[31].nextPathNum_2.push_back(30);
 
-    Path[32] = {0,2733,452,31,33};
+    Path[32] = {1,2733,452,31,33};
     Path[32].nextPathNum_1.push_back(33);
     Path[32].nextPathNum_2.push_back(31);
 
@@ -3462,7 +3507,7 @@ void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 :
     Path[40].nextPathNum_1.push_back(75);
     Path[40].nextPathNum_2.push_back(39);
 
-    Path[41] = {3,2263,1590,42,40,75};
+    Path[41] = {6,2263,1590,42,40,75};
     Path[41].nextPathNum_1.push_back(40);
     Path[41].nextPathNum_1.push_back(75);
     Path[41].nextPathNum_2.push_back(42);
@@ -3501,7 +3546,7 @@ void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 :
     Path[49].nextPathNum_1.push_back(50);
     Path[49].nextPathNum_2.push_back(48);
 
-    Path[50] = {1,1077,1401,49,51};
+    Path[50] = {4,1077,1401,49,51};
     Path[50].nextPathNum_1.push_back(51);
     Path[50].nextPathNum_2.push_back(49);
 
@@ -3509,7 +3554,7 @@ void Game::setPath(){//0 shop : 1 money : 2 ranitem : 3 heal : dun1 4 : dun2 5 :
     Path[51].nextPathNum_1.push_back(52);
     Path[51].nextPathNum_2.push_back(50);
 
-    Path[52] = {5,991,1670,1,51};
+    Path[52] = {1,991,1670,1,51};
     Path[52].nextPathNum_1.push_back(51);
     Path[52].nextPathNum_2.push_back(1);
 
@@ -3649,7 +3694,7 @@ void Game::randomDice(){
         this->gameWindow->draw(UI_diceValue);
         diceTemp.push_back(diceNum);
     }
-    if(diceTemp.size() == 5){
+    if(diceTemp.size() == 8){
         gameStates = 2;
         totalTime = 0.0f;
     }
@@ -3949,27 +3994,27 @@ void Game::setItemStat(){
 }
 
 void Game::initMob(){
-	characters[0].clas="Berserker";characters[0].stat[0]=15;characters[0].stat[1]=5;characters[0].stat[2]=3;
-	characters[0].stat[3]=7;characters[0].stat[4]=5;characters[0].stat[5]=75;
-	characters[1].clas="HolyKnight";characters[1].stat[0]=8;characters[1].stat[1]=7;characters[1].stat[2]=3;
+	characters[0].clas="Berserker";characters[0].stat[0]=16;characters[0].stat[1]=5;characters[0].stat[2]=3;
+	characters[0].stat[3]=10;characters[0].stat[4]=5;characters[0].stat[5]=75;
+	characters[1].clas="HolyKnight";characters[1].stat[0]=8;characters[1].stat[1]=7;characters[1].stat[2]=5;
 	characters[1].stat[3]=13;characters[1].stat[4]=5;characters[1].stat[5]=40;
-	characters[2].clas="Thief";characters[2].stat[0]=5;characters[2].stat[1]=10;characters[2].stat[2]=14;
-	characters[2].stat[3]=5;characters[2].stat[4]=5;characters[2].stat[5]=25;
-	characters[3].clas="B";characters[3].stat[0]=7;characters[3].stat[1]=3;characters[3].stat[2]=10;
-	characters[3].stat[3]=10;characters[3].stat[4]=5;characters[3].stat[5]=35;
+	characters[2].clas="Thief";characters[2].stat[0]=7;characters[2].stat[1]=10;characters[2].stat[2]=14;
+	characters[2].stat[3]=5;characters[2].stat[4]=8;characters[2].stat[5]=35;
+	characters[3].clas="Valkyrie";characters[3].stat[0]=7;characters[3].stat[1]=3;characters[3].stat[2]=10;
+	characters[3].stat[3]=12;characters[3].stat[4]=5;characters[3].stat[5]=35;
 	characters[4].clas="Merchant";characters[4].stat[0]=10;characters[4].stat[1]=10;characters[4].stat[2]=3;
 	characters[4].stat[3]=7;characters[4].stat[4]=5;characters[4].stat[5]=50;
-	characters[5].clas="B2";characters[5].stat[0]=6;characters[5].stat[1]=6;characters[5].stat[2]=6;
-	characters[5].stat[3]=6;characters[5].stat[4]=6;characters[5].stat[5]=30;
+	characters[5].clas="Cheat Man";characters[5].stat[0]=8;characters[5].stat[1]=8;characters[5].stat[2]=15;
+	characters[5].stat[3]=8;characters[5].stat[4]=9;characters[5].stat[5]=40;
 
 	//atk hp agi luk def
-    monster[0].name = "m1";monster[0].stat[0]=3;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=15;monster[0].stat[5]=150;monster[0].stat[6]=6;monster[0].lv=5;
-	monster[1].name = "m1";monster[1].stat[0]=6;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=300;monster[1].stat[5]=1000;monster[1].stat[6]=12;monster[1].lv=15;
-	monster[2].name = "m1";monster[2].stat[0]=10;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=500;monster[2].stat[5]=1200;monster[2].stat[6]=18;monster[2].lv=20;
-	monster[3].name = "m1";monster[3].stat[0]=16;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=80;monster[3].stat[5]=3000;monster[3].stat[6]=22;monster[3].lv=30;
-	monster[4].name = "m1";monster[4].stat[0]=20;monster[4].stat[1]=29;monster[4].stat[2]=25;monster[4].stat[3]=350;monster[4].stat[4]=100;monster[4].stat[5]=3500;monster[4].stat[6]=24;monster[4].lv=35;
-	monster[5].name = "m1";monster[5].stat[0]=24;monster[5].stat[1]=31;monster[5].stat[2]=27;monster[5].stat[3]=400;monster[5].stat[4]=120;monster[5].stat[5]=4000;monster[5].stat[6]=26;monster[5].lv=40;
-	monster[0].name = "m1";monster[0].maxhp = 400;monster[1].maxhp = 800;monster[2].maxhp = 1200;monster[3].maxhp = 3000;monster[4].maxhp = 3500;monster[5].maxhp=4000;
+    monster[0].name = "m1";monster[0].stat[0]=5;monster[0].stat[1]=4;monster[0].stat[2]=3;monster[0].stat[3]=40;monster[0].stat[4]=25;monster[0].stat[5]=150;monster[0].stat[6]=6;monster[0].lv=5;
+	monster[1].name = "m1";monster[1].stat[0]=10;monster[1].stat[1]=12;monster[1].stat[2]=6;monster[1].stat[3]=80;monster[1].stat[4]=45;monster[1].stat[5]=1000;monster[1].stat[6]=12;monster[1].lv=15;
+	monster[2].name = "m1";monster[2].stat[0]=14;monster[2].stat[1]=22;monster[2].stat[2]=18;monster[2].stat[3]=120;monster[2].stat[4]=65;monster[2].stat[5]=1200;monster[2].stat[6]=18;monster[2].lv=20;
+	monster[3].name = "m1";monster[3].stat[0]=20;monster[3].stat[1]=27;monster[3].stat[2]=22;monster[3].stat[3]=300;monster[3].stat[4]=90;monster[3].stat[5]=3000;monster[3].stat[6]=22;monster[3].lv=30;
+	monster[4].name = "m1";monster[4].stat[0]=30;monster[4].stat[1]=29;monster[4].stat[2]=25;monster[4].stat[3]=350;monster[4].stat[4]=130;monster[4].stat[5]=3500;monster[4].stat[6]=24;monster[4].lv=35;
+	monster[5].name = "m1";monster[5].stat[0]=40;monster[5].stat[1]=31;monster[5].stat[2]=27;monster[5].stat[3]=400;monster[5].stat[4]=175;monster[5].stat[5]=4000;monster[5].stat[6]=26;monster[5].lv=40;
+	monster[0].name = "m1";monster[0].maxhp = 400;monster[1].maxhp = 900;monster[2].maxhp = 1400;monster[3].maxhp = 2600;monster[4].maxhp = 3100;monster[5].maxhp=3600;
 }
 
 void Game::useThisItem(bool high_grade){
@@ -4035,29 +4080,33 @@ void Game::upstat(){
         }
             if(player[now_player].exp<0){
 				if(player[now_player].level==1){
-					player[now_player].exp=0;
-					player[now_player].hp=player[now_player].HpMax()/2;
+					player[now_player].exp=1;
+					player[now_player].hp=player[now_player].HpMax();
+					x=0;
 				}
-            else{player[now_player].level--;
+
+            else if(player[now_player].level>1){
+                player[now_player].level--;
 				player[now_player].exp+=(needexp[player[now_player].level-1]);
-				player[now_player].hp=player[now_player].HpMax()/2;
+				player[now_player].hp=player[now_player].HpMax();
 				x--;
 				}
-			}
+				}
+
         if(x>=1){
 	 	if(player[now_player].character_number==0){
-			player[now_player].std_str+=3;
-			player[now_player].std_vit+=2;
-			player[now_player].std_agi+=2;
+			player[now_player].std_str+=2;
+			player[now_player].std_vit+=1;
+			player[now_player].std_agi+=1;
 			player[now_player].std_luk+=1;
-			player[now_player].std_atk+=15;
+			player[now_player].std_atk+=10;
             player[now_player].hp+=(player[now_player].HpMax()-defhp);
 
 		}
 	else if(player[now_player].character_number==1){
-			player[now_player].std_str+=2;
-			player[now_player].std_vit+=3;
-			player[now_player].std_agi+=2;
+			player[now_player].std_str+=1;
+			player[now_player].std_vit+=2;
+			player[now_player].std_agi+=1;
 			player[now_player].std_luk+=1;
 			player[now_player].std_atk+=10;
             player[now_player].hp+=(player[now_player].HpMax()-defhp);
@@ -4065,79 +4114,79 @@ void Game::upstat(){
 	else if(player[now_player].character_number==2){
 			player[now_player].std_str+=2;
 			player[now_player].std_vit+=1;
-			player[now_player].std_agi+=3;
-			player[now_player].std_luk+=2;
+			player[now_player].std_agi+=2;
+			player[now_player].std_luk+=1;
 			player[now_player].std_atk+=10;
             player[now_player].hp+=(player[now_player].HpMax()-defhp);
 		}
 	else if(player[now_player].character_number==3){
 			player[now_player].std_str+=1;
-			player[now_player].std_vit+=3;
-			player[now_player].std_agi+=3;
+			player[now_player].std_vit+=2;
+			player[now_player].std_agi+=2;
 			player[now_player].std_luk+=1;
 			player[now_player].std_atk+=5;
             player[now_player].hp+=(player[now_player].HpMax()-defhp);
 		}
 	else if(player[now_player].character_number==4){
-			player[now_player].std_str+=3;
+			player[now_player].std_str+=2;
 			player[now_player].std_vit+=1;
 			player[now_player].std_agi+=1;
-			player[now_player].std_luk+=3;
+			player[now_player].std_luk+=2;
 			player[now_player].std_atk+=15;
             player[now_player].hp+=(player[now_player].HpMax()-defhp);
 		}
 	else if(player[now_player].character_number==5){
-			player[now_player].std_str+=2;
-			player[now_player].std_vit+=2;
+			player[now_player].std_str+=1;
+			player[now_player].std_vit+=1;
 			player[now_player].std_agi+=2;
 			player[now_player].std_luk+=2;
-			player[now_player].std_atk+=10;
+			player[now_player].std_atk+=5;
             player[now_player].hp+=(player[now_player].HpMax()-defhp);
 		}
 		x=x-1;
 	}
 		if(x<0){
 	 	if(player[now_player].character_number==0){
-			player[now_player].std_str-=3;
-			player[now_player].std_vit-=2;
-			player[now_player].std_agi-=2;
+			player[now_player].std_str-=2;
+			player[now_player].std_vit-=1;
+			player[now_player].std_agi-=1;
 			player[now_player].std_luk-=1;
-			player[now_player].std_atk-=15;
+			player[now_player].std_atk-=10;
 		}
         else if(player[now_player].character_number==1){
-			player[now_player].std_str-=2;
-			player[now_player].std_vit-=3;
-			player[now_player].std_agi-=2;
+			player[now_player].std_str-=1;
+			player[now_player].std_vit-=2;
+			player[now_player].std_agi-=1;
 			player[now_player].std_luk-=1;
 			player[now_player].std_atk-=10;
 		}
 	else if(player[now_player].character_number==2){
 			player[now_player].std_str-=2;
 			player[now_player].std_vit-=1;
-			player[now_player].std_agi-=3;
-			player[now_player].std_luk-=2;
+			player[now_player].std_agi-=2;
+			player[now_player].std_luk-=1;
 			player[now_player].std_atk-=10;
 		}
 	else if(player[now_player].character_number==3){
 			player[now_player].std_str-=1;
-			player[now_player].std_vit-=3;
-			player[now_player].std_agi-=3;
+			player[now_player].std_vit-=2;
+			player[now_player].std_agi-=2;
 			player[now_player].std_luk-=1;
 			player[now_player].std_atk-=5;
 		}
 	else if(player[now_player].character_number==4){
-			player[now_player].std_str-=3;
+			player[now_player].std_str-=2;
 			player[now_player].std_vit-=1;
 			player[now_player].std_agi-=1;
-			player[now_player].std_luk-=3;
+			player[now_player].std_luk-=2;
 			player[now_player].std_atk-=15;
 		}
 	else if(player[now_player].character_number==5){
-			player[now_player].std_str-=2;
-			player[now_player].std_vit-=2;
+			player[now_player].std_str-=1;
+			player[now_player].std_vit-=1;
 			player[now_player].std_agi-=2;
 			player[now_player].std_luk-=2;
-			player[now_player].std_atk-=10;
+			player[now_player].std_atk-=5;
 		}
 		x=x+1;
 	}
